@@ -1,21 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "outputDirectory": "public",
-  "rewrites": [
-    { "source": "/v1", "destination": "/arazzo-visualizer.html" },
-    { "source": "/v2", "destination": "/arazzo-visualizer-v2.html" }
-  ],
+  "framework": "nextjs",
+  "installCommand": "cd app && npm install",
+  "buildCommand": "cd app && npm run build",
+  "outputDirectory": "app/.next",
   "headers": [
     {
       "source": "/workflows/(.*)",
-      "headers": [
-        { "key": "Content-Type", "value": "text/yaml; charset=utf-8" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
-    },
-    {
-      "source": "/openapi/(.*)",
       "headers": [
         { "key": "Content-Type", "value": "text/yaml; charset=utf-8" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
