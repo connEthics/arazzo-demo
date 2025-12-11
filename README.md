@@ -9,7 +9,6 @@ Visualiseur interactif pour les spécifications [Arazzo](https://spec.openapis.o
 ## ✨ Fonctionnalités
 
 - 📊 **Diagramme Mermaid** - Vue flowchart des workflows
-- 🔗 **Data Flow** - Visualisation des dépendances entre steps
 - 📁 **Exemples inclus** - Pet Store & E-Commerce avancés
 
 ## 🏃 Lancer en local
