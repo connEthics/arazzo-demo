@@ -1,0 +1,62 @@
+arazzo: "1.0.1"
+info:
+  title: "User Authentication Workflow"
+  summary: "Complete user authentication and profile retrieval workflow"
+  version: "1.0.0"
+  description: "This workflow demonstrates user login and profile fetching sequence"
+
+sourceDescriptions:
+  - name: users-api
+    type: openapi
+    url: https://api.example.com/openapi.yaml
+
+workflows:
+  - workflowId: loginAndGetProfile
+    summary: "Login and retrieve user profile"
+    description: "Authenticate a user and fetch their profile information"
+    steps:
+      - stepId: login
+        description: "User login step"
+        operationId: postLogin
+        requestBody:
+          contentType: application/json
+          payload:
+            username: user@example.com
+            password: secretPassword123
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          authToken: $response.body#/token
+          userId: $response.body#/userId
+
+      - stepId: getProfile
+        description: "Fetch user profile"
+        operationId: getUserProfile
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$outputs.authToken}
+          - name: userId
+            in: path
+            value: $outputs.userId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          userProfile: $response.body
+
+      - stepId: updateLastLogin
+        description: "Update last login timestamp"
+        operationId: patchUserProfile
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$outputs.authToken}
+          - name: userId
+            in: path
+            value: $outputs.userId
+        requestBody:
+          contentType: application/json
+          payload:
+            lastLogin: $response.body#/timestamp
+        successCriteria:
+          - condition: $statusCode == 200
