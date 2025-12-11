@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arazzo Specification Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════
+           CSS CUSTOM PROPERTIES (Design Tokens)
+           ═══════════════════════════════════════════════════════════════════════ */
+        :root {
+            /* Colors */
+            --color-bg-primary: #1a1a2e;
+            --color-bg-secondary: #16213e;
+            --color-bg-tertiary: #0f3460;
+            --color-bg-card: rgba(255,255,255,0.05);
+            --color-bg-input: #0d1117;
+            
+            --color-text-primary: #e0e0e0;
+            --color-text-secondary: #888;
+            --color-text-muted: #a0aec0;
+            
+            --color-accent-cyan: #00d9ff;
+            --color-accent-green: #00ff88;
+            --color-accent-success: #48bb78;
+            --color-accent-warning: #ed8936;
+            --color-accent-error: #f56565;
+            --color-accent-info: #4299e1;
+            --color-accent-purple: #9f7aea;
+            
+            --color-border: rgba(255,255,255,0.1);
+            --color-border-hover: rgba(255,255,255,0.2);
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-green));
+            --gradient-bg: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 100%);
+            
+            /* Spacing */
+            --space-xs: 5px;
+            --space-sm: 10px;
+            --space-md: 15px;
+            --space-lg: 20px;
+            --space-xl: 30px;
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            
+            /* Shadows */
+            --shadow-card: 0 4px 15px rgba(0,0,0,0.3);
+            --shadow-hover: 0 8px 25px rgba(0, 217, 255, 0.3);
+            
+            /* Transitions */
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           BASE STYLES
+           ═══════════════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--gradient-bg);
+            min-height: 100vh;
+            color: var(--color-text-primary);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           LAYOUT
+           ═══════════════════════════════════════════════════════════════════════ */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: var(--space-lg);
+        }
+
+        header {
+            text-align: center;
+            padding: var(--space-xl) 0;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: var(--space-xl);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-sm);
+        }
+
+        header p {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           INPUT SECTION
+           ═══════════════════════════════════════════════════════════════════════ */
+        .input-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            margin-bottom: var(--space-xl);
+            border: 1px solid var(--color-border);
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+        }
+
+        .input-header h2 {
+            font-size: 1.3rem;
+            color: var(--color-accent-cyan);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           BUTTONS
+           ═══════════════════════════════════════════════════════════════════════ */
+        button {
+            padding: var(--space-sm) var(--space-lg);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: var(--color-bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border-hover);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           TEXTAREA
+           ═══════════════════════════════════════════════════════════════════════ */
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: var(--color-bg-input);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            color: var(--color-text-primary);
+            font-family: 'Fira Code', 'Monaco', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           TABS
+           ═══════════════════════════════════════════════════════════════════════ */
+        .tabs {
+            display: flex;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-lg);
+            background: rgba(0,0,0,0.3);
+            padding: var(--space-xs);
+            border-radius: var(--radius-md);
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all var(--transition-normal);
+        }
+
+        .tab.active {
+            background: var(--gradient-primary);
+            color: var(--color-bg-primary);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--color-text-primary);
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           VISUALIZATION SECTIONS
+           ═══════════════════════════════════════════════════════════════════════ */
+        .visualization-section {
+            display: none;
+        }
+
+        .visualization-section.active {
+            display: block;
+        }
+
+        .viz-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            min-height: 500px;
+            position: relative;
+            overflow: auto;
+        }
+
+        #mermaid-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        #mermaid-diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           DATA FLOW VIEW STYLES
+           ═══════════════════════════════════════════════════════════════════════ */
+        .dataflow-container {
+            background: var(--color-bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            min-height: 600px;
+            overflow: auto;
+        }
+
+        .df-workflow-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .df-workflow-header h2 {
+            color: var(--color-accent-cyan);
+            font-size: 1.5rem;
+            margin-bottom: var(--space-xs);
+        }
+
+        .df-workflow-header p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            white-space: pre-line;
+        }
+
+        .df-legend {
+            display: flex;
+            gap: 25px;
+            margin-bottom: var(--space-lg);
+            padding: var(--space-md);
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-sm);
+            flex-wrap: wrap;
+        }
+
+        .df-legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
+        .df-legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .df-legend-line {
+            width: 30px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .df-steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .df-step-card {
+            background: linear-gradient(135deg, #1a365d, #2c5282);
+            border: 2px solid var(--color-accent-info);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .df-step-card.input-card {
+            background: linear-gradient(135deg, #1a4731, #22543d);
+            border-color: var(--color-accent-success);
+        }
+
+        .df-step-card.output-card {
+            background: linear-gradient(135deg, #7b341e, #9c4221);
+            border-color: var(--color-accent-warning);
+        }
+
+        .df-step-header {
+            background: rgba(0,0,0,0.3);
+            padding: 12px var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        .df-step-badge {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: var(--color-accent-info);
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .df-step-card.input-card .df-step-badge { background: var(--color-accent-success); }
+        .df-step-card.output-card .df-step-badge { background: var(--color-accent-warning); }
+
+        .df-step-title {
+            font-weight: 700;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .df-step-desc {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-left: auto;
+        }
+
+        .df-step-body {
+            padding: var(--space-md);
+            display: flex;
+            gap: var(--space-lg);
+            flex-wrap: wrap;
+        }
+
+        .df-fields-section {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .df-fields-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .df-fields-label::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .df-fields-label.inputs::before { background: var(--color-accent-success); }
+        .df-fields-label.outputs::before { background: var(--color-accent-warning); }
+        .df-fields-label.params::before { background: var(--color-accent-purple); }
+
+        .df-field {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: var(--space-sm) 12px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            border-left: 3px solid transparent;
+            transition: all var(--transition-fast);
+        }
+
+        .df-field:hover {
+            background: rgba(0,0,0,0.5);
+            transform: translateX(3px);
+        }
+
+        .df-field.input-field { border-left-color: var(--color-accent-success); }
+        .df-field.output-field { border-left-color: var(--color-accent-warning); }
+        .df-field.param-field { border-left-color: var(--color-accent-purple); }
+
+        .df-field-name {
+            color: #fff;
+            font-weight: 600;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .df-field-value {
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+            margin-top: 3px;
+            font-family: 'Fira Code', monospace;
+            word-break: break-all;
+        }
+
+        .df-expression-highlight {
+            background: rgba(159, 122, 234, 0.2);
+            color: #d6bcfa;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .df-data-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0, 217, 255, 0.15);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            color: var(--color-accent-cyan);
+            margin: 2px;
+        }
+
+        .df-data-pill.linked {
+            background: rgba(72, 187, 120, 0.15);
+            border-color: rgba(72, 187, 120, 0.3);
+            color: var(--color-accent-success);
+            cursor: pointer;
+        }
+
+        .df-data-pill.linked:hover {
+            background: rgba(72, 187, 120, 0.3);
+        }
+
+        .df-divider {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .df-divider::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--color-accent-info) 0%, var(--color-accent-success) 100%);
+        }
+
+        .df-divider-icon {
+            background: var(--color-bg-primary);
+            color: var(--color-accent-info);
+            padding: var(--space-xs);
+            border-radius: 50%;
+            z-index: 1;
+            font-size: 1.2rem;
+        }
+
+        /* HTTP Method badges */
+        .http-method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: var(--space-sm);
+        }
+
+        .http-method.get { background: var(--color-accent-success); color: #fff; }
+        .http-method.post { background: var(--color-accent-info); color: #fff; }
+        .http-method.put { background: var(--color-accent-warning); color: #fff; }
+        .http-method.delete { background: var(--color-accent-error); color: #fff; }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           INFO PANEL
+           ═══════════════════════════════════════════════════════════════════════ */
+        .info-panel {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+        }
+
+        .info-panel h3 {
+            color: var(--color-accent-cyan);
+            margin-bottom: var(--space-md);
+            font-size: 1.1rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .info-card {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-sm);
+            padding: var(--space-md);
+            border: 1px solid var(--color-border);
+        }
+
+        .info-card-label {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .info-card-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           WORKFLOW SELECTOR
+           ═══════════════════════════════════════════════════════════════════════ */
+        .workflow-selector {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--color-border-hover);
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm) var(--space-md);
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .workflow-selector:focus {
+            outline: none;
+            border-color: var(--color-accent-cyan);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           MESSAGES
+           ═══════════════════════════════════════════════════════════════════════ */
+        .error-message {
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid var(--color-accent-error);
+            border-radius: var(--radius-sm);
+            padding: var(--space-md);
+            color: #feb2b2;
+            margin-top: var(--space-md);
+        }
+
+        .success-message {
+            background: rgba(72, 187, 120, 0.2);
+            border: 1px solid var(--color-accent-success);
+            border-radius: var(--radius-sm);
+            padding: var(--space-md);
+            color: #9ae6b4;
+            margin-top: var(--space-md);
+        }
+
+        .loading-message {
+            background: rgba(66, 153, 225, 0.2);
+            border: 1px solid var(--color-accent-info);
+            border-radius: var(--radius-sm);
+            padding: var(--space-md);
+            color: #90cdf4;
+            margin-top: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: var(--color-accent-info);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 Arazzo Specification Visualizer</h1>
+            <p>Visualize your API workflow orchestration with Mermaid diagrams</p>
+        </header>
+
+        <div class="input-section">
+            <div class="input-header">
+                <h2>📄 Arazzo Specification (YAML/JSON)</h2>
+                <div class="btn-group">
+                    <button class="btn-secondary" onclick="loadExample('pet-adoption')">🐾 Pet Store (Advanced)</button>
+                    <button class="btn-secondary" onclick="loadExample('ecommerce-onboarding')">🛒 E-Commerce (409 Handling)</button>
+                    <button class="btn-secondary" onclick="clearInput()">Clear</button>
+                    <button class="btn-primary" onclick="visualize()">🚀 Visualize</button>
+                </div>
+            </div>
+            <textarea id="arazzo-input" placeholder="Paste your Arazzo specification here (YAML or JSON)...
+
+Features demonstrated in examples:
+✅ JSON Schema definitions for requests/responses
+✅ Concrete payload examples  
+✅ Error handling (200/400/409 cases)
+✅ Conditional branching (onSuccess, onFailure)
+✅ Step skipping for 'customer already exists' scenario
+✅ Retry logic with retryAfter/retryLimit"></textarea>
+            <div id="message-container"></div>
+        </div>
+
+        <div id="visualization-wrapper" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('mermaid')">📊 Mermaid Flowchart</button>
+                    <button class="tab" onclick="switchTab('dataflow')">🔗 Data Flow Details</button>
+                </div>
+                <div>
+                    <label style="color: #888; margin-right: 10px;">Workflow:</label>
+                    <select class="workflow-selector" id="workflow-selector" onchange="selectWorkflow()"></select>
+                </div>
+            </div>
+
+            <div id="mermaid-section" class="visualization-section active">
+                <div class="viz-container">
+                    <div id="mermaid-diagram"></div>
+                </div>
+            </div>
+
+            <div id="dataflow-section" class="visualization-section">
+                <div class="dataflow-container" id="dataflow-container"></div>
+            </div>
+
+            <div class="info-panel" id="info-panel">
+                <h3>📋 Specification Info</h3>
+                <div class="info-grid" id="info-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ARAZZO VISUALIZER - Modern ES6+ Architecture
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Application State Management
+     */
+    const AppState = {
+        currentSpec: null,
+        currentWorkflow: null,
+        exampleCache: new Map(),
+    };
+
+    /**
+     * Configuration for example files
+     */
+    const EXAMPLE_FILES = {
+        'pet-adoption': {
+            path: './workflows/pet-adoption.arazzo.yaml',
+            description: '🐾 Pet Store Advanced example loaded! Features: onSuccess/onFailure, 409 handling, step skip, JSON schemas',
+        },
+        'ecommerce-onboarding': {
+            path: './workflows/ecommerce-onboarding.arazzo.yaml',
+            description: '🛒 E-Commerce Advanced example loaded! Features: 409 "customer exists" handling, conditional branching, error recovery',
+        },
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#4299e1',
+            primaryTextColor: '#fff',
+            primaryBorderColor: '#2c5282',
+            lineColor: '#4a5568',
+            secondaryColor: '#48bb78',
+            tertiaryColor: '#ed8936',
+            background: '#1a1a2e',
+            mainBkg: '#2d3748',
+            nodeBorder: '#4a5568',
+            clusterBkg: '#1a202c',
+            titleColor: '#e0e0e0',
+            edgeLabelBackground: '#2d3748',
+        },
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis',
+            padding: 20,
+        },
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // UI UTILITIES
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Display a message to the user
+     * @param {string} text - Message text
+     * @param {string} type - Message type: 'success', 'error', 'loading'
+     * @param {number} duration - Auto-hide duration in ms (0 for no auto-hide)
+     */
+    function showMessage(text, type, duration = 5000) {
+        const container = document.getElementById('message-container');
+        
+        if (type === 'loading') {
+            container.innerHTML = `
+                <div class="loading-message">
+                    <div class="loading-spinner"></div>
+                    ${text}
+                </div>
+            `;
+        } else {
+            container.innerHTML = `<div class="${type}-message">${text}</div>`;
+        }
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, duration);
+        }
+    }
+
+    /**
+     * Clear the message container
+     */
+    function clearMessage() {
+        document.getElementById('message-container').innerHTML = '';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // FILE LOADING
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Load an example Arazzo file
+     * @param {string} exampleId - ID of the example to load
+     */
+    async function loadExample(exampleId) {
+        const example = EXAMPLE_FILES[exampleId];
+        
+        if (!example) {
+            showMessage(`Unknown example: ${exampleId}`, 'error');
+            return;
+        }
+
+        // Check cache first
+        if (AppState.exampleCache.has(exampleId)) {
+            document.getElementById('arazzo-input').value = AppState.exampleCache.get(exampleId);
+            showMessage(example.description, 'success');
+            return;
+        }
+
+        showMessage(`Loading ${exampleId}...`, 'loading', 0);
+
+        try {
+            const response = await fetch(example.path);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const content = await response.text();
+            
+            // Cache for future use
+            AppState.exampleCache.set(exampleId, content);
+            
+            document.getElementById('arazzo-input').value = content;
+            showMessage(example.description, 'success');
+            
+        } catch (error) {
+            console.error('Error loading example:', error);
+            showMessage(`Error loading example: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Clear the input textarea
+     */
+    function clearInput() {
+        document.getElementById('arazzo-input').value = '';
+        document.getElementById('visualization-wrapper').style.display = 'none';
+        clearMessage();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PARSING & VALIDATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Parse Arazzo specification from YAML or JSON
+     * @param {string} input - Raw input string
+     * @returns {Object} Parsed specification
+     */
+    function parseSpecification(input) {
+        // Try YAML first (more common for Arazzo)
+        try {
+            return jsyaml.load(input);
+        } catch (yamlError) {
+            // Fall back to JSON
+            try {
+                return JSON.parse(input);
+            } catch (jsonError) {
+                throw new Error(`Invalid format. YAML error: ${yamlError.message}`);
+            }
+        }
+    }
+
+    /**
+     * Validate basic Arazzo structure
+     * @param {Object} spec - Parsed specification
+     */
+    function validateSpecification(spec) {
+        if (!spec.arazzo) {
+            throw new Error('Missing required field: arazzo (version)');
+        }
+        if (!spec.workflows || !Array.isArray(spec.workflows) || spec.workflows.length === 0) {
+            throw new Error('Missing or empty required field: workflows');
+        }
+        if (!spec.info) {
+            throw new Error('Missing required field: info');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // MAIN VISUALIZATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Main visualization function
+     */
+    function visualize() {
+        const input = document.getElementById('arazzo-input').value.trim();
+
+        if (!input) {
+            showMessage('Please enter an Arazzo specification', 'error');
+            return;
+        }
+
+        try {
+            const spec = parseSpecification(input);
+            validateSpecification(spec);
+
+            AppState.currentSpec = spec;
+            AppState.currentWorkflow = spec.workflows[0];
+
+            // Populate workflow selector
+            populateWorkflowSelector(spec.workflows);
+
+            // Update info panel
+            updateInfoPanel(spec);
+
+            // Generate visualizations
+            generateMermaidDiagram();
+            generateDataFlowView();
+
+            document.getElementById('visualization-wrapper').style.display = 'block';
+            showMessage('Specification parsed and visualized successfully!', 'success');
+
+        } catch (error) {
+            showMessage(`Error parsing specification: ${error.message}`, 'error');
+            console.error('Parse error:', error);
+        }
+    }
+
+    /**
+     * Populate the workflow selector dropdown
+     * @param {Array} workflows - Array of workflow objects
+     */
+    function populateWorkflowSelector(workflows) {
+        const selector = document.getElementById('workflow-selector');
+        selector.innerHTML = workflows.map(w =>
+            `<option value="${w.workflowId}">${w.workflowId} - ${w.summary || ''}</option>`
+        ).join('');
+    }
+
+    /**
+     * Handle workflow selection change
+     */
+    function selectWorkflow() {
+        const workflowId = document.getElementById('workflow-selector').value;
+        AppState.currentWorkflow = AppState.currentSpec.workflows.find(w => w.workflowId === workflowId);
+        generateMermaidDiagram();
+        generateDataFlowView();
+    }
+
+    /**
+     * Switch between visualization tabs
+     * @param {string} tab - Tab identifier
+     */
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.visualization-section').forEach(s => s.classList.remove('active'));
+
+        const tabIndex = tab === 'mermaid' ? 0 : 1;
+        document.querySelectorAll('.tab')[tabIndex].classList.add('active');
+        document.getElementById(`${tab}-section`).classList.add('active');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // INFO PANEL
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Update the info panel with specification details
+     * @param {Object} spec - Parsed specification
+     */
+    function updateInfoPanel(spec) {
+        const totalSteps = spec.workflows.reduce((acc, w) => acc + (w.steps?.length || 0), 0);
+        
+        const grid = document.getElementById('info-grid');
+        grid.innerHTML = `
+            <div class="info-card">
+                <div class="info-card-label">Title</div>
+                <div class="info-card-value">${escapeHtml(spec.info.title)}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Version</div>
+                <div class="info-card-value">${escapeHtml(spec.info.version)}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Arazzo Version</div>
+                <div class="info-card-value">${escapeHtml(spec.arazzo)}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Workflows</div>
+                <div class="info-card-value">${spec.workflows.length}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Source Descriptions</div>
+                <div class="info-card-value">${spec.sourceDescriptions?.length || 0}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Total Steps</div>
+                <div class="info-card-value">${totalSteps}</div>
+            </div>
+        `;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // MERMAID DIAGRAM GENERATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Generate Mermaid flowchart diagram
+     */
+    function generateMermaidDiagram() {
+        const workflow = AppState.currentWorkflow;
+        if (!workflow) return;
+
+        let mermaidCode = buildMermaidCode(workflow);
+
+        const container = document.getElementById('mermaid-diagram');
+        container.innerHTML = '';
+
+        mermaid.render('mermaid-svg', mermaidCode)
+            .then(result => {
+                container.innerHTML = result.svg;
+            })
+            .catch(error => {
+                container.innerHTML = `<div style="color: red; padding: 20px;">Error rendering diagram: ${escapeHtml(error.message)}</div>`;
+                console.error('Mermaid error:', error);
+            });
+    }
+
+    /**
+     * Build Mermaid diagram code from workflow
+     * @param {Object} workflow - Workflow object
+     * @returns {string} Mermaid code
+     */
+    function buildMermaidCode(workflow) {
+        let code = 'flowchart TD\n';
+        
+        // Class definitions
+        code += '    classDef inputNode fill:#22543d,stroke:#48bb78,color:#fff\n';
+        code += '    classDef stepNode fill:#2c5282,stroke:#4299e1,color:#fff\n';
+        code += '    classDef outputNode fill:#9c4221,stroke:#ed8936,color:#fff\n';
+        code += '    classDef errorNode fill:#742a2a,stroke:#f56565,color:#fff\n\n';
+
+        // Input node
+        const inputProps = workflow.inputs?.properties 
+            ? Object.keys(workflow.inputs.properties).slice(0, 3).join(', ') + (Object.keys(workflow.inputs.properties).length > 3 ? '...' : '')
+            : 'inputs';
+        code += `    INPUT[/"🔹 INPUTS\\n${escapeForMermaid(inputProps)}"/]:::inputNode\n`;
+
+        // Step nodes
+        workflow.steps.forEach(step => {
+            const desc = step.description || step.operationId || step.stepId;
+            const shortDesc = desc.length > 25 ? desc.substring(0, 25) + '...' : desc;
+            const hasError = step.onFailure && step.onFailure.length > 0;
+            const hasSkip = step['x-skip'];
+            
+            let icon = '📌';
+            if (hasError) icon = '⚡';
+            if (hasSkip) icon = '⏭️';
+            
+            code += `    ${step.stepId}["${icon} ${step.stepId}\\n${escapeForMermaid(shortDesc)}"]:::stepNode\n`;
+        });
+
+        // Output node
+        if (workflow.outputs) {
+            const outputProps = Object.keys(workflow.outputs).slice(0, 3).join(', ') + (Object.keys(workflow.outputs).length > 3 ? '...' : '');
+            code += `    OUTPUT[/"🔸 OUTPUTS\\n${escapeForMermaid(outputProps)}"/]:::outputNode\n`;
+        }
+
+        code += '\n';
+
+        // Edges: Input to first step
+        if (workflow.steps.length > 0) {
+            code += `    INPUT --> ${workflow.steps[0].stepId}\n`;
+        }
+
+        // Edges: Sequential steps
+        for (let i = 0; i < workflow.steps.length - 1; i++) {
+            code += `    ${workflow.steps[i].stepId} --> ${workflow.steps[i + 1].stepId}\n`;
+        }
+
+        // Edges: Last step to output
+        if (workflow.outputs && workflow.steps.length > 0) {
+            code += `    ${workflow.steps[workflow.steps.length - 1].stepId} --> OUTPUT\n`;
+        }
+
+        // Edges: onSuccess/onFailure branches
+        workflow.steps.forEach(step => {
+            if (step.onSuccess) {
+                step.onSuccess.forEach(action => {
+                    if (action.type === 'goto' && action.stepId) {
+                        code += `    ${step.stepId} -.->|"✓ ${action.name || 'success'}"| ${action.stepId}\n`;
+                    }
+                });
+            }
+            if (step.onFailure) {
+                step.onFailure.forEach(action => {
+                    if (action.type === 'goto' && action.stepId) {
+                        code += `    ${step.stepId} -.->|"✗ ${action.name || 'failure'}"| ${action.stepId}\n`;
+                    }
+                });
+            }
+        });
+
+        // Edges: Data flow based on expressions
+        workflow.steps.forEach(step => {
+            if (step.parameters) {
+                step.parameters.forEach(param => {
+                    if (param.value && typeof param.value === 'string') {
+                        const stepMatch = param.value.match(/\$steps\.(\w+)/);
+                        if (stepMatch && stepMatch[1] !== step.stepId) {
+                            const sourceStep = stepMatch[1];
+                            // Only add if source step exists
+                            if (workflow.steps.some(s => s.stepId === sourceStep)) {
+                                code += `    ${sourceStep} -.->|"${param.name}"| ${step.stepId}\n`;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        return code;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // DATA FLOW VIEW GENERATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Generate detailed data flow view
+     */
+    function generateDataFlowView() {
+        const workflow = AppState.currentWorkflow;
+        if (!workflow) return;
+
+        const container = document.getElementById('dataflow-container');
+        const dependencyMap = buildDependencyMap(workflow);
+
+        let html = buildDataFlowHeader(workflow);
+        html += buildDataFlowLegend();
+        html += '<div class="df-steps-container">';
+
+        // Workflow inputs card
+        if (workflow.inputs?.properties) {
+            html += buildInputsCard(workflow.inputs.properties, dependencyMap);
+            html += '<div class="df-divider"><span class="df-divider-icon">⬇️</span></div>';
+        }
+
+        // Step cards
+        workflow.steps.forEach((step, index) => {
+            html += buildStepCard(step, index, dependencyMap);
+            if (index < workflow.steps.length - 1 || workflow.outputs) {
+                html += '<div class="df-divider"><span class="df-divider-icon">⬇️</span></div>';
+            }
+        });
+
+        // Workflow outputs card
+        if (workflow.outputs) {
+            html += buildOutputsCard(workflow.outputs);
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    /**
+     * Build the header section of data flow view
+     */
+    function buildDataFlowHeader(workflow) {
+        return `
+            <div class="df-workflow-header">
+                <h2>📊 ${escapeHtml(workflow.workflowId)}</h2>
+                <p>${escapeHtml(workflow.description || workflow.summary || '')}</p>
+            </div>
+        `;
+    }
+
+    /**
+     * Build the legend section
+     */
+    function buildDataFlowLegend() {
+        return `
+            <div class="df-legend">
+                <div class="df-legend-item">
+                    <div class="df-legend-color" style="background: #48bb78;"></div>
+                    Input Fields
+                </div>
+                <div class="df-legend-item">
+                    <div class="df-legend-color" style="background: #ed8936;"></div>
+                    Output Fields
+                </div>
+                <div class="df-legend-item">
+                    <div class="df-legend-color" style="background: #9f7aea;"></div>
+                    Parameters
+                </div>
+                <div class="df-legend-item">
+                    <div class="df-legend-line" style="background: linear-gradient(90deg, #48bb78, #00d9ff);"></div>
+                    Data Flow Link
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Build the inputs card
+     */
+    function buildInputsCard(properties, dependencyMap) {
+        const fields = Object.entries(properties).map(([name, prop]) => `
+            <div class="df-field output-field" data-field-id="inputs.${name}">
+                <div class="df-field-name">$inputs.${escapeHtml(name)}</div>
+                <div class="df-field-value">
+                    Type: ${escapeHtml(prop.type || 'any')}
+                    ${prop.default !== undefined ? ` | Default: ${escapeHtml(String(prop.default))}` : ''}
+                    ${prop.description ? `<br>${escapeHtml(prop.description)}` : ''}
+                </div>
+                ${getUsageInfo('inputs', name, dependencyMap)}
+            </div>
+        `).join('');
+
+        return `
+            <div class="df-step-card input-card">
+                <div class="df-step-header">
+                    <span class="df-step-badge">WORKFLOW</span>
+                    <span class="df-step-title">Inputs</span>
+                </div>
+                <div class="df-step-body">
+                    <div class="df-fields-section">
+                        <div class="df-fields-label outputs">Available Input Fields</div>
+                        ${fields}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Build a step card
+     */
+    function buildStepCard(step, index, dependencyMap) {
+        const method = extractHttpMethod(step.operationId);
+        const methodBadge = method ? `<span class="http-method ${method.toLowerCase()}">${method}</span>` : '';
+        
+        return `
+            <div class="df-step-card">
+                <div class="df-step-header">
+                    <span class="df-step-badge">STEP ${index + 1}</span>
+                    <span class="df-step-title">${escapeHtml(step.stepId)}</span>
+                    ${methodBadge}
+                    <span class="df-step-desc">${escapeHtml(step.description || '')}</span>
+                </div>
+                <div class="df-step-body">
+                    <div class="df-fields-section">
+                        <div class="df-fields-label inputs">Inputs (Parameters & Body)</div>
+                        ${renderStepInputs(step)}
+                    </div>
+                    ${step.outputs ? `
+                        <div class="df-fields-section">
+                            <div class="df-fields-label outputs">Outputs</div>
+                            ${renderStepOutputs(step, dependencyMap)}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Build the outputs card
+     */
+    function buildOutputsCard(outputs) {
+        const fields = Object.entries(outputs).map(([name, expr]) => `
+            <div class="df-field input-field">
+                <div class="df-field-name">${escapeHtml(name)}</div>
+                <div class="df-field-value">
+                    <span class="df-expression-highlight">${escapeHtml(expr)}</span>
+                    ${renderSourceLink(expr)}
+                </div>
+            </div>
+        `).join('');
+
+        return `
+            <div class="df-step-card output-card">
+                <div class="df-step-header">
+                    <span class="df-step-badge">WORKFLOW</span>
+                    <span class="df-step-title">Outputs</span>
+                </div>
+                <div class="df-step-body">
+                    <div class="df-fields-section">
+                        <div class="df-fields-label inputs">Final Output Values</div>
+                        ${fields}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render step input parameters
+     */
+    function renderStepInputs(step) {
+        let html = '';
+
+        // Parameters
+        if (step.parameters && step.parameters.length > 0) {
+            step.parameters.forEach(param => {
+                const hasExpression = param.value && typeof param.value === 'string' && param.value.includes('$');
+                html += `
+                    <div class="df-field param-field">
+                        <div class="df-field-name">
+                            ${escapeHtml(param.name)}
+                            <span style="color: #888; font-weight: normal;">(${escapeHtml(param.in)})</span>
+                        </div>
+                        <div class="df-field-value">
+                            ${hasExpression
+                                ? `<span class="df-expression-highlight">${escapeHtml(param.value)}</span>${renderSourceLink(param.value)}`
+                                : escapeHtml(String(param.value))
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Request body
+        if (step.requestBody?.payload) {
+            html += `
+                <div class="df-field param-field">
+                    <div class="df-field-name">Request Body</div>
+                    <div class="df-field-value">
+                        ${renderPayloadFields(step.requestBody.payload)}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (!html) {
+            html = '<div class="df-field" style="color: #888;">No parameters</div>';
+        }
+
+        return html;
+    }
+
+    /**
+     * Render step outputs
+     */
+    function renderStepOutputs(step, dependencyMap) {
+        return Object.entries(step.outputs).map(([name, expr]) => `
+            <div class="df-field output-field" data-field-id="steps.${step.stepId}.outputs.${name}">
+                <div class="df-field-name">${escapeHtml(name)}</div>
+                <div class="df-field-value">
+                    <span class="df-expression-highlight">${escapeHtml(expr)}</span>
+                </div>
+                ${getUsageInfo(`steps.${step.stepId}.outputs`, name, dependencyMap)}
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Render payload fields recursively
+     */
+    function renderPayloadFields(payload, indent = 0) {
+        if (typeof payload !== 'object' || payload === null) {
+            if (typeof payload === 'string' && payload.includes('$')) {
+                return `<span class="df-expression-highlight">${escapeHtml(payload)}</span>${renderSourceLink(payload)}`;
+            }
+            return escapeHtml(String(payload));
+        }
+
+        return Object.entries(payload).map(([key, value]) => {
+            const isExpr = typeof value === 'string' && value.includes('$');
+            return `
+                <div style="margin-left: ${indent * 10}px; margin-top: 4px;">
+                    <span style="color: #a0aec0;">${escapeHtml(key)}:</span>
+                    ${isExpr
+                        ? `<span class="df-expression-highlight">${escapeHtml(value)}</span>${renderSourceLink(value)}`
+                        : (typeof value === 'object' ? renderPayloadFields(value, indent + 1) : escapeHtml(String(value)))
+                    }
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // DATA FLOW ANALYSIS
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Build dependency map for tracking data flow
+     */
+    function buildDependencyMap(workflow) {
+        const map = {};
+
+        // Track where each output is used in steps
+        workflow.steps.forEach(step => {
+            const expressions = extractExpressions(step);
+            expressions.forEach(expr => {
+                const match = expr.match(/\$(inputs|steps)\.([^\s.\[]+)(?:\.outputs\.([^\s.\[]+))?/);
+                if (match) {
+                    const key = match[1] === 'inputs'
+                        ? `inputs.${match[2]}`
+                        : `steps.${match[2]}.outputs.${match[3] || '*'}`;
+                    if (!map[key]) map[key] = [];
+                    map[key].push({ stepId: step.stepId, expression: expr });
+                }
+            });
+        });
+
+        // Track workflow output usage
+        if (workflow.outputs) {
+            Object.entries(workflow.outputs).forEach(([name, expr]) => {
+                const match = expr.match(/\$(inputs|steps)\.([^\s.\[]+)(?:\.outputs\.([^\s.\[]+))?/);
+                if (match) {
+                    const key = match[1] === 'inputs'
+                        ? `inputs.${match[2]}`
+                        : `steps.${match[2]}.outputs.${match[3] || '*'}`;
+                    if (!map[key]) map[key] = [];
+                    map[key].push({ stepId: 'workflow-output', outputName: name, expression: expr });
+                }
+            });
+        }
+
+        return map;
+    }
+
+    /**
+     * Extract all expressions from a step
+     */
+    function extractExpressions(step) {
+        const expressions = [];
+
+        // From parameters
+        if (step.parameters) {
+            step.parameters.forEach(param => {
+                if (param.value && typeof param.value === 'string' && param.value.includes('$')) {
+                    expressions.push(param.value);
+                }
+            });
+        }
+
+        // From request body
+        if (step.requestBody?.payload) {
+            extractExpressionsFromObject(step.requestBody.payload, expressions);
+        }
+
+        return expressions;
+    }
+
+    /**
+     * Recursively extract expressions from an object
+     */
+    function extractExpressionsFromObject(obj, expressions) {
+        if (typeof obj === 'string' && obj.includes('$')) {
+            expressions.push(obj);
+        } else if (typeof obj === 'object' && obj !== null) {
+            Object.values(obj).forEach(val => extractExpressionsFromObject(val, expressions));
+        }
+    }
+
+    /**
+     * Render source link pill for an expression
+     */
+    function renderSourceLink(expression) {
+        if (!expression || typeof expression !== 'string') return '';
+
+        const inputMatch = expression.match(/\$inputs\.(\w+)/);
+        const stepMatch = expression.match(/\$steps\.(\w+)\.outputs\.(\w+)/);
+
+        if (inputMatch) {
+            return `<span class="df-data-pill linked" onclick="highlightSource('inputs', '${inputMatch[1]}')" title="From workflow inputs">
+                ← inputs.${escapeHtml(inputMatch[1])}
+            </span>`;
+        }
+
+        if (stepMatch) {
+            return `<span class="df-data-pill linked" onclick="highlightSource('${stepMatch[1]}', '${stepMatch[2]}')" title="From step ${stepMatch[1]}">
+                ← ${escapeHtml(stepMatch[1])}.${escapeHtml(stepMatch[2])}
+            </span>`;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get usage info for a field
+     */
+    function getUsageInfo(source, fieldName, dependencyMap) {
+        const key = `${source}.${fieldName}`;
+        const usages = dependencyMap[key];
+
+        if (!usages || usages.length === 0) return '';
+
+        const usageLabels = usages.map(u => {
+            if (u.stepId === 'workflow-output') {
+                return `<span class="df-data-pill">→ output.${escapeHtml(u.outputName)}</span>`;
+            }
+            return `<span class="df-data-pill">→ ${escapeHtml(u.stepId)}</span>`;
+        }).join('');
+
+        return `<div style="margin-top: 6px; font-size: 0.75rem; color: #888;">Used by: ${usageLabels}</div>`;
+    }
+
+    /**
+     * Highlight a source field when clicked
+     */
+    function highlightSource(stepOrInput, fieldName) {
+        // Remove previous highlights
+        document.querySelectorAll('.df-field.highlighted').forEach(el => {
+            el.classList.remove('highlighted');
+            el.style.boxShadow = '';
+            el.style.background = '';
+        });
+
+        // Find and highlight the source field
+        const selector = stepOrInput === 'inputs'
+            ? `[data-field-id="inputs.${fieldName}"]`
+            : `[data-field-id="steps.${stepOrInput}.outputs.${fieldName}"]`;
+
+        const sourceEl = document.querySelector(selector);
+        if (sourceEl) {
+            sourceEl.classList.add('highlighted');
+            sourceEl.style.boxShadow = '0 0 0 2px #00d9ff, 0 0 20px rgba(0, 217, 255, 0.4)';
+            sourceEl.style.background = 'rgba(0, 217, 255, 0.2)';
+            sourceEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            setTimeout(() => {
+                sourceEl.style.boxShadow = '';
+                sourceEl.style.background = '';
+                sourceEl.classList.remove('highlighted');
+            }, 3000);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Extract HTTP method from operation ID
+     */
+    function extractHttpMethod(operationId) {
+        if (!operationId) return null;
+        const op = operationId.toLowerCase();
+        if (op.includes('get') || op.includes('find') || op.includes('list') || op.includes('search')) return 'GET';
+        if (op.includes('post') || op.includes('create') || op.includes('place') || op.includes('add')) return 'POST';
+        if (op.includes('put') || op.includes('update')) return 'PUT';
+        if (op.includes('delete') || op.includes('remove')) return 'DELETE';
+        return null;
+    }
+
+    /**
+     * Escape HTML entities
+     */
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text;
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Escape text for Mermaid diagrams
+     */
+    function escapeForMermaid(text) {
+        if (typeof text !== 'string') return text;
+        return text
+            .replace(/"/g, "'")
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, ' ');
+    }
+
+    </script>
+</body>
+</html>
