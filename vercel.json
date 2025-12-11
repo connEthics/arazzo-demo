@@ -1,9 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "installCommand": "cd app && npm install",
-  "buildCommand": "cd app && npm run build",
-  "outputDirectory": "app/.next",
+  "rootDirectory": "app",
   "headers": [
     {
       "source": "/workflows/(.*)",
