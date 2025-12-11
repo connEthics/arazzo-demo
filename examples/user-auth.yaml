@@ -57,6 +57,6 @@ workflows:
         requestBody:
           contentType: application/json
           payload:
-            lastLogin: $response.body#/timestamp
+            lastLogin: new Date().toISOString()
         successCriteria:
           - condition: $statusCode == 200
