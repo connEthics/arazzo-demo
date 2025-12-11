@@ -1,0 +1,141 @@
+{
+  "arazzo": "1.0.1",
+  "info": {
+    "title": "E-commerce Order Workflow",
+    "summary": "Complete order placement workflow",
+    "version": "1.0.0",
+    "description": "Workflow for placing an order, processing payment, and sending confirmation"
+  },
+  "sourceDescriptions": [
+    {
+      "name": "ecommerce-api",
+      "type": "openapi",
+      "url": "https://api.store.com/openapi.json"
+    }
+  ],
+  "workflows": [
+    {
+      "workflowId": "placeOrder",
+      "summary": "Place and process an order",
+      "steps": [
+        {
+          "stepId": "createCart",
+          "description": "Create shopping cart",
+          "operationId": "postCart",
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 201"
+            }
+          ],
+          "outputs": {
+            "cartId": "$response.body#/cartId"
+          }
+        },
+        {
+          "stepId": "addItems",
+          "description": "Add items to cart",
+          "operationId": "postCartItems",
+          "parameters": [
+            {
+              "name": "cartId",
+              "in": "path",
+              "value": "$outputs.cartId"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "items": [
+                {
+                  "productId": "prod-123",
+                  "quantity": 2
+                },
+                {
+                  "productId": "prod-456",
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ]
+        },
+        {
+          "stepId": "checkout",
+          "description": "Checkout the cart",
+          "operationId": "postCheckout",
+          "parameters": [
+            {
+              "name": "cartId",
+              "in": "path",
+              "value": "$outputs.cartId"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "shippingAddress": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "zip": "12345"
+              }
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "orderId": "$response.body#/orderId",
+            "totalAmount": "$response.body#/total"
+          }
+        },
+        {
+          "stepId": "processPayment",
+          "description": "Process payment",
+          "operationId": "postPayment",
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "orderId": "$outputs.orderId",
+              "amount": "$outputs.totalAmount",
+              "paymentMethod": {
+                "type": "credit_card",
+                "cardNumber": "****1234"
+              }
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "paymentId": "$response.body#/paymentId"
+          }
+        },
+        {
+          "stepId": "sendConfirmation",
+          "description": "Send order confirmation email",
+          "operationId": "postNotification",
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "orderId": "$outputs.orderId",
+              "type": "order_confirmation"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 202"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
