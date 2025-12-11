@@ -1,19 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm install",
-  "buildCommand": null,
   "outputDirectory": "public",
   "rewrites": [
     { "source": "/v1", "destination": "/arazzo-visualizer.html" },
-    { "source": "/v2", "destination": "/arazzo-visualizer-v2.html" },
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+    { "source": "/v2", "destination": "/arazzo-visualizer-v2.html" }
   ],
-  "functions": {
-    "api/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "headers": [
     {
       "source": "/workflows/(.*)",
