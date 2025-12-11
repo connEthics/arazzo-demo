@@ -1,53 +1,33 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": null,
-  "outputDirectory": ".",
   "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/v1", "destination": "/arazzo-visualizer.html" },
+    { "source": "/v2", "destination": "/arazzo-visualizer-v2.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ],
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node@3"
+    }
+  },
   "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
-    },
     {
       "source": "/workflows/(.*)",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/yaml; charset=utf-8"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
+        { "key": "Content-Type", "value": "text/yaml; charset=utf-8" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
       "source": "/openapi/(.*)",
       "headers": [
-        {
-          "key": "Content-Type", 
-          "value": "text/yaml; charset=utf-8"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
+        { "key": "Content-Type", "value": "text/yaml; charset=utf-8" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/v1",
-      "destination": "/arazzo-visualizer.html"
-    },
-    {
-      "source": "/v2",
-      "destination": "/arazzo-visualizer-v2.html"
     }
   ]
 }
