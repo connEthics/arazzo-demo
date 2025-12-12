@@ -1,7 +1,8 @@
 'use client';
 
 import { memo } from 'react';
-import type { Step } from '@/types/arazzo';
+import type { Step, Parameter, SuccessAction, FailureAction } from '@/types/arazzo';
+import { isReusableObject } from '@/types/arazzo';
 
 interface StepDetailPanelProps {
   step: Step;
@@ -57,21 +58,33 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
         {step.parameters && step.parameters.length > 0 && (
           <Section title="Parameters" isDark={isDark}>
             <div className="space-y-2">
-              {step.parameters.map((param, idx) => (
-                <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 border-indigo-400`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${textClass}`}>{param.name}</span>
-                    {param.in && (
-                      <span className={`text-[10px] ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'} px-1.5 py-0.5 rounded`}>
-                        {param.in}
-                      </span>
-                    )}
+              {step.parameters.map((param, idx) => {
+                if (isReusableObject(param)) {
+                  return (
+                    <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 border-cyan-400`}>
+                      <code className={`text-xs font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                        $ref: {param.reference}
+                      </code>
+                    </div>
+                  );
+                }
+                const p = param as Parameter;
+                return (
+                  <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 border-indigo-400`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium ${textClass}`}>{p.name}</span>
+                      {p.in && (
+                        <span className={`text-[10px] ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'} px-1.5 py-0.5 rounded`}>
+                          {p.in}
+                        </span>
+                      )}
+                    </div>
+                    <code className={`text-[10px] font-mono ${mutedClass} block mt-1 break-all`}>
+                      {typeof p.value === 'string' ? p.value : JSON.stringify(p.value)}
+                    </code>
                   </div>
-                  <code className={`text-[10px] font-mono ${mutedClass} block mt-1 break-all`}>
-                    {typeof param.value === 'string' ? param.value : JSON.stringify(param.value)}
-                  </code>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}
@@ -124,22 +137,34 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
         {step.onSuccess && step.onSuccess.length > 0 && (
           <Section title="On Success" isDark={isDark}>
             <div className="space-y-1">
-              {step.onSuccess.map((action, idx) => (
-                <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-emerald-500`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">{action.type}</span>
-                    {action.name && <span className={`text-xs ${textClass}`}>{action.name}</span>}
-                  </div>
-                  {action.stepId && (
-                    <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5`}>→ {action.stepId}</code>
-                  )}
-                  {action.criteria && action.criteria.length > 0 && (
-                    <div className={`text-[10px] ${mutedClass} mt-1`}>
-                      Condition: {action.criteria[0].condition}
+              {step.onSuccess.map((action, idx) => {
+                if (isReusableObject(action)) {
+                  return (
+                    <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-cyan-400`}>
+                      <code className={`text-xs font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                        $ref: {action.reference}
+                      </code>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+                const a = action as SuccessAction;
+                return (
+                  <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-emerald-500`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">{a.type}</span>
+                      {a.name && <span className={`text-xs ${textClass}`}>{a.name}</span>}
+                    </div>
+                    {a.stepId && (
+                      <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5`}>→ {a.stepId}</code>
+                    )}
+                    {a.criteria && a.criteria.length > 0 && (
+                      <div className={`text-[10px] ${mutedClass} mt-1`}>
+                        Condition: {a.criteria[0].condition}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Section>
         )}
@@ -148,22 +173,34 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
         {step.onFailure && step.onFailure.length > 0 && (
           <Section title="On Failure" isDark={isDark}>
             <div className="space-y-1">
-              {step.onFailure.map((action, idx) => (
-                <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-red-500`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">{action.type}</span>
-                    {action.name && <span className={`text-xs ${textClass}`}>{action.name}</span>}
-                  </div>
-                  {action.stepId && (
-                    <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5`}>→ {action.stepId}</code>
-                  )}
-                  {action.criteria && action.criteria.length > 0 && (
-                    <div className={`text-[10px] ${mutedClass} mt-1`}>
-                      Condition: {action.criteria[0].condition}
+              {step.onFailure.map((action, idx) => {
+                if (isReusableObject(action)) {
+                  return (
+                    <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-cyan-400`}>
+                      <code className={`text-xs font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                        $ref: {action.reference}
+                      </code>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+                const a = action as FailureAction;
+                return (
+                  <div key={idx} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-red-500`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">{a.type}</span>
+                      {a.name && <span className={`text-xs ${textClass}`}>{a.name}</span>}
+                    </div>
+                    {a.stepId && (
+                      <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5`}>→ {a.stepId}</code>
+                    )}
+                    {a.criteria && a.criteria.length > 0 && (
+                      <div className={`text-[10px] ${mutedClass} mt-1`}>
+                        Condition: {a.criteria[0].condition}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Section>
         )}

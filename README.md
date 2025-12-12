@@ -9,7 +9,7 @@ Interactive visualizer for [Arazzo](https://spec.openapis.org/arazzo/latest.html
 
 ## 🚀 Demo
 
-👉 **[arazzo.connethics](https://arazzo-demo.vercel.app)**
+👉 **[arazzo.connethics.com](https://arazzo.connethics.com)**
 
 ## ✨ Features
 

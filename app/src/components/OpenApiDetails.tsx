@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useState, useMemo } from 'react';
-import type { Step, SourceDescription } from '@/types/arazzo';
+import type { Step, SourceDescription, Parameter } from '@/types/arazzo';
+import { isReusableObject } from '@/types/arazzo';
 
 interface OpenApiDetailsProps {
   step: Step;
@@ -25,7 +26,7 @@ interface OpenApiOperation {
 
 interface OpenApiParameter {
   name: string;
-  in: string;
+  in?: string;
   description?: string;
   required?: boolean;
   schema?: OpenApiSchema;
@@ -78,20 +79,24 @@ function OpenApiDetails({ step, source, isDark = false }: OpenApiDetailsProps) {
       summary: step.description || `${opId} operation`,
       description: `Executes the ${opId} operation on the ${source?.name || 'API'} service.`,
       tags: source ? [source.name] : [],
-      parameters: step.parameters?.map(p => ({
-        name: p.name,
-        in: p.in,
-        required: true,
-        description: `${p.name} parameter`,
-        schema: { type: 'string' },
-        example: p.value,
-      })),
+      parameters: step.parameters
+        ?.filter((p): p is Parameter => !isReusableObject(p))
+        .map(p => ({
+          name: p.name,
+          in: p.in,
+          required: true,
+          description: `${p.name} parameter`,
+          schema: { type: 'string' },
+          example: p.value,
+        })),
       requestBody: step.requestBody ? {
         required: true,
         description: 'Request payload',
         content: {
           [step.requestBody.contentType || 'application/json']: {
-            schema: generateSchemaFromPayload(step.requestBody.payload),
+            schema: step.requestBody.payload && typeof step.requestBody.payload === 'object' 
+              ? generateSchemaFromPayload(step.requestBody.payload as Record<string, unknown>) 
+              : undefined,
             example: step.requestBody.payload,
           }
         }

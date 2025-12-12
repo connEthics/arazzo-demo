@@ -1,4 +1,5 @@
-import type { ArazzoSpec, Step } from '@/types/arazzo';
+import type { ArazzoSpec, Step, SuccessAction, FailureAction } from '@/types/arazzo';
+import { isReusableObject } from '@/types/arazzo';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Mermaid Flowchart Generator
@@ -72,7 +73,11 @@ export function workflowToMermaidFlowchart(
     const nextStep = workflow.steps[i + 1];
     
     // Default sequential flow
-    const hasExplicitNext = step.onSuccess?.some(a => a.type === 'goto' || a.type === 'end');
+    const hasExplicitNext = step.onSuccess?.some(a => {
+      if (isReusableObject(a)) return false;
+      const action = a as SuccessAction;
+      return action.type === 'goto' || action.type === 'end';
+    });
     if (nextStep && !hasExplicitNext) {
       lines.push(`  ${sanitizeId(step.stepId)} --> ${sanitizeId(nextStep.stepId)}`);
     }
@@ -80,10 +85,12 @@ export function workflowToMermaidFlowchart(
     // onSuccess flows
     if (step.onSuccess) {
       step.onSuccess.forEach((action) => {
-        if (action.type === 'goto' && action.stepId) {
-          const label = sanitizeLabel(action.name || 'success');
-          lines.push(`  ${sanitizeId(step.stepId)} -->|"✓ ${label}"| ${sanitizeId(action.stepId)}`);
-        } else if (action.type === 'end') {
+        if (isReusableObject(action)) return;
+        const a = action as SuccessAction;
+        if (a.type === 'goto' && a.stepId) {
+          const label = sanitizeLabel(a.name || 'success');
+          lines.push(`  ${sanitizeId(step.stepId)} -->|"✓ ${label}"| ${sanitizeId(a.stepId)}`);
+        } else if (a.type === 'end') {
           lines.push(`  ${sanitizeId(step.stepId)} -->|"✓ end"| OUTPUT`);
         }
       });
@@ -92,10 +99,12 @@ export function workflowToMermaidFlowchart(
     // onFailure flows (if not hidden)
     if (!hideErrorFlows && step.onFailure) {
       step.onFailure.forEach((action) => {
-        if (action.type === 'goto' && action.stepId) {
-          const label = sanitizeLabel(action.name || 'failure');
-          lines.push(`  ${sanitizeId(step.stepId)} -.->|"✗ ${label}"| ${sanitizeId(action.stepId)}`);
-        } else if (action.type === 'end') {
+        if (isReusableObject(action)) return;
+        const a = action as FailureAction;
+        if (a.type === 'goto' && a.stepId) {
+          const label = sanitizeLabel(a.name || 'failure');
+          lines.push(`  ${sanitizeId(step.stepId)} -.->|"✗ ${label}"| ${sanitizeId(a.stepId)}`);
+        } else if (a.type === 'end') {
           lines.push(`  ${sanitizeId(step.stepId)} -.->|"✗ end"| END_ERROR["❌ Error"]:::errorNode`);
         }
       });
@@ -105,7 +114,10 @@ export function workflowToMermaidFlowchart(
   // Last step to output
   if (workflow.outputs && workflow.steps.length > 0) {
     const lastStep = workflow.steps[workflow.steps.length - 1];
-    const hasExplicitEnd = lastStep.onSuccess?.some(a => a.type === 'end');
+    const hasExplicitEnd = lastStep.onSuccess?.some(a => {
+      if (isReusableObject(a)) return false;
+      return (a as SuccessAction).type === 'end';
+    });
     if (!hasExplicitEnd) {
       lines.push(`  ${sanitizeId(lastStep.stepId)} --> OUTPUT`);
     }
@@ -188,9 +200,11 @@ export function workflowToMermaidSequence(
     if (!hideErrorFlows && step.onFailure && step.onFailure.length > 0) {
       lines.push(`  alt Error handling`);
       step.onFailure.forEach(action => {
-        if (action.type === 'goto' && action.stepId) {
-          lines.push(`    Client->>Client: Retry → ${sanitizeLabel(action.stepId)}`);
-        } else if (action.type === 'end') {
+        if (isReusableObject(action)) return;
+        const a = action as FailureAction;
+        if (a.type === 'goto' && a.stepId) {
+          lines.push(`    Client->>Client: Retry → ${sanitizeLabel(a.stepId)}`);
+        } else if (a.type === 'end') {
           lines.push(`    Client->>Client: ❌ Abort workflow`);
         }
       });

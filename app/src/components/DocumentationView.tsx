@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { ArazzoSpec, Step, SourceDescription, Workflow } from '@/types/arazzo';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
+import StepCard from './StepCard';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 
@@ -12,53 +13,13 @@ interface DocumentationViewProps {
   isDark?: boolean;
   initialStepId?: string;
   initialWorkflowId?: string;
+  expandAll?: boolean;
 }
 
-// Copy button component
-function CopyButton({ text, isDark }: { text: string; isDark: boolean }) {
-  const [copied, setCopied] = useState(false);
-  
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
 
-  return (
-    <button
-      onClick={handleCopy}
-      className={`p-1.5 rounded transition-all print:hidden ${
-        copied 
-          ? 'bg-emerald-500 text-white' 
-          : isDark 
-            ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' 
-            : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-      }`}
-      title={copied ? 'Copied!' : 'Copy to clipboard'}
-    >
-      {copied ? (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      ) : (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      )}
-    </button>
-  );
-}
 
-export default function DocumentationView({ spec, isDark = false, initialStepId, initialWorkflowId }: DocumentationViewProps) {
+export default function DocumentationView({ spec, isDark = false, initialStepId, initialWorkflowId, expandAll }: DocumentationViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   // Scroll to step when clicking on Mermaid diagram
   const scrollToStep = useCallback((workflowId: string, stepId: string) => {
@@ -88,20 +49,6 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
 
   return (
     <div className={`h-full overflow-auto print:overflow-visible print:h-auto ${bgClass}`} id="documentation-root">
-      {/* Print Button - Hidden in print */}
-      <div className="print:hidden sticky top-0 z-10 p-4 border-b backdrop-blur bg-opacity-90 flex items-center justify-between" style={{ backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)' }}>
-        <span className={`text-sm ${mutedClass}`}>Documentation Preview</span>
-        <button
-          onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-          </svg>
-          Print / Export PDF
-        </button>
-      </div>
-
       {/* Documentation Content - Full width for better use of screen space */}
       <div ref={contentRef} className={`max-w-7xl mx-auto px-6 lg:px-12 py-8 print:p-6 print:max-w-none ${textClass}`}>
         {/* Cover / Header */}
@@ -190,6 +137,7 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
             borderClass={borderClass}
             codeBgClass={codeBgClass}
             onStepClick={scrollToStep}
+            expandAll={expandAll}
           />
         ))}
 
@@ -266,9 +214,10 @@ interface WorkflowSectionProps {
   borderClass: string;
   codeBgClass: string;
   onStepClick: (workflowId: string, stepId: string) => void;
+  expandAll?: boolean;
 }
 
-function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mutedClass, borderClass, codeBgClass, onStepClick }: WorkflowSectionProps) {
+function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mutedClass, borderClass, codeBgClass, onStepClick, expandAll }: WorkflowSectionProps) {
   // Generate Mermaid diagrams without errors
   const flowchartCode = useMemo(() => {
     try {
@@ -407,6 +356,7 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               borderClass={borderClass}
               codeBgClass={codeBgClass}
               onNavigate={onStepClick}
+              forceExpanded={expandAll}
             />
           ))}
         </div>
@@ -415,231 +365,4 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
   );
 }
 
-interface StepCardProps {
-  step: Step;
-  stepIndex: number;
-  workflowId: string;
-  allSteps: Step[];
-  sources: SourceDescription[];
-  isDark: boolean;
-  textClass: string;
-  mutedClass: string;
-  borderClass: string;
-  codeBgClass: string;
-  onNavigate: (workflowId: string, stepId: string) => void;
-}
 
-function StepCard({ step, stepIndex, workflowId, allSteps, sources, isDark, textClass, mutedClass, borderClass, codeBgClass, onNavigate }: StepCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  // Find the source for this step
-  const getSourceForStep = () => {
-    if (step.operationId?.includes('.')) {
-      const sourceName = step.operationId.split('.')[0];
-      return sources.find(s => s.name === sourceName);
-    }
-    return sources[0];
-  };
-
-  const source = getSourceForStep();
-
-  // Get HTTP method color (Swagger-style)
-  const getMethodColor = (operationId: string) => {
-    const opLower = operationId.toLowerCase();
-    if (opLower.includes('get') || opLower.includes('find') || opLower.includes('list') || opLower.includes('search')) {
-      return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
-    }
-    if (opLower.includes('create') || opLower.includes('add') || opLower.includes('post')) {
-      return { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500' };
-    }
-    if (opLower.includes('update') || opLower.includes('put') || opLower.includes('patch')) {
-      return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
-    }
-    if (opLower.includes('delete') || opLower.includes('remove')) {
-      return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
-    }
-    return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
-  };
-
-  const methodColor = step.operationId ? getMethodColor(step.operationId) : { bg: 'bg-gray-500', text: 'text-white', border: 'border-gray-500' };
-
-  // Generate cURL-like request representation
-  const generateRequestPreview = () => {
-    const parts: string[] = [];
-    
-    if (step.operationId) {
-      parts.push(`# Operation: ${step.operationId}`);
-    }
-    
-    if (step.parameters && step.parameters.length > 0) {
-      parts.push('\n# Parameters:');
-      step.parameters.forEach(param => {
-        const value = typeof param.value === 'string' ? param.value : JSON.stringify(param.value);
-        parts.push(`${param.name}${param.in ? ` (${param.in})` : ''}: ${value}`);
-      });
-    }
-    
-    if (step.requestBody?.payload) {
-      parts.push('\n# Request Body:');
-      parts.push(JSON.stringify(step.requestBody.payload, null, 2));
-    }
-    
-    return parts.join('\n');
-  };
-
-  // Generate response/output preview
-  const generateOutputPreview = () => {
-    if (!step.outputs || Object.keys(step.outputs).length === 0) return null;
-    
-    const parts: string[] = ['# Outputs:'];
-    Object.entries(step.outputs).forEach(([name, expr]) => {
-      parts.push(`${name}: ${expr}`);
-    });
-    
-    return parts.join('\n');
-  };
-
-  const requestPreview = generateRequestPreview();
-  const outputPreview = generateOutputPreview();
-
-  // Parse goto targets for clickable links
-  const renderGotoLink = (action: { type: string; stepId?: string; workflowId?: string }, isSuccess: boolean) => {
-    const targetStepId = action.stepId;
-    const targetWorkflowId = action.workflowId || workflowId;
-    
-    if (action.type === 'goto' && targetStepId) {
-      return (
-        <button
-          onClick={() => onNavigate(targetWorkflowId, targetStepId)}
-          className={`text-xs px-2 py-1 rounded inline-flex items-center gap-1 hover:ring-2 hover:ring-offset-1 transition-all cursor-pointer print:ring-0 ${
-            isSuccess 
-              ? 'bg-emerald-100 text-emerald-700 hover:ring-emerald-400' 
-              : 'bg-red-100 text-red-700 hover:ring-red-400'
-          }`}
-        >
-          {isSuccess ? '✓' : '✗'} goto
-          <svg className="w-3 h-3 print:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-          </svg>
-          <span className="font-mono font-semibold">{targetStepId}</span>
-        </button>
-      );
-    }
-    
-    if (action.type === 'end') {
-      return (
-        <span className={`text-xs px-2 py-1 rounded ${isSuccess ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-          {isSuccess ? '✓' : '✗'} end
-        </span>
-      );
-    }
-    
-    return (
-      <span className={`text-xs px-2 py-1 rounded ${isSuccess ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-        {isSuccess ? '✓' : '✗'} {action.type} {action.stepId && `→ ${action.stepId}`}
-      </span>
-    );
-  };
-
-  return (
-    <div 
-      id={`step-${workflowId}-${step.stepId}`}
-      className={`rounded-lg border overflow-hidden avoid-break transition-all ${borderClass} ${isDark ? 'bg-slate-800/50' : 'bg-white'}`}
-    >
-      {/* Swagger-style Header */}
-      <div 
-        className={`flex items-center gap-3 p-3 cursor-pointer hover:opacity-90 transition-opacity border-l-4 ${methodColor.border}`}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <span className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold ${methodColor.bg} ${methodColor.text}`}>
-          {stepIndex + 1}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-semibold text-base">{step.stepId}</h4>
-            {step.operationId && (
-              <code className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'}`}>
-                {step.operationId}
-              </code>
-            )}
-          </div>
-          {step.description && (
-            <p className={`text-sm ${mutedClass} mt-0.5 truncate`}>{step.description}</p>
-          )}
-        </div>
-        <svg 
-          className={`w-5 h-5 ${mutedClass} transition-transform print:hidden ${isExpanded ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* Expandable Content - Always visible in print */}
-      <div className={`border-t ${borderClass} ${isExpanded ? '' : 'hidden print:block'}`}>
-        {/* Request Section - Swagger style */}
-        <div className="p-4">
-          <div className="grid lg:grid-cols-2 gap-4">
-            {/* Request */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h5 className={`text-xs font-semibold uppercase ${mutedClass}`}>Request</h5>
-                <CopyButton text={requestPreview} isDark={isDark} />
-              </div>
-              <div className={`rounded-lg ${isDark ? 'bg-slate-900' : 'bg-gray-900'} p-3 overflow-x-auto`}>
-                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">{requestPreview}</pre>
-              </div>
-            </div>
-
-            {/* Response/Outputs */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h5 className={`text-xs font-semibold uppercase ${mutedClass}`}>Outputs & Criteria</h5>
-                {outputPreview && <CopyButton text={outputPreview} isDark={isDark} />}
-              </div>
-              <div className={`rounded-lg ${isDark ? 'bg-slate-900' : 'bg-gray-900'} p-3 overflow-x-auto`}>
-                {/* Success Criteria */}
-                {step.successCriteria && step.successCriteria.length > 0 && (
-                  <div className="mb-3">
-                    <span className="text-[10px] text-emerald-400 uppercase font-semibold">Success Criteria</span>
-                    {step.successCriteria.map((criteria, idx) => (
-                      <code key={idx} className="text-xs text-emerald-300 font-mono block mt-1">
-                        {criteria.condition}
-                      </code>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Outputs */}
-                {outputPreview ? (
-                  <pre className="text-xs text-amber-300 font-mono whitespace-pre-wrap">{outputPreview}</pre>
-                ) : (
-                  <span className="text-xs text-gray-500 italic">No outputs defined</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Flow Control - Clickable gotos */}
-        {(step.onSuccess || step.onFailure) && (
-          <div className={`px-4 pb-4 flex flex-wrap gap-2 items-center`}>
-            <span className={`text-xs ${mutedClass} mr-2`}>Flow:</span>
-            {step.onSuccess?.map((action, idx) => (
-              <span key={`success-${idx}`}>
-                {renderGotoLink(action, true)}
-              </span>
-            ))}
-            {step.onFailure?.map((action, idx) => (
-              <span key={`failure-${idx}`}>
-                {renderGotoLink(action, false)}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}

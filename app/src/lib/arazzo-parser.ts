@@ -1,5 +1,6 @@
 import yaml from 'js-yaml';
-import type { ArazzoSpec } from '@/types/arazzo';
+import type { ArazzoSpec, SuccessAction, FailureAction } from '@/types/arazzo';
+import { isReusableObject } from '@/types/arazzo';
 import type { Node, Edge } from '@xyflow/react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -96,17 +97,23 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: Fl
     // Track branch targets for positioning
     if (step.onSuccess) {
       step.onSuccess.forEach((action, actionIndex) => {
-        if (action.type === 'goto' && action.stepId) {
-          const offset = (actionIndex + 1) * horizontalGap;
-          branchOffsets.set(action.stepId, offset);
+        if (!isReusableObject(action)) {
+          const a = action as SuccessAction;
+          if (a.type === 'goto' && a.stepId) {
+            const offset = (actionIndex + 1) * horizontalGap;
+            branchOffsets.set(a.stepId, offset);
+          }
         }
       });
     }
     if (step.onFailure) {
       step.onFailure.forEach((action, actionIndex) => {
-        if (action.type === 'goto' && action.stepId) {
-          const offset = -(actionIndex + 1) * horizontalGap;
-          branchOffsets.set(action.stepId, offset);
+        if (!isReusableObject(action)) {
+          const a = action as FailureAction;
+          if (a.type === 'goto' && a.stepId) {
+            const offset = -(actionIndex + 1) * horizontalGap;
+            branchOffsets.set(a.stepId, offset);
+          }
         }
       });
     }
@@ -146,11 +153,18 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: Fl
     const nextStep = workflow.steps[i + 1];
     
     // Only add default edge if no onSuccess goto overrides it
-    const hasGotoNext = currentStep.onSuccess?.some(
-      a => a.type === 'goto' && a.stepId === nextStep.stepId
-    );
+    const hasGotoNext = currentStep.onSuccess?.some(a => {
+      if (isReusableObject(a)) return false;
+      const action = a as SuccessAction;
+      return action.type === 'goto' && action.stepId === nextStep.stepId;
+    });
     
-    if (!hasGotoNext && !currentStep.onSuccess?.some(a => a.type === 'end')) {
+    const hasEnd = currentStep.onSuccess?.some(a => {
+      if (isReusableObject(a)) return false;
+      return (a as SuccessAction).type === 'end';
+    });
+    
+    if (!hasGotoNext && !hasEnd) {
       edges.push({
         id: `e-${currentStep.stepId}-${nextStep.stepId}`,
         source: currentStep.stepId,
@@ -165,14 +179,16 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: Fl
   workflow.steps.forEach(step => {
     if (step.onSuccess) {
       step.onSuccess.forEach((action, index) => {
-        if (action.type === 'goto' && action.stepId) {
+        if (isReusableObject(action)) return;
+        const a = action as SuccessAction;
+        if (a.type === 'goto' && a.stepId) {
           edges.push({
-            id: `e-success-${step.stepId}-${action.stepId}-${index}`,
+            id: `e-success-${step.stepId}-${a.stepId}-${index}`,
             source: step.stepId,
-            target: action.stepId,
+            target: a.stepId,
             type: 'smoothstep',
             animated: true,
-            label: `✓ ${action.name || 'success'}`,
+            label: `✓ ${a.name || 'success'}`,
             labelStyle: { fill: '#10b981', fontSize: 10 },
             labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9 },
             style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4,4' },
@@ -184,14 +200,16 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: Fl
     // onFailure edges (conditionally hidden)
     if (!hideErrorFlows && step.onFailure) {
       step.onFailure.forEach((action, index) => {
-        if (action.type === 'goto' && action.stepId) {
+        if (isReusableObject(action)) return;
+        const a = action as FailureAction;
+        if (a.type === 'goto' && a.stepId) {
           edges.push({
-            id: `e-failure-${step.stepId}-${action.stepId}-${index}`,
+            id: `e-failure-${step.stepId}-${a.stepId}-${index}`,
             source: step.stepId,
-            target: action.stepId,
+            target: a.stepId,
             type: 'smoothstep',
             animated: true,
-            label: `✗ ${action.name || 'failure'}`,
+            label: `✗ ${a.name || 'failure'}`,
             labelStyle: { fill: '#ef4444', fontSize: 10 },
             labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9 },
             style: { stroke: '#ef4444', strokeWidth: 1.5, strokeDasharray: '4,4' },

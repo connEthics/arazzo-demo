@@ -15,7 +15,7 @@ interface OutputNodeProps {
 }
 
 function OutputNode({ data }: OutputNodeProps) {
-  const { label, properties, expressions } = data;
+  const { label, properties = [], expressions = {} } = data;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] overflow-hidden">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Node, Edge } from '@xyflow/react';
 import ArazzoFlow from '@/components/ArazzoFlow';
@@ -56,6 +57,24 @@ const CollapseIcon = () => (
 const DocumentIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const ExpandAllIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
+const CollapseAllIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+  </svg>
+);
+
+const PrintIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
   </svg>
 );
 
@@ -163,6 +182,7 @@ export default function Home() {
   
   // Navigation state for documentation view
   const [docNavigationTarget, setDocNavigationTarget] = useState<{workflowId: string; stepId: string} | null>(null);
+  const [docExpandAll, setDocExpandAll] = useState<boolean | undefined>(undefined);
 
   // Get current workflow and its data
   const currentWorkflow = useMemo(() => {
@@ -607,8 +627,8 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Copy Mermaid Button */}
-              {viewMode !== 'reactflow' && (
+              {/* Copy Mermaid Button - For Mermaid modes */}
+              {(viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence') && (
                 <button
                   onClick={copyMermaidToClipboard}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
@@ -619,6 +639,41 @@ export default function Home() {
                   </svg>
                   Copy Mermaid
                 </button>
+              )}
+
+              {/* Documentation specific buttons */}
+              {viewMode === 'documentation' && (
+                <>
+                  {/* Expand/Collapse All */}
+                  <button
+                    onClick={() => setDocExpandAll(true)}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                    title="Expand all steps"
+                  >
+                    <ExpandAllIcon />
+                    Expand All
+                  </button>
+                  <button
+                    onClick={() => setDocExpandAll(false)}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                    title="Collapse all steps"
+                  >
+                    <CollapseAllIcon />
+                    Collapse All
+                  </button>
+
+                  <div className={`w-px h-4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+
+                  {/* Print/Export */}
+                  <button
+                    onClick={() => window.print()}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                    title="Print / Export PDF"
+                  >
+                    <PrintIcon />
+                    Print / Export
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -633,6 +688,7 @@ export default function Home() {
                   isDark={isDark}
                   initialWorkflowId={docNavigationTarget?.workflowId}
                   initialStepId={docNavigationTarget?.stepId}
+                  expandAll={docExpandAll}
                 />
               ) : nodes.length > 0 || (spec && selectedWorkflow) ? (
                 <>
@@ -708,6 +764,13 @@ export default function Home() {
         >
           connethics.com
         </a>
+        <span className="mx-2">•</span>
+        <Link 
+          href="/showcase" 
+          className={`hover:underline ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}
+        >
+          Components
+        </Link>
         <span className="mx-2">•</span>
         <a 
           href="https://github.com/connEthics/arazzo-demo" 

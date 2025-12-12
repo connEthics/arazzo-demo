@@ -25,7 +25,18 @@ const methodStyles: Record<string, string> = {
 };
 
 function StepNode({ data }: StepNodeProps) {
-  const { step, hasOnSuccess, hasOnFailure, hasSkip, method } = data;
+  const { step, hasOnSuccess, hasOnFailure, hasSkip, method } = data || {};
+
+  // Guard against undefined step
+  if (!step) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] p-3">
+        <Handle type="target" position={Position.Top} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
+        <span className="text-gray-400 text-sm">Loading step...</span>
+        <Handle type="source" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] max-w-[280px] overflow-hidden">
@@ -41,7 +52,7 @@ function StepNode({ data }: StepNodeProps) {
         <span className="text-[10px] font-semibold uppercase bg-indigo-500 text-white px-1.5 py-0.5 rounded">
           Step
         </span>
-        <span className="text-gray-800 font-medium text-sm">{step.stepId}</span>
+        <span className="text-gray-800 font-medium text-sm">{step.stepId || 'Unknown'}</span>
         {method && (
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${methodStyles[method] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
             {method}

@@ -17,7 +17,7 @@ interface InputNodeProps {
 }
 
 function InputNode({ data }: InputNodeProps) {
-  const { label, properties, required, schema } = data;
+  const { label, properties = [], required = [], schema = {} } = data;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] overflow-hidden">
