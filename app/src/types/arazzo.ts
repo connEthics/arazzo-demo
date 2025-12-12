@@ -94,6 +94,11 @@ export interface SchemaProperty {
   minLength?: number;
   maxLength?: number;
   pattern?: string;
+  example?: unknown;
+  const?: unknown;
+  items?: SchemaProperty;
+  properties?: Record<string, SchemaProperty>;
+  additionalProperties?: SchemaProperty | boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────

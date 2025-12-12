@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
-import type { Step, SourceDescription } from '@/types/arazzo';
+import type { Step, SourceDescription, WorkflowInputs } from '@/types/arazzo';
 import type { DetailData } from './DetailDrawer';
 
 interface MermaidDiagramProps {
@@ -10,6 +10,7 @@ interface MermaidDiagramProps {
   isDark?: boolean;
   steps?: Step[];
   sources?: SourceDescription[];
+  workflowInputs?: WorkflowInputs;
   workflowOutputs?: Record<string, string>;
   selectedStepId?: string | null;
   onDetailSelect?: (data: DetailData | null) => void;
@@ -24,6 +25,7 @@ export default function MermaidDiagram({
   isDark = false, 
   steps = [], 
   sources = [],
+  workflowInputs,
   workflowOutputs = {},
   selectedStepId,
   onDetailSelect,
@@ -47,7 +49,13 @@ export default function MermaidDiagram({
       sequence: {
         useMaxWidth: false,
         showSequenceNumbers: true,
-        mirrorActors: false,
+        mirrorActors: true,
+        actorMargin: 80,
+        messageMargin: 40,
+        boxMargin: 10,
+        boxTextMargin: 5,
+        noteMargin: 10,
+        bottomMarginAdj: 10,
       },
     });
   }, [isDark]);
@@ -176,6 +184,52 @@ export default function MermaidDiagram({
     
     const groupId = noteGroup.id || '';
     
+    // Also check parent node element for flowchart
+    const nodeElement = target.closest('.node, [id*="flowchart"]');
+    const nodeId = nodeElement?.id || '';
+    const nodeText = nodeElement?.textContent || '';
+    
+    // Check for INPUT node click (flowchart) - check FIRST before other checks
+    // Mermaid generates IDs like "flowchart-INPUT-0" for node INPUT
+    const isInputNode = groupText.includes('📥') || 
+                        nodeText.includes('📥') ||
+                        groupText.toLowerCase().includes('inputs:') ||
+                        nodeText.toLowerCase().includes('inputs:') ||
+                        nodeId.toLowerCase().includes('input') ||
+                        groupId.toLowerCase().includes('input');
+    if (isInputNode) {
+      e.stopPropagation();
+      onDetailSelect?.({ 
+        type: 'input', 
+        input: { 
+          name: 'Workflow Inputs', 
+          schema: workflowInputs?.properties || {} 
+        } 
+      });
+      return;
+    }
+
+    // Check for OUTPUT node click (flowchart)
+    // Mermaid generates IDs like "flowchart-OUTPUT-0" for node OUTPUT
+    const isOutputNode = groupText.includes('📤') || 
+                         nodeText.includes('📤') ||
+                         groupText.toLowerCase().includes('outputs:') ||
+                         nodeText.toLowerCase().includes('outputs:') ||
+                         nodeId.toLowerCase().includes('output') ||
+                         groupId.toLowerCase().includes('output');
+    if (isOutputNode) {
+      e.stopPropagation();
+      onDetailSelect?.({ 
+        type: 'output', 
+        output: { 
+          name: 'Workflow Outputs', 
+          value: '', 
+          allOutputs: workflowOutputs 
+        } 
+      });
+      return;
+    }
+    
     // Check if this is an actor (sequence diagram participant)
     const actorBox = target.closest('.actor-box, .actor');
     if (actorBox || noteGroup.classList.contains('actor')) {
@@ -196,6 +250,35 @@ export default function MermaidDiagram({
         });
         return;
       }
+    }
+
+    // Check for sequence diagram notes with workflow summary (input)
+    const workflowStartMatch = groupText.match(/🚀/i);
+    if (workflowStartMatch) {
+      e.stopPropagation();
+      onDetailSelect?.({ 
+        type: 'input', 
+        input: { 
+          name: 'Workflow Inputs', 
+          schema: workflowInputs?.properties || {} 
+        } 
+      });
+      return;
+    }
+
+    // Check for sequence diagram final note with outputs (✅ Complete)
+    const workflowCompleteMatch = groupText.match(/✅\s*Complete/i);
+    if (workflowCompleteMatch) {
+      e.stopPropagation();
+      onDetailSelect?.({ 
+        type: 'output', 
+        output: { 
+          name: 'Workflow Outputs', 
+          value: '', 
+          allOutputs: workflowOutputs 
+        } 
+      });
+      return;
     }
 
     // Check for output messages (dashed lines with output text)
@@ -252,14 +335,14 @@ export default function MermaidDiagram({
     }
     
     // For flowchart nodes, also check parent groups
-    const nodeElement = target.closest('.node, .cluster, [id*="flowchart"]');
-    if (nodeElement) {
-      const nodeId = nodeElement.id || '';
-      const nodeText = nodeElement.textContent || '';
+    const flowchartNodeElement = target.closest('.node, .cluster, [id*="flowchart"]');
+    if (flowchartNodeElement) {
+      const flowNodeId = flowchartNodeElement.id || '';
+      const flowNodeText = flowchartNodeElement.textContent || '';
       
       for (const step of steps) {
         const sanitizedId = step.stepId.replace(/[^a-zA-Z0-9_]/g, '_');
-        if (nodeId.includes(sanitizedId) || nodeText.includes(step.stepId)) {
+        if (flowNodeId.includes(sanitizedId) || flowNodeText.includes(step.stepId)) {
           e.stopPropagation();
           const sourceForStep = getSourceForStep(step);
           onDetailSelect?.({ type: 'step', step, sourceForStep });
@@ -272,7 +355,7 @@ export default function MermaidDiagram({
       // If no steps provided but we have onNodeClick, try to extract step ID from node
       if (onNodeClick && steps.length === 0) {
         // Try to find step ID pattern in node text or ID
-        const stepIdMatch = nodeText.match(/([a-z][a-z0-9_-]*)/i);
+        const stepIdMatch = flowNodeText.match(/([a-z][a-z0-9_-]*)/i);
         if (stepIdMatch) {
           e.stopPropagation();
           onNodeClick(stepIdMatch[1]);
@@ -280,7 +363,7 @@ export default function MermaidDiagram({
         }
       }
     }
-  }, [onDetailSelect, onStepSelect, onNodeClick, steps, sources, workflowOutputs]);
+  }, [onDetailSelect, onStepSelect, onNodeClick, steps, sources, workflowOutputs, workflowInputs]);
 
   if (error) {
     return (
