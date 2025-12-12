@@ -1,595 +1,381 @@
-'use client';
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import { Node, Edge } from '@xyflow/react';
-import ArazzoFlow from '@/components/ArazzoFlow';
-import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
-import { parseArazzoSpec, workflowToFlow } from '@/lib/arazzo-parser';
-import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
-import { ArazzoSpec, Step } from '@/types/arazzo';
+export const metadata: Metadata = {
+  title: "Arazzo Playground - Interactive OpenAPI Workflow Visualizer",
+  description: "The most intuitive way to visualize, edit and understand Arazzo API workflows. Interactive diagrams, real-time YAML editing with syntax highlighting, and Mermaid export.",
+};
 
-// Dynamic import for Mermaid to avoid SSR issues
-const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
-
-type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence';
-
-// Icons
-const SunIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+// Icons as components
+const LightningIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
   </svg>
 );
 
-const MoonIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+const CodeIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
   </svg>
 );
 
-const ChevronLeftIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+const FlowIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
   </svg>
 );
 
-const ChevronRightIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+const ExportIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
   </svg>
 );
 
-// Example YAML for quick testing
-const EXAMPLE_YAML = `arazzo: 1.0.1
+const EyeIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const LayersIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
+const features = [
+  {
+    icon: <FlowIcon />,
+    title: "Interactive Flow Diagrams",
+    description: "Explore your API workflows with draggable, zoomable React Flow diagrams. Click on steps to see details.",
+  },
+  {
+    icon: <CodeIcon />,
+    title: "Monaco YAML Editor",
+    description: "Edit your Arazzo specifications with VS Code's powerful Monaco editor featuring syntax highlighting and code folding.",
+  },
+  {
+    icon: <LayersIcon />,
+    title: "Multiple View Modes",
+    description: "Switch between interactive diagrams, Mermaid flowcharts, and sequence diagrams to visualize your workflows.",
+  },
+  {
+    icon: <ExportIcon />,
+    title: "Mermaid Export",
+    description: "Export your workflows as Mermaid diagrams for documentation, presentations, or integration with other tools.",
+  },
+  {
+    icon: <EyeIcon />,
+    title: "Step Details Panel",
+    description: "View comprehensive details about each step including parameters, success criteria, outputs, and API operations.",
+  },
+  {
+    icon: <LightningIcon />,
+    title: "Real-time Parsing",
+    description: "See changes instantly as you edit. The visualizer updates in real-time as you modify your YAML specification.",
+  },
+];
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <span className="text-xl font-bold">Arazzo Playground</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://github.com/connEthics/arazzo-demo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+              </a>
+              <Link
+                href="/playground"
+                className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Open Playground
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-8">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Open Source • Free Forever
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                Visualize
+              </span>{" "}
+              your API
+              <br />
+              workflows instantly
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-10">
+              The most intuitive way to understand, edit and share{" "}
+              <a href="https://spec.openapis.org/arazzo/latest.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4">
+                Arazzo
+              </a>{" "}
+              API workflow specifications. Real-time editing with Monaco Editor, interactive diagrams, and Mermaid export.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/playground"
+                className="group flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50"
+              >
+                Open Playground
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <a
+                href="https://github.com/connEthics/arazzo-demo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-colors border border-slate-700"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Hero Image / Preview */}
+          <div className="mt-20 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/50 p-2 shadow-2xl shadow-indigo-500/10 overflow-hidden">
+              <div className="rounded-xl bg-slate-950 overflow-hidden">
+                {/* Fake browser chrome */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 border-b border-slate-800">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="flex-1 mx-4">
+                    <div className="bg-slate-800 rounded-md px-3 py-1 text-xs text-slate-400 text-center">
+                      arazzo.connethics.com/playground
+                    </div>
+                  </div>
+                </div>
+                {/* Screenshot placeholder - using gradient as placeholder */}
+                <div className="aspect-[16/9] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <p className="text-slate-400 text-lg">Interactive API Workflow Visualizer</p>
+                    <p className="text-slate-500 text-sm mt-2">Edit YAML • View Diagrams • Export Mermaid</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Everything you need to understand
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                Arazzo specifications
+              </span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              A complete toolkit for working with OpenAPI Arazzo workflow specifications
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-indigo-500/50 transition-all hover:shadow-lg hover:shadow-indigo-500/10"
+              >
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4 group-hover:bg-indigo-500/20 transition-colors">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-slate-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* What is Arazzo Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+                What is{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                  Arazzo?
+                </span>
+              </h2>
+              <p className="text-slate-400 text-lg mb-6">
+                Arazzo is an OpenAPI Initiative specification for describing sequences of API calls and their dependencies. It enables you to document complex API workflows that involve multiple endpoints working together.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Define multi-step API workflows with dependencies",
+                  "Specify success criteria and failure handling",
+                  "Document input/output data flows between steps",
+                  "Reference OpenAPI operations directly",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="https://spec.openapis.org/arazzo/latest.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-8 text-indigo-400 hover:text-indigo-300 font-medium"
+              >
+                Read the Arazzo Specification
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur-3xl" />
+              <div className="relative bg-slate-950 rounded-2xl border border-slate-800 p-6 font-mono text-sm">
+                <pre className="text-slate-300 overflow-x-auto">
+                  <code>{`arazzo: 1.0.1
 info:
   title: Pet Adoption Workflow
   version: 1.0.0
-  description: A workflow for adopting a pet from the store
-
-sourceDescriptions:
-  - name: petstore
-    type: openapi
-    url: ./petstore.yaml
 
 workflows:
   - workflowId: adopt-pet
-    summary: Complete pet adoption process
-    description: Search for available pets, select one, and complete the adoption
-    inputs:
-      type: object
-      properties:
-        petType:
-          type: string
-          enum: [dog, cat, bird]
-        maxPrice:
-          type: number
+    summary: Complete pet adoption
     steps:
-      - stepId: find-available-pets
+      - stepId: find-pets
         operationId: findPetsByStatus
         parameters:
           - name: status
-            in: query
             value: available
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          availablePets: $response.body
-        onSuccess:
-          - name: checkPetsFound
-            type: goto
-            stepId: select-pet
-            criteria:
-              - condition: $outputs.availablePets.length > 0
+          pets: $response.body
 
       - stepId: select-pet
         operationId: getPetById
+        dependsOn: find-pets
         parameters:
           - name: petId
-            in: path
-            value: $steps.find-available-pets.outputs.availablePets[0].id
-        successCriteria:
-          - condition: $statusCode == 200
-        outputs:
-          selectedPet: $response.body
-        onFailure:
-          - name: petNotFound
-            type: goto
-            stepId: find-available-pets
-            criteria:
-              - condition: $statusCode == 404
-
-      - stepId: place-order
-        operationId: placeOrder
-        requestBody:
-          contentType: application/json
-          payload:
-            petId: $steps.select-pet.outputs.selectedPet.id
-            quantity: 1
-            status: placed
-        successCriteria:
-          - condition: $statusCode == 200
-        outputs:
-          order: $response.body
-
-    outputs:
-      adoptedPet: $steps.select-pet.outputs.selectedPet
-      orderConfirmation: $steps.place-order.outputs.order
-`;
-
-export default function Home() {
-  const [yamlInput, setYamlInput] = useState(EXAMPLE_YAML);
-  const [spec, setSpec] = useState<ArazzoSpec | null>(null);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  
-  // New state
-  const [viewMode, setViewMode] = useState<ViewMode>('reactflow');
-  const [hideErrorFlows, setHideErrorFlows] = useState(false);
-  const [hideOutputs, setHideOutputs] = useState(false);
-  const [showStepNames, setShowStepNames] = useState(true);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [detailData, setDetailData] = useState<DetailData | null>(null);
-
-  // Get current workflow and its data
-  const currentWorkflow = useMemo(() => {
-    if (!spec || !selectedWorkflow) return null;
-    return spec.workflows.find(w => w.workflowId === selectedWorkflow);
-  }, [spec, selectedWorkflow]);
-
-  const currentWorkflowSteps = useMemo(() => {
-    return currentWorkflow?.steps || [];
-  }, [currentWorkflow]);
-
-  const currentWorkflowOutputs = useMemo(() => {
-    return currentWorkflow?.outputs || {};
-  }, [currentWorkflow]);
-
-  const currentWorkflowInputs = useMemo(() => {
-    return currentWorkflow?.inputs;
-  }, [currentWorkflow]);
-
-  // Helper to find source for a step
-  const getSourceForStep = useCallback((step: Step) => {
-    if (!spec?.sourceDescriptions) return undefined;
-    if (step.operationId?.includes('.')) {
-      const sourceName = step.operationId.split('.')[0];
-      return spec.sourceDescriptions.find(s => s.name === sourceName);
-    }
-    return spec.sourceDescriptions[0];
-  }, [spec]);
-
-  // Handle step selection from React Flow (convert to DetailData)
-  const handleStepSelect = useCallback((step: Step | null) => {
-    if (step) {
-      setDetailData({ 
-        type: 'step', 
-        step,
-        sourceForStep: getSourceForStep(step)
-      });
-    } else {
-      setDetailData(null);
-    }
-  }, [getSourceForStep]);
-
-  // Generate Mermaid diagrams
-  const mermaidFlowchart = useMemo(() => {
-    if (!spec || !selectedWorkflow) return '';
-    try {
-      return workflowToMermaidFlowchart(spec, selectedWorkflow, { hideErrorFlows });
-    } catch {
-      return '';
-    }
-  }, [spec, selectedWorkflow, hideErrorFlows]);
-
-  const mermaidSequence = useMemo(() => {
-    if (!spec || !selectedWorkflow) return '';
-    try {
-      return workflowToMermaidSequence(spec, selectedWorkflow, { hideErrorFlows, hideOutputs, showStepNames });
-    } catch {
-      return '';
-    }
-  }, [spec, selectedWorkflow, hideErrorFlows, hideOutputs, showStepNames]);
-
-  // Parse YAML and update visualization
-  const parseAndVisualize = useCallback(() => {
-    try {
-      setError(null);
-      setDetailData(null);
-      const parsedSpec = parseArazzoSpec(yamlInput);
-      setSpec(parsedSpec);
-      
-      // Select first workflow by default
-      if (parsedSpec.workflows.length > 0) {
-        const firstWorkflow = parsedSpec.workflows[0].workflowId;
-        setSelectedWorkflow(firstWorkflow);
-        const { nodes: flowNodes, edges: flowEdges } = workflowToFlow(parsedSpec, firstWorkflow, { hideErrorFlows });
-        setNodes(flowNodes);
-        setEdges(flowEdges);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to parse YAML');
-      setNodes([]);
-      setEdges([]);
-    }
-  }, [yamlInput, hideErrorFlows]);
-
-  // Update flow when workflow selection or hideErrorFlows changes
-  useEffect(() => {
-    if (spec && selectedWorkflow) {
-      try {
-        const { nodes: flowNodes, edges: flowEdges } = workflowToFlow(spec, selectedWorkflow, { hideErrorFlows });
-        setNodes(flowNodes);
-        setEdges(flowEdges);
-        setError(null);
-        setDetailData(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to render workflow');
-      }
-    }
-  }, [spec, selectedWorkflow, hideErrorFlows]);
-
-  // Auto-parse on initial load
-  useEffect(() => {
-    parseAndVisualize();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Load example from file
-  const loadExample = async (filename: string) => {
-    setIsLoading(true);
-    setDetailData(null);
-    try {
-      const response = await fetch(`/workflows/${filename}`);
-      if (!response.ok) throw new Error(`Failed to load ${filename}`);
-      const yaml = await response.text();
-      setYamlInput(yaml);
-      // Parse after setting
-      const parsedSpec = parseArazzoSpec(yaml);
-      setSpec(parsedSpec);
-      if (parsedSpec.workflows.length > 0) {
-        const firstWorkflow = parsedSpec.workflows[0].workflowId;
-        setSelectedWorkflow(firstWorkflow);
-        const { nodes: flowNodes, edges: flowEdges } = workflowToFlow(parsedSpec, firstWorkflow, { hideErrorFlows });
-        setNodes(flowNodes);
-        setEdges(flowEdges);
-      }
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load example');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Copy Mermaid to clipboard
-  const copyMermaidToClipboard = useCallback(async () => {
-    const content = viewMode === 'mermaid-flowchart' ? mermaidFlowchart : mermaidSequence;
-    try {
-      await navigator.clipboard.writeText(content);
-    } catch {
-      // Fallback for browsers without clipboard API
-      const textArea = document.createElement('textarea');
-      textArea.value = content;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-    }
-  }, [viewMode, mermaidFlowchart, mermaidSequence]);
-
-  return (
-    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      {/* Compact Header */}
-      <header className={`flex-shrink-0 border-b transition-colors duration-300 ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
-        <div className="px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            value: $steps.find-pets.outputs.pets[0].id`}</code>
+                </pre>
+              </div>
             </div>
-            <h1 className="text-base font-semibold">Arazzo Visualizer</h1>
-            
-            {/* Workflow info badge */}
-            {spec && (
-              <span className={`px-2 py-0.5 rounded text-xs ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                {spec.info.title} v{spec.info.version}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
-            <div className={`flex rounded-lg p-0.5 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
-              <button
-                onClick={() => setViewMode('reactflow')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'reactflow' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
-              >
-                Interactive
-              </button>
-              <button
-                onClick={() => setViewMode('mermaid-flowchart')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'mermaid-flowchart' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
-              >
-                Flowchart
-              </button>
-              <button
-                onClick={() => setViewMode('mermaid-sequence')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'mermaid-sequence' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
-              >
-                Sequence
-              </button>
-            </div>
-
-            {/* Workflow Selector */}
-            {spec && spec.workflows.length > 1 && (
-              <select
-                value={selectedWorkflow}
-                onChange={(e) => setSelectedWorkflow(e.target.value)}
-                className={`rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} border`}
-              >
-                {spec.workflows.map((wf) => (
-                  <option key={wf.workflowId} value={wf.workflowId}>
-                    {wf.summary || wf.workflowId}
-                  </option>
-                ))}
-              </select>
-            )}
-            
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-              aria-label="Toggle theme"
-            >
-              {isDark ? <SunIcon /> : <MoonIcon />}
-            </button>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content - Full Height */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - YAML Editor (collapsible) */}
-        <div 
-          className={`relative flex flex-col border-r transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} ${isPanelCollapsed ? 'w-12' : 'w-[400px] min-w-[300px] max-w-[700px]'}`}
-          style={{ resize: isPanelCollapsed ? 'none' : 'horizontal', overflow: 'hidden' }}
-        >
-
-          {!isPanelCollapsed && (
-            <>
-              {/* Editor Header */}
-              <div className={`flex items-center justify-between px-3 py-2 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                  </svg>
-                  <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>YAML Source</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => loadExample('pet-adoption.arazzo.yaml')}
-                    disabled={isLoading}
-                    className={`px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                  >
-                    Pet Store
-                  </button>
-                  <button
-                    onClick={() => loadExample('ecommerce-onboarding.arazzo.yaml')}
-                    disabled={isLoading}
-                    className={`px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                  >
-                    E-Commerce
-                  </button>
-                  <button
-                    onClick={() => setIsPanelCollapsed(true)}
-                    className={`ml-1 p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
-                    title="Hide YAML Editor"
-                  >
-                    <ChevronLeftIcon />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Editor */}
-              <div className="flex-1 overflow-hidden">
-                <textarea
-                  value={yamlInput}
-                  onChange={(e) => setYamlInput(e.target.value)}
-                  className={`w-full h-full font-mono text-xs p-3 resize-none focus:outline-none transition-colors leading-relaxed ${isDark ? 'bg-slate-900 text-slate-300' : 'bg-white text-gray-800'}`}
-                  spellCheck={false}
-                  placeholder="Paste your Arazzo YAML here..."
-                />
-              </div>
-              
-              {/* Footer */}
-              <div className={`flex items-center justify-between px-3 py-2 border-t ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-                <div className="flex-1">
-                  {error && (
-                    <span className="text-red-500 text-[10px] flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {error}
-                    </span>
-                  )}
-                  {!error && spec && (
-                    <span className="text-emerald-600 text-[10px] flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {spec.workflows.length} workflow(s) • {nodes.filter(n => n.type === 'step').length} steps
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={parseAndVisualize}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium transition-colors flex items-center gap-1.5"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  </svg>
-                  Visualize
-                </button>
-              </div>
-            </>
-          )}
-
-          {isPanelCollapsed && (
-            <button
-              onClick={() => setIsPanelCollapsed(false)}
-              className={`flex-1 flex flex-col items-center justify-center gap-2 hover:opacity-80 transition-opacity cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-gray-50'}`}
-            >
-              <svg className={`w-5 h-5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-              <span className={`text-[10px] font-medium ${isDark ? 'text-slate-600' : 'text-gray-400'}`} style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-                YAML Editor
-              </span>
-              <ChevronRightIcon />
-            </button>
-          )}
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            Ready to visualize your workflows?
+          </h2>
+          <p className="text-slate-400 text-lg mb-10">
+            Start exploring your Arazzo specifications now. No sign-up required.
+          </p>
+          <Link
+            href="/playground"
+            className="group inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-10 py-5 rounded-xl font-semibold text-xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50"
+          >
+            Launch Playground
+            <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
         </div>
+      </section>
 
-        {/* Right Panel - Visualization (Full Width) */}
-        <div className={`flex-1 flex flex-col overflow-hidden relative ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
-          {/* Options Bar */}
-          <div className={`flex-shrink-0 px-4 py-1.5 flex items-center justify-between border-b ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-gray-200 bg-white/50'}`}>
+      {/* Footer */}
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              {/* Toggle YAML Panel Button */}
-              <button
-                onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  isPanelCollapsed 
-                    ? (isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-500')
-                    : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-                }`}
-                title={isPanelCollapsed ? 'Show YAML Editor' : 'Hide YAML Editor'}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                {isPanelCollapsed ? 'Show YAML' : 'Hide'}
-              </button>
-
-              <div className={`w-px h-4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-
-              {/* Hide Error Flows Toggle */}
-              <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                <input
-                  type="checkbox"
-                  checked={hideErrorFlows}
-                  onChange={(e) => setHideErrorFlows(e.target.checked)}
-                  className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Hide errors
-              </label>
-
-              {/* Hide Outputs Toggle (Sequence mode only) */}
-              {viewMode === 'mermaid-sequence' && (
-                <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  <input
-                    type="checkbox"
-                    checked={hideOutputs}
-                    onChange={(e) => setHideOutputs(e.target.checked)}
-                    className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  Hide outputs
-                </label>
-              )}
-
-              {/* Show Step Names Toggle (Sequence mode only) */}
-              {viewMode === 'mermaid-sequence' && (
-                <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  <input
-                    type="checkbox"
-                    checked={showStepNames}
-                    onChange={(e) => setShowStepNames(e.target.checked)}
-                    className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  Show steps
-                </label>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Copy Mermaid Button */}
-              {viewMode !== 'reactflow' && (
-                <button
-                  onClick={copyMermaidToClipboard}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
-                  title="Copy Mermaid code"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Copy Mermaid
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Visualization Content */}
-          <div className="flex-1 relative overflow-hidden">
-            {nodes.length > 0 || (spec && selectedWorkflow) ? (
-              <>
-                {viewMode === 'reactflow' && (
-                  <ArazzoFlow 
-                    nodes={nodes} 
-                    edges={edges} 
-                    workflowId={selectedWorkflow}
-                    isDark={isDark}
-                    onStepSelect={handleStepSelect}
-                  />
-                )}
-                {viewMode === 'mermaid-flowchart' && (
-                  <MermaidDiagram 
-                    chart={mermaidFlowchart} 
-                    isDark={isDark} 
-                    steps={currentWorkflowSteps}
-                    sources={spec?.sourceDescriptions || []}
-                    workflowOutputs={currentWorkflowOutputs}
-                    onDetailSelect={setDetailData}
-                  />
-                )}
-                {viewMode === 'mermaid-sequence' && (
-                  <MermaidDiagram 
-                    chart={mermaidSequence} 
-                    isDark={isDark}
-                    steps={currentWorkflowSteps}
-                    sources={spec?.sourceDescriptions || []}
-                    workflowOutputs={currentWorkflowOutputs}
-                    onDetailSelect={setDetailData}
-                  />
-                )}
-              </>
-            ) : (
-              <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
-                <div className="text-center">
-                  <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                  </svg>
-                  <p className="text-sm">Load an example or paste Arazzo YAML</p>
-                </div>
               </div>
-            )}
-            
-            {/* Detail Drawer - Bottom Panel */}
-            <DetailDrawer
-              data={detailData}
-              isDark={isDark}
-              onClose={() => setDetailData(null)}
-              workflowInputs={currentWorkflowInputs}
-            />
+              <span className="text-lg font-semibold">Arazzo Playground</span>
+            </div>
+            <div className="text-slate-400 text-sm">
+              Made with ❤️ by{" "}
+              <a href="https://connethics.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
+                connethics.com
+              </a>
+            </div>
+            <div className="flex items-center gap-6">
+              <a
+                href="https://github.com/connEthics/arazzo-demo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                GitHub
+              </a>
+              <a
+                href="https://spec.openapis.org/arazzo/latest.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                Arazzo Spec
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
