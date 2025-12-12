@@ -145,3 +145,13 @@ workflows:
 ## 📄 License
 
 MIT © [connEthics](https://github.com/connEthics)
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://connethics.com">connethics.com</a>
+  <br><br>
+  <a href="https://github.com/connEthics/arazzo-demo">
+    <img src="https://img.shields.io/badge/GitHub-View_Source-black?logo=github" alt="GitHub">
+  </a>
+</p>
