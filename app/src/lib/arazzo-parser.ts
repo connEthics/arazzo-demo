@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import type { ArazzoSpec, Workflow, Step } from '@/types/arazzo';
+import type { ArazzoSpec } from '@/types/arazzo';
 import type { Node, Edge } from '@xyflow/react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -31,7 +31,12 @@ export interface FlowData {
   edges: Edge[];
 }
 
-export function workflowToFlow(spec: ArazzoSpec, workflowId: string): FlowData {
+export interface FlowOptions {
+  hideErrorFlows?: boolean;
+}
+
+export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: FlowOptions = {}): FlowData {
+  const { hideErrorFlows = false } = options;
   const workflow = spec.workflows.find(w => w.workflowId === workflowId);
   if (!workflow) {
     throw new Error(`Workflow not found: ${workflowId}`);
@@ -40,14 +45,11 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string): FlowData {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   
-  const nodeWidth = 280;
-  const nodeHeight = 100;
   const verticalGap = 140;
   const horizontalGap = 320;
   
   // Calculate positions for branching
   const branchOffsets = new Map<string, number>();
-  let currentBranchOffset = 0;
   
   // Input node
   const inputProperties = workflow.inputs?.properties 
@@ -179,8 +181,8 @@ export function workflowToFlow(spec: ArazzoSpec, workflowId: string): FlowData {
       });
     }
     
-    // onFailure edges
-    if (step.onFailure) {
+    // onFailure edges (conditionally hidden)
+    if (!hideErrorFlows && step.onFailure) {
       step.onFailure.forEach((action, index) => {
         if (action.type === 'goto' && action.stepId) {
           edges.push({

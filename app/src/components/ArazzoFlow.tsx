@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { InputNode, StepNode, OutputNode } from './nodes';
+import type { Step } from '@/types/arazzo';
 
 // Register custom node types
 const nodeTypes = {
@@ -36,9 +37,10 @@ interface ArazzoFlowProps {
   edges: Edge[];
   workflowId?: string;
   isDark?: boolean;
+  onStepSelect?: (step: Step | null) => void;
 }
 
-export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, workflowId, isDark = false }: ArazzoFlowProps) {
+export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, workflowId, isDark = false, onStepSelect }: ArazzoFlowProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -49,8 +51,16 @@ export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, w
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    console.log('Node clicked:', node);
-  }, []);
+    if (node.type === 'step' && node.data?.step && onStepSelect) {
+      onStepSelect(node.data.step as Step);
+    }
+  }, [onStepSelect]);
+
+  const onPaneClick = useCallback(() => {
+    if (onStepSelect) {
+      onStepSelect(null);
+    }
+  }, [onStepSelect]);
 
   return (
     <div className={`w-full h-full rounded-lg overflow-hidden transition-colors ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
@@ -60,6 +70,7 @@ export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, w
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         connectionMode={ConnectionMode.Loose}
