@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Node, Edge } from '@xyflow/react';
 import ArazzoFlow from '@/components/ArazzoFlow';
 import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
+import DocumentationView from '@/components/DocumentationView';
 import { parseArazzoSpec, workflowToFlow } from '@/lib/arazzo-parser';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
 import { ArazzoSpec, Step } from '@/types/arazzo';
@@ -13,7 +14,7 @@ import { ArazzoSpec, Step } from '@/types/arazzo';
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
-type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence';
+type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence' | 'documentation';
 
 // Icons
 const SunIcon = () => (
@@ -49,6 +50,18 @@ const ExpandIcon = () => (
 const CollapseIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
+  </svg>
+);
+
+const DocumentIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const InfoIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
@@ -147,6 +160,9 @@ export default function Home() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [isEditorExpanded, setIsEditorExpanded] = useState(false);
   const [detailData, setDetailData] = useState<DetailData | null>(null);
+  
+  // Navigation state for documentation view
+  const [docNavigationTarget, setDocNavigationTarget] = useState<{workflowId: string; stepId: string} | null>(null);
 
   // Get current workflow and its data
   const currentWorkflow = useMemo(() => {
@@ -297,6 +313,24 @@ export default function Home() {
     }
   }, [viewMode, mermaidFlowchart, mermaidSequence]);
 
+  // Navigate to documentation view with a specific step
+  const navigateToDocStep = useCallback((workflowId: string, stepId: string) => {
+    setDocNavigationTarget({ workflowId, stepId });
+    setViewMode('documentation');
+    setDetailData(null);
+  }, []);
+
+  // Clear navigation target after documentation view has scrolled
+  useEffect(() => {
+    if (viewMode === 'documentation' && docNavigationTarget) {
+      // Wait for the component to mount and scroll
+      const timeout = setTimeout(() => {
+        setDocNavigationTarget(null);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [viewMode, docNavigationTarget]);
+
   return (
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
       {/* Compact Header */}
@@ -310,11 +344,21 @@ export default function Home() {
             </div>
             <h1 className="text-base font-semibold">Arazzo Playground</h1>
             
-            {/* Workflow info badge */}
+            {/* Workflow info badge with tooltip */}
             {spec && (
-              <span className={`px-2 py-0.5 rounded text-xs ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                {spec.info.title} v{spec.info.version}
-              </span>
+              <div className="relative group">
+                <span className={`px-2 py-0.5 rounded text-xs flex items-center gap-1.5 ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                  {spec.info.title} v{spec.info.version}
+                  {spec.info.description && (
+                    <InfoIcon />
+                  )}
+                </span>
+                {spec.info.description && (
+                  <div className={`absolute left-0 top-full mt-2 z-50 w-80 p-3 rounded-lg shadow-xl border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>
+                    <p className="text-xs leading-relaxed">{spec.info.description}</p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           
@@ -338,6 +382,13 @@ export default function Home() {
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'mermaid-sequence' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
               >
                 Sequence
+              </button>
+              <button
+                onClick={() => setViewMode('documentation')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${viewMode === 'documentation' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                <DocumentIcon />
+                Docs
               </button>
             </div>
 
@@ -573,57 +624,74 @@ export default function Home() {
           </div>
           
           {/* Visualization Content */}
-          <div className="flex-1 relative overflow-hidden">
-            {nodes.length > 0 || (spec && selectedWorkflow) ? (
-              <>
-                {viewMode === 'reactflow' && (
-                  <ArazzoFlow 
-                    nodes={nodes} 
-                    edges={edges} 
-                    workflowId={selectedWorkflow}
-                    isDark={isDark}
-                    onStepSelect={handleStepSelect}
-                  />
-                )}
-                {viewMode === 'mermaid-flowchart' && (
-                  <MermaidDiagram 
-                    chart={mermaidFlowchart} 
-                    isDark={isDark} 
-                    steps={currentWorkflowSteps}
-                    sources={spec?.sourceDescriptions || []}
-                    workflowOutputs={currentWorkflowOutputs}
-                    onDetailSelect={setDetailData}
-                  />
-                )}
-                {viewMode === 'mermaid-sequence' && (
-                  <MermaidDiagram 
-                    chart={mermaidSequence} 
-                    isDark={isDark}
-                    steps={currentWorkflowSteps}
-                    sources={spec?.sourceDescriptions || []}
-                    workflowOutputs={currentWorkflowOutputs}
-                    onDetailSelect={setDetailData}
-                  />
-                )}
-              </>
-            ) : (
-              <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
-                <div className="text-center">
-                  <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                  </svg>
-                  <p className="text-sm">Load an example or paste Arazzo YAML</p>
+          <div className="flex-1 flex overflow-hidden">
+            {/* Diagram Area */}
+            <div className="flex-1 relative overflow-hidden">
+              {viewMode === 'documentation' && spec ? (
+                <DocumentationView 
+                  spec={spec} 
+                  isDark={isDark}
+                  initialWorkflowId={docNavigationTarget?.workflowId}
+                  initialStepId={docNavigationTarget?.stepId}
+                />
+              ) : nodes.length > 0 || (spec && selectedWorkflow) ? (
+                <>
+                  {viewMode === 'reactflow' && (
+                    <ArazzoFlow 
+                      nodes={nodes} 
+                      edges={edges} 
+                      workflowId={selectedWorkflow}
+                      isDark={isDark}
+                      onDetailSelect={setDetailData}
+                    />
+                  )}
+                  {viewMode === 'mermaid-flowchart' && (
+                    <MermaidDiagram 
+                      chart={mermaidFlowchart} 
+                      isDark={isDark} 
+                      steps={currentWorkflowSteps}
+                      sources={spec?.sourceDescriptions || []}
+                      workflowOutputs={currentWorkflowOutputs}
+                      selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      onDetailSelect={setDetailData}
+                    />
+                  )}
+                  {viewMode === 'mermaid-sequence' && (
+                    <MermaidDiagram 
+                      chart={mermaidSequence} 
+                      isDark={isDark}
+                      steps={currentWorkflowSteps}
+                      sources={spec?.sourceDescriptions || []}
+                      workflowOutputs={currentWorkflowOutputs}
+                      selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      onDetailSelect={setDetailData}
+                    />
+                  )}
+                </>
+              ) : (
+                <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
+                  <div className="text-center">
+                    <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                    </svg>
+                    <p className="text-sm">Load an example or paste Arazzo YAML</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
-            {/* Detail Drawer - Bottom Panel */}
-            <DetailDrawer
-              data={detailData}
-              isDark={isDark}
-              onClose={() => setDetailData(null)}
-              workflowInputs={currentWorkflowInputs}
-            />
+            {/* Detail Drawer - Side Panel (hidden in documentation view) */}
+            {viewMode !== 'documentation' && (
+              <DetailDrawer
+                data={detailData}
+                isDark={isDark}
+                onClose={() => setDetailData(null)}
+                workflowInputs={currentWorkflowInputs}
+                workflowOutputs={currentWorkflowOutputs}
+                workflowId={selectedWorkflow}
+                onNavigateToDoc={navigateToDocStep}
+              />
+            )}
           </div>
         </div>
         )}

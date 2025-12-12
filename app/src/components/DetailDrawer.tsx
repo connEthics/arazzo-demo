@@ -13,7 +13,7 @@ export interface DetailData {
   source?: SourceDescription;
   sourceForStep?: SourceDescription; // Source description for the step's API
   input?: { name: string; schema: Record<string, unknown> };
-  output?: { name: string; value: string; stepId?: string };
+  output?: { name: string; value: string; stepId?: string; allOutputs?: Record<string, string> };
 }
 
 interface DetailDrawerProps {
@@ -21,18 +21,22 @@ interface DetailDrawerProps {
   isDark?: boolean;
   onClose: () => void;
   workflowInputs?: WorkflowInputs;
+  workflowOutputs?: Record<string, string>;
+  workflowId?: string;
+  onNavigateToDoc?: (workflowId: string, stepId: string) => void;
 }
 
-function DetailDrawer({ data, isDark = false, onClose, workflowInputs }: DetailDrawerProps) {
-  if (!data) return null;
-
+function DetailDrawer({ data, isDark = false, onClose, workflowInputs, workflowOutputs, workflowId, onNavigateToDoc }: DetailDrawerProps) {
   const bgClass = isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
   const textClass = isDark ? 'text-white' : 'text-gray-900';
   const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
   const codeBgClass = isDark ? 'bg-slate-800' : 'bg-gray-50';
 
+  // Return null but keep in DOM flow when no data
+  if (!data) return null;
+
   return (
-    <div className={`absolute right-0 top-0 bottom-0 w-96 ${bgClass} border-l shadow-2xl z-20 flex flex-col overflow-hidden`}>
+    <div className={`flex-shrink-0 w-96 ${bgClass} border-l flex flex-col overflow-hidden transition-all duration-300`}>
       
       {/* Header */}
       <div className={`flex-shrink-0 flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800 bg-slate-800/50' : 'border-gray-100 bg-gray-50'}`}>
@@ -49,15 +53,34 @@ function DetailDrawer({ data, isDark = false, onClose, workflowInputs }: DetailD
           </h3>
         </div>
 
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className={`flex-shrink-0 p-1 rounded hover:bg-opacity-10 ${isDark ? 'hover:bg-white' : 'hover:bg-black'}`}
-        >
-          <svg className={`w-4 h-4 ${mutedClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1">
+          {/* View in Documentation Button - only for steps */}
+          {data.type === 'step' && data.step && workflowId && onNavigateToDoc && (
+            <button
+              onClick={() => onNavigateToDoc(workflowId, data.step!.stepId)}
+              className={`flex-shrink-0 p-1.5 rounded text-xs font-medium transition-colors ${
+                isDark 
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
+                  : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
+              }`}
+              title="View in Documentation"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+          )}
+
+          {/* Close */}
+          <button
+            onClick={onClose}
+            className={`flex-shrink-0 p-1 rounded hover:bg-opacity-10 ${isDark ? 'hover:bg-white' : 'hover:bg-black'}`}
+          >
+            <svg className={`w-4 h-4 ${mutedClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Subtitle */}
@@ -86,7 +109,7 @@ function DetailDrawer({ data, isDark = false, onClose, workflowInputs }: DetailD
           <InputContent input={data.input} isDark={isDark} textClass={textClass} mutedClass={mutedClass} codeBgClass={codeBgClass} workflowInputs={workflowInputs} />
         )}
         {data.type === 'output' && data.output && (
-          <OutputContent output={data.output} isDark={isDark} textClass={textClass} mutedClass={mutedClass} codeBgClass={codeBgClass} />
+          <OutputContent output={data.output} isDark={isDark} textClass={textClass} mutedClass={mutedClass} codeBgClass={codeBgClass} workflowOutputs={workflowOutputs} />
         )}
       </div>
     </div>
@@ -303,9 +326,58 @@ function SourceContent({ source, ...props }: ContentProps & { source: SourceDesc
 function InputContent({ input, workflowInputs, ...props }: ContentProps & { input: { name: string; schema: Record<string, unknown> }; workflowInputs?: WorkflowInputs }) {
   const { isDark, textClass, mutedClass, codeBgClass } = props;
   
-  // Get input schema from workflow inputs
-  const inputSchema = workflowInputs?.properties?.[input.name];
+  // Check if this is a single input property or the whole inputs block
+  const isSingleInput = input.name !== 'Workflow Inputs' && workflowInputs?.properties?.[input.name];
+  const inputSchema = isSingleInput ? workflowInputs?.properties?.[input.name] : null;
 
+  // If showing all workflow inputs
+  if (!isSingleInput && workflowInputs?.properties) {
+    const properties = Object.keys(workflowInputs.properties);
+    return (
+      <div className="space-y-4">
+        <Card title="Workflow Inputs" isDark={isDark}>
+          <span className={`text-xs ${mutedClass}`}>{properties.length} input(s) defined</span>
+        </Card>
+
+        {properties.length > 0 && (
+          <Card title="Properties" isDark={isDark}>
+            <div className="space-y-2 max-h-64 overflow-auto">
+              {properties.map((propName) => {
+                const propSchema = workflowInputs.properties![propName];
+                const isRequired = workflowInputs.required?.includes(propName);
+                return (
+                  <div key={propName} className={`${codeBgClass} rounded p-2 border-l-2 border-emerald-400`}>
+                    <div className="flex items-center gap-2">
+                      <code className={`text-xs font-mono font-medium ${textClass}`}>{propName}</code>
+                      {isRequired && (
+                        <span className="text-[9px] px-1 py-0.5 rounded bg-red-100 text-red-600">required</span>
+                      )}
+                      {propSchema?.type && (
+                        <span className={`text-[9px] px-1 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
+                          {propSchema.type}
+                        </span>
+                      )}
+                    </div>
+                    {propSchema?.description && (
+                      <p className={`text-[10px] ${mutedClass} mt-1`}>{propSchema.description}</p>
+                    )}
+                    {propSchema?.default !== undefined && (
+                      <p className={`text-[10px] ${mutedClass} mt-1`}>Default: <code>{JSON.stringify(propSchema.default)}</code></p>
+                    )}
+                    {propSchema?.enum && (
+                      <p className={`text-[10px] ${mutedClass} mt-1`}>Enum: {propSchema.enum.join(', ')}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // Single input property view
   return (
     <div className="space-y-4">
       <Card title="Name" isDark={isDark}>
@@ -356,9 +428,35 @@ function InputContent({ input, workflowInputs, ...props }: ContentProps & { inpu
   );
 }
 
-function OutputContent({ output, ...props }: ContentProps & { output: { name: string; value: string; stepId?: string } }) {
-  const { isDark, textClass, codeBgClass } = props;
+function OutputContent({ output, workflowOutputs, ...props }: ContentProps & { output: { name: string; value: string; stepId?: string; allOutputs?: Record<string, string> }; workflowOutputs?: Record<string, string> }) {
+  const { isDark, textClass, mutedClass, codeBgClass } = props;
 
+  // Check if this is showing all outputs (from clicking on Output node)
+  const isAllOutputs = output.name === 'Workflow Outputs' || (output.allOutputs && Object.keys(output.allOutputs).length > 0);
+  const allOutputsData = output.allOutputs || workflowOutputs || {};
+
+  if (isAllOutputs && Object.keys(allOutputsData).length > 0) {
+    return (
+      <div className="space-y-4">
+        <Card title="Workflow Outputs" isDark={isDark}>
+          <span className={`text-xs ${mutedClass}`}>{Object.keys(allOutputsData).length} output(s) defined</span>
+        </Card>
+
+        <Card title="Outputs" isDark={isDark}>
+          <div className="space-y-2 max-h-64 overflow-auto">
+            {Object.entries(allOutputsData).map(([name, expression]) => (
+              <div key={name} className={`${codeBgClass} rounded p-2 border-l-2 border-amber-400`}>
+                <code className={`text-xs font-mono font-medium ${textClass}`}>{name}</code>
+                <code className={`text-[10px] font-mono ${mutedClass} block mt-1 break-all`}>{expression}</code>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Single output view
   return (
     <div className="space-y-4">
       <Card title="Name" isDark={isDark}>

@@ -17,6 +17,7 @@ import '@xyflow/react/dist/style.css';
 
 import { InputNode, StepNode, OutputNode } from './nodes';
 import type { Step } from '@/types/arazzo';
+import type { DetailData } from './DetailDrawer';
 
 // Register custom node types
 const nodeTypes = {
@@ -37,10 +38,19 @@ interface ArazzoFlowProps {
   edges: Edge[];
   workflowId?: string;
   isDark?: boolean;
+  onDetailSelect?: (data: DetailData | null) => void;
+  // Legacy prop for backward compatibility
   onStepSelect?: (step: Step | null) => void;
 }
 
-export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, workflowId, isDark = false, onStepSelect }: ArazzoFlowProps) {
+export default function ArazzoFlow({ 
+  nodes: initialNodes, 
+  edges: initialEdges, 
+  workflowId, 
+  isDark = false, 
+  onDetailSelect,
+  onStepSelect 
+}: ArazzoFlowProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -51,16 +61,41 @@ export default function ArazzoFlow({ nodes: initialNodes, edges: initialEdges, w
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    if (node.type === 'step' && node.data?.step && onStepSelect) {
-      onStepSelect(node.data.step as Step);
+    if (node.type === 'step' && node.data?.step) {
+      const step = node.data.step as Step;
+      onDetailSelect?.({ type: 'step', step });
+      onStepSelect?.(step);
+    } else if (node.type === 'input' && node.data) {
+      // Handle input node click - show all inputs
+      onDetailSelect?.({
+        type: 'input',
+        input: {
+          name: 'Workflow Inputs',
+          schema: {}
+        }
+      });
+    } else if (node.type === 'output' && node.data) {
+      // Handle output node click - show all outputs
+      const outputData = node.data as {
+        label: string;
+        properties: string[];
+        expressions: Record<string, string>;
+      };
+      onDetailSelect?.({
+        type: 'output',
+        output: {
+          name: 'Workflow Outputs',
+          value: '',
+          allOutputs: outputData.expressions
+        }
+      });
     }
-  }, [onStepSelect]);
+  }, [onDetailSelect, onStepSelect]);
 
   const onPaneClick = useCallback(() => {
-    if (onStepSelect) {
-      onStepSelect(null);
-    }
-  }, [onStepSelect]);
+    onDetailSelect?.(null);
+    onStepSelect?.(null);
+  }, [onDetailSelect, onStepSelect]);
 
   return (
     <div className={`w-full h-full rounded-lg overflow-hidden transition-colors ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>

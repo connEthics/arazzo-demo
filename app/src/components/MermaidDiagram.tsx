@@ -11,9 +11,12 @@ interface MermaidDiagramProps {
   steps?: Step[];
   sources?: SourceDescription[];
   workflowOutputs?: Record<string, string>;
+  selectedStepId?: string | null;
   onDetailSelect?: (data: DetailData | null) => void;
   // Legacy prop for backward compatibility
   onStepSelect?: (step: Step | null) => void;
+  // Simple callback for node clicks when steps not available
+  onNodeClick?: (nodeId: string) => void;
 }
 
 export default function MermaidDiagram({ 
@@ -22,8 +25,10 @@ export default function MermaidDiagram({
   steps = [], 
   sources = [],
   workflowOutputs = {},
+  selectedStepId,
   onDetailSelect,
-  onStepSelect 
+  onStepSelect,
+  onNodeClick
 }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +70,76 @@ export default function MermaidDiagram({
 
     renderChart();
   }, [chart, isDark]);
+
+  // Apply highlight to selected step
+  useEffect(() => {
+    if (!containerRef.current || !svgContent) return;
+    
+    const svg = containerRef.current.querySelector('svg');
+    if (!svg) return;
+
+    // Remove previous highlights
+    svg.querySelectorAll('.selected-step-highlight').forEach(el => {
+      el.classList.remove('selected-step-highlight');
+    });
+
+    if (!selectedStepId) return;
+
+    // Find and highlight the selected step - be very specific
+    const sanitizedId = selectedStepId.replace(/[^a-zA-Z0-9_]/g, '_');
+    let found = false;
+    
+    // For flowcharts: find nodes by their ID which contains the step ID
+    svg.querySelectorAll('.node').forEach(node => {
+      const nodeId = node.id || '';
+      // Match only if the node ID specifically contains our step ID
+      // Mermaid generates IDs like "flowchart-stepId-123"
+      if (nodeId.includes(`-${sanitizedId}-`) || 
+          nodeId.includes(`-${sanitizedId}`) ||
+          nodeId.endsWith(sanitizedId)) {
+        node.classList.add('selected-step-highlight');
+        found = true;
+      }
+    });
+
+    // For sequence diagrams: find by text content in messageText or notes
+    if (!found) {
+      // Find all text elements and check if they contain the step ID
+      svg.querySelectorAll('.messageText, text').forEach(textEl => {
+        const text = textEl.textContent || '';
+        if (text.includes(selectedStepId)) {
+          // Highlight the parent group or the message line
+          const parentGroup = textEl.closest('g');
+          if (parentGroup) {
+            // Find the associated line or rect
+            const line = parentGroup.querySelector('line');
+            const rect = parentGroup.querySelector('rect');
+            if (line) {
+              line.classList.add('selected-step-highlight');
+              found = true;
+            }
+            if (rect) {
+              parentGroup.classList.add('selected-step-highlight');
+              found = true;
+            }
+            // Also highlight the text itself
+            if (!found) {
+              parentGroup.classList.add('selected-step-highlight');
+              found = true;
+            }
+          }
+        }
+      });
+
+      // Also check notes which may contain step info
+      svg.querySelectorAll('.note').forEach(note => {
+        const noteText = note.textContent || '';
+        if (noteText.includes(selectedStepId)) {
+          note.classList.add('selected-step-highlight');
+        }
+      });
+    }
+  }, [svgContent, selectedStepId]);
 
   // Handle click on SVG elements
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -171,6 +246,7 @@ export default function MermaidDiagram({
         const sourceForStep = getSourceForStep(step);
         onDetailSelect?.({ type: 'step', step, sourceForStep });
         onStepSelect?.(step);
+        onNodeClick?.(step.stepId);
         return;
       }
     }
@@ -188,11 +264,23 @@ export default function MermaidDiagram({
           const sourceForStep = getSourceForStep(step);
           onDetailSelect?.({ type: 'step', step, sourceForStep });
           onStepSelect?.(step);
+          onNodeClick?.(step.stepId);
+          return;
+        }
+      }
+      
+      // If no steps provided but we have onNodeClick, try to extract step ID from node
+      if (onNodeClick && steps.length === 0) {
+        // Try to find step ID pattern in node text or ID
+        const stepIdMatch = nodeText.match(/([a-z][a-z0-9_-]*)/i);
+        if (stepIdMatch) {
+          e.stopPropagation();
+          onNodeClick(stepIdMatch[1]);
           return;
         }
       }
     }
-  }, [onDetailSelect, onStepSelect, steps, sources, workflowOutputs]);
+  }, [onDetailSelect, onStepSelect, onNodeClick, steps, sources, workflowOutputs]);
 
   if (error) {
     return (
@@ -233,10 +321,41 @@ export default function MermaidDiagram({
         .mermaid-container .node polygon,
         .mermaid-container .actor rect,
         .mermaid-container .note rect {
-          transition: filter 0.15s ease;
+          transition: filter 0.15s ease, stroke 0.2s ease, stroke-width 0.2s ease;
         }
         .mermaid-container text {
           cursor: pointer;
+        }
+        /* Selected step highlight */
+        .mermaid-container .selected-step-highlight rect,
+        .mermaid-container .selected-step-highlight polygon,
+        .mermaid-container .selected-step-highlight circle {
+          stroke: #6366f1 !important;
+          stroke-width: 3px !important;
+          filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+        }
+        /* Sequence diagram line highlight */
+        .mermaid-container line.selected-step-highlight {
+          stroke: #6366f1 !important;
+          stroke-width: 3px !important;
+          filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+        }
+        /* Sequence diagram text highlight */
+        .mermaid-container .selected-step-highlight text,
+        .mermaid-container .selected-step-highlight .messageText {
+          fill: #6366f1 !important;
+          font-weight: bold !important;
+        }
+        .mermaid-container .selected-step-highlight {
+          animation: pulse-highlight 2s ease-in-out infinite;
+        }
+        @keyframes pulse-highlight {
+          0%, 100% {
+            filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.5));
+          }
+          50% {
+            filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.8));
+          }
         }
       `}</style>
     </div>
