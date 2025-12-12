@@ -91,8 +91,9 @@ arazzo-demo/
 4. Deploy!
 
 The `vercel.json` in the root configures:
-- `rootDirectory`: Points to the Next.js app in `/app`
 - YAML files in `/workflows` are served with correct Content-Type headers
+
+**Note:** When importing to Vercel, set the root directory to `app` in the project settings.
 
 ## 📝 Adding Your Own Workflows
 
