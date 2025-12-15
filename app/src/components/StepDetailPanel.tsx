@@ -162,6 +162,19 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
                         Condition: {a.criteria[0].condition}
                       </div>
                     )}
+                    {a.outputs && Object.keys(a.outputs).length > 0 && (
+                      <div className={`mt-1 pt-1 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+                        <span className={`text-[9px] font-medium ${mutedClass}`}>Outputs:</span>
+                        <div className="space-y-0.5 mt-0.5">
+                          {Object.entries(a.outputs).map(([key, value]) => (
+                            <div key={key} className="flex flex-col gap-0.5">
+                              <span className={`text-[9px] ${textClass}`}>{key}:</span>
+                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{value}</code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -196,6 +209,19 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
                     {a.criteria && a.criteria.length > 0 && (
                       <div className={`text-[10px] ${mutedClass} mt-1`}>
                         Condition: {a.criteria[0].condition}
+                      </div>
+                    )}
+                    {a.outputs && Object.keys(a.outputs).length > 0 && (
+                      <div className={`mt-1 pt-1 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+                        <span className={`text-[9px] font-medium ${mutedClass}`}>Outputs:</span>
+                        <div className="space-y-0.5 mt-0.5">
+                          {Object.entries(a.outputs).map(([key, value]) => (
+                            <div key={key} className="flex flex-col gap-0.5">
+                              <span className={`text-[9px] ${textClass}`}>{key}:</span>
+                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{value}</code>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

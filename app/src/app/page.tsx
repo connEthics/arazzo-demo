@@ -449,6 +449,12 @@ workflows:
               </a>
             </div>
             <div className="flex items-center gap-6">
+              <Link
+                href="/showcase"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                Showcase
+              </Link>
               <a
                 href="https://github.com/connEthics/arazzo-demo"
                 target="_blank"

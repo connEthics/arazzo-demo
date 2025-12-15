@@ -5,7 +5,7 @@ import type { Step, SourceDescription, WorkflowInputs, Parameter, Criterion } fr
 import { isReusableObject } from '@/types/arazzo';
 
 // Import Arazzo components
-import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements } from './arazzo';
+import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements, SchemaViewer } from './arazzo';
 import { Card, Badge, CodeBlock, PropertyList, MarkdownText } from './primitives';
 
 interface ContentProps {
@@ -15,9 +15,14 @@ interface ContentProps {
   codeBgClass?: string;
 }
 
+interface GeneratedSchema {
+  type: string;
+  properties: Record<string, any>;
+}
+
 // Utility functions for schema generation
-function generateSchemaFromPayload(payload: Record<string, unknown>): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
+function generateSchemaFromPayload(payload: Record<string, unknown>): GeneratedSchema {
+  const properties: Record<string, any> = {};
   
   for (const [key, value] of Object.entries(payload)) {
     if (typeof value === 'string') {
@@ -60,7 +65,7 @@ function getMethodBadgeVariant(method: string): 'method-get' | 'method-post' | '
   return map[method] || 'method-get';
 }
 
-export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & { 
+export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & {  
   step: Step; 
   sourceForStep?: SourceDescription;
   onStepClick?: (stepId: string) => void;
@@ -107,14 +112,24 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
   }, [step.requestBody]);
 
   // Generate response schema from outputs
-  const responseSchema = useMemo(() => {
+  const responseSchema = useMemo((): GeneratedSchema | null => {
     if (!step.outputs || Object.keys(step.outputs).length === 0) return null;
-    const properties: Record<string, unknown> = {};
+    const properties: Record<string, any> = {};
     for (const [key, value] of Object.entries(step.outputs)) {
       properties[key] = { type: 'string', description: `Extracted from: ${value}` };
     }
     return { type: 'object', properties };
   }, [step.outputs]);
+
+  // Extract x- extensions
+  const extensions = useMemo(() => {
+    return Object.entries(step)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [step]);
 
   return (
     <div className="space-y-4">
@@ -195,11 +210,11 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
       )}
 
       {/* Request Body */}
-      {step.requestBody && (
+      {!!step.requestBody && (
         <Card 
           title="Request Body" 
           isDark={isDark}
-          badge={step.requestBody.contentType && <Badge variant="info" isDark={isDark} size="xs">{step.requestBody.contentType}</Badge>}
+          badge={step.requestBody?.contentType && <Badge variant="info" isDark={isDark} size="xs">{step.requestBody.contentType}</Badge>}
           icon={
             <svg className={`w-3 h-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -211,7 +226,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             <div>
               <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Payload</span>
               <CodeBlock 
-                code={JSON.stringify(step.requestBody.payload, null, 2)} 
+                code={typeof step.requestBody?.payload === 'string' ? step.requestBody.payload : JSON.stringify(step.requestBody?.payload, null, 2) || ''} 
                 language="json" 
                 isDark={isDark}
                 maxHeight={150}
@@ -219,22 +234,25 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
               />
             </div>
             
-            {/* Schema */}
-            {requestBodySchema && (
+            {/* Schema Structure */}
+            {requestBodySchema?.properties && (
               <div>
-                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema</span>
-                <CodeBlock 
-                  code={JSON.stringify(requestBodySchema, null, 2)} 
-                  language="json" 
-                  isDark={isDark}
-                  maxHeight={120}
-                  forceExpanded={forceExpanded}
-                />
+                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
+                <div className="space-y-1">
+                  {Object.entries(requestBodySchema.properties).map(([propName, propSchema]) => (
+                    <SchemaViewer 
+                      key={propName} 
+                      name={propName} 
+                      schema={propSchema} 
+                      isDark={isDark} 
+                    />
+                  ))}
+                </div>
               </div>
             )}
             
             {/* Payload Replacements */}
-            {step.requestBody.replacements && step.requestBody.replacements.length > 0 && (
+            {step.requestBody?.replacements && step.requestBody.replacements.length > 0 && (
               <PayloadReplacements 
                 replacements={step.requestBody.replacements} 
                 isDark={isDark} 
@@ -294,16 +312,19 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             )}
 
             {/* Response Schema */}
-            {responseSchema && (
+            {responseSchema?.properties && (
               <div>
-                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema</span>
-                <CodeBlock 
-                  code={JSON.stringify(responseSchema, null, 2)} 
-                  language="json" 
-                  isDark={isDark}
-                  maxHeight={100}
-                  forceExpanded={forceExpanded}
-                />
+                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
+                <div className="space-y-1">
+                  {Object.entries(responseSchema.properties).map(([name, schema]) => (
+                    <SchemaViewer 
+                      key={name} 
+                      name={name} 
+                      schema={schema} 
+                      isDark={isDark} 
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -328,6 +349,28 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             isDark={isDark}
             onStepClick={onStepClick}
             onRefClick={onRefClick}
+          />
+        </Card>
+      )}
+
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card 
+          title="Extensions" 
+          isDark={isDark}
+          icon={
+            <svg className={`w-3 h-3 ${isDark ? 'text-pink-400' : 'text-pink-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+          }
+        >
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+            maxItems={5}
+            forceExpanded={forceExpanded}
           />
         </Card>
       )}
@@ -363,6 +406,16 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
     mutedClass = isDark ? 'text-slate-400' : 'text-gray-500' 
   } = props;
 
+  // Extract x- extensions
+  const extensions = useMemo(() => {
+    return Object.entries(source)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [source]);
+
   return (
     <div className="space-y-4">
       <Card title="Name" isDark={isDark}>
@@ -394,6 +447,18 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
           <p className={`text-sm ${mutedClass}`}>{source.description}</p>
         </Card>
       )}
+
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card title="Extensions" isDark={isDark}>
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+          />
+        </Card>
+      )}
     </div>
   );
 }
@@ -410,19 +475,20 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
   const isSingleInput = input.name !== 'Workflow Inputs' && workflowInputs?.properties?.[input.name];
   const inputSchema = isSingleInput ? workflowInputs?.properties?.[input.name] : null;
 
+  // Extract x- extensions from schema
+  const extensions = useMemo(() => {
+    if (!inputSchema) return [];
+    return Object.entries(inputSchema)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [inputSchema]);
+
   // If showing all workflow inputs
   if (!isSingleInput && workflowInputs?.properties) {
     const properties = Object.keys(workflowInputs.properties);
-    
-    const propertyItems = properties.map(propName => {
-      const propSchema = workflowInputs.properties![propName];
-      return {
-        name: propName,
-        value: propSchema?.description || (propSchema?.default !== undefined ? `Default: ${JSON.stringify(propSchema.default)}` : ''),
-        type: propSchema?.type as string | undefined,
-        required: workflowInputs.required?.includes(propName),
-      };
-    });
 
     return (
       <div className="space-y-4">
@@ -434,13 +500,17 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
 
         {properties.length > 0 && (
           <Card title="Properties" isDark={isDark}>
-            <PropertyList 
-              items={propertyItems}
-              isDark={isDark}
-              variant="detailed"
-              borderColor="border-emerald-400"
-              maxItems={6}
-            />
+            <div className="space-y-3">
+              {properties.map(propName => (
+                <SchemaViewer
+                  key={propName}
+                  name={propName}
+                  schema={workflowInputs.properties![propName]}
+                  required={workflowInputs.required?.includes(propName)}
+                  isDark={isDark}
+                />
+              ))}
+            </div>
           </Card>
         )}
       </div>
@@ -450,46 +520,24 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
   // Single input property view
   return (
     <div className="space-y-4">
-      <Card title="Name" isDark={isDark}>
-        <span className={`text-sm font-medium ${textClass}`}>{input.name}</span>
+      <Card title="Input Details" isDark={isDark}>
+        <SchemaViewer
+          name={input.name}
+          schema={inputSchema || {}}
+          required={workflowInputs?.required?.includes(input.name)}
+          isDark={isDark}
+        />
       </Card>
 
-      {inputSchema?.type && (
-        <Card title="Type" isDark={isDark}>
-          <Badge variant={`type-${inputSchema.type}` as 'type-string'} isDark={isDark}>
-            {inputSchema.type}
-            {inputSchema.format && ` (${inputSchema.format})`}
-          </Badge>
-        </Card>
-      )}
-
-      {workflowInputs?.required?.includes(input.name) && (
-        <Card title="Required" isDark={isDark}>
-          <Badge variant="required" isDark={isDark}>Required</Badge>
-        </Card>
-      )}
-
-      {inputSchema?.description && (
-        <Card title="Description" isDark={isDark}>
-          <p className={`text-sm ${mutedClass}`}>{inputSchema.description}</p>
-        </Card>
-      )}
-
-      {inputSchema?.default !== undefined && (
-        <Card title="Default Value" isDark={isDark}>
-          <CodeBlock code={JSON.stringify(inputSchema.default)} language="json" isDark={isDark} />
-        </Card>
-      )}
-
-      {inputSchema?.enum && (
-        <Card title="Allowed Values" isDark={isDark}>
-          <div className="flex flex-wrap gap-1">
-            {inputSchema.enum.map((val, idx) => (
-              <Badge key={idx} variant="info" isDark={isDark} size="xs">
-                {val}
-              </Badge>
-            ))}
-          </div>
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card title="Extensions" isDark={isDark}>
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+          />
         </Card>
       )}
     </div>

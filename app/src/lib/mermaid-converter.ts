@@ -43,10 +43,11 @@ export function workflowToMermaidFlowchart(
 
   // Step nodes
   lines.push('  %% Steps');
-  workflow.steps.forEach((step) => {
+  workflow.steps.forEach((step, index) => {
+    const stepNumber = index + 1;
     const method = extractHttpMethod(step.operationId);
     const methodBadge = method ? `[${method}] ` : '';
-    const label = `${methodBadge}${sanitizeLabel(step.stepId)}`;
+    const label = `${stepNumber}. ${methodBadge}${sanitizeLabel(step.stepId)}`;
     lines.push(`  ${sanitizeId(step.stepId)}["${label}"]:::stepNode`);
   });
   lines.push('');
@@ -140,6 +141,9 @@ export function workflowToMermaidSequence(
   if (!workflow) throw new Error(`Workflow not found: ${workflowId}`);
 
   const lines: string[] = [];
+  
+  // Theme configuration - use neutral defaults, let JavaScript handle note colors based on content
+  lines.push('%%{init: {"theme": "base", "themeVariables": {"noteBkgColor": "#f8fafc", "noteBorderColor": "#cbd5e1", "noteTextColor": "#334155"}}}%%');
   lines.push('sequenceDiagram');
   lines.push('  autonumber');
   lines.push('');
@@ -169,17 +173,19 @@ export function workflowToMermaidSequence(
     const source = extractSourceFromStep(step, spec) || 'API';
     const method = extractHttpMethod(step.operationId);
     const operation = getOperationLabel(step);
+    const stepNumber = index + 1;
     
-    lines.push(`  %% Step ${index + 1}: ${step.stepId}`);
+    lines.push(`  %% Step ${stepNumber}: ${step.stepId}`);
     
-    // Show step name in a box (optional)
-    if (showStepNames) {
-      lines.push(`  rect rgb(238, 242, 255)`);
-      lines.push(`  Note over Client,${sanitizeId(source)}: 📌 ${sanitizeLabel(step.stepId)}`);
-    }
+    // Wrap step in a styled rect for visual grouping
+    lines.push(`  rect hsla(201, 100%, 96%, 0.59)`);
     
-    // Request
-    const requestLabel = method ? `${method} ${sanitizeLabel(operation)}` : sanitizeLabel(operation);
+    // Add clickable step header note with step number and name (no HTTP method - that goes on the arrow)
+    lines.push(`  Note over Client,${sanitizeId(source)}: 🔹 ${stepNumber}. ${sanitizeLabel(step.stepId)}`);
+    
+    // Request arrow with HTTP method
+    const methodBadge = method ? `[${method}] ` : '';
+    const requestLabel = `${methodBadge}${sanitizeLabel(operation)}`;
     lines.push(`  Client->>+${sanitizeId(source)}: ${requestLabel}`);
     
     // Success response
@@ -196,9 +202,12 @@ export function workflowToMermaidSequence(
       lines.push(`  Note right of Client: 📦 ${sanitizeLabel(outputs)}`);
     }
 
-    // Error handling (if not hidden)
+    // Close step rect before error handling to avoid nesting issues
+    lines.push(`  end`);
+
+    // Error handling (if not hidden) - outside the rect to avoid Mermaid parsing issues
     if (!hideErrorFlows && step.onFailure && step.onFailure.length > 0) {
-      lines.push(`  alt Error handling`);
+      lines.push(`  alt Error handling for step ${index + 1}`);
       step.onFailure.forEach(action => {
         if (isReusableObject(action)) return;
         const a = action as FailureAction;
@@ -208,11 +217,6 @@ export function workflowToMermaidSequence(
           lines.push(`    Client->>Client: ❌ Abort workflow`);
         }
       });
-      lines.push(`  end`);
-    }
-
-    // Close step rect
-    if (showStepNames) {
       lines.push(`  end`);
     }
 

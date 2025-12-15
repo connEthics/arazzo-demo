@@ -128,6 +128,40 @@ function ActionList({
             ))}
           </div>
         )}
+
+        {/* Outputs */}
+        {action.outputs && Object.keys(action.outputs).length > 0 && (
+          <div className={`mt-1.5 pt-1.5 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+            <span className={`text-[9px] font-medium ${mutedClass} block mb-1`}>Outputs:</span>
+            <div className="space-y-1">
+              {Object.entries(action.outputs).map(([key, value]) => (
+                <div key={key} className="flex flex-col gap-0.5">
+                  <span className={`text-[9px] font-medium ${textClass}`}>{key}:</span>
+                  <code className={`text-[9px] font-mono ${mutedClass} break-all bg-opacity-50 rounded px-1 ${isDark ? 'bg-black' : 'bg-white'}`}>{value}</code>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Extensions */}
+        {Object.keys(action).filter(k => k.startsWith('x-')).length > 0 && (
+          <div className={`mt-1.5 pt-1.5 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+            <span className={`text-[9px] font-medium ${mutedClass} block mb-1`}>Extensions:</span>
+            <div className="space-y-1">
+              {Object.entries(action)
+                .filter(([key]) => key.startsWith('x-'))
+                .map(([key, value]) => (
+                  <div key={key} className="flex flex-col gap-0.5">
+                    <span className={`text-[9px] font-medium ${textClass}`}>{key}:</span>
+                    <code className={`text-[9px] font-mono ${mutedClass} break-all bg-opacity-50 rounded px-1 ${isDark ? 'bg-black' : 'bg-white'}`}>
+                      {typeof value === 'string' ? value : JSON.stringify(value)}
+                    </code>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
