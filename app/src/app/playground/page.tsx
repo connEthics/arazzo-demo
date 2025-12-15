@@ -384,11 +384,11 @@ export default function Home() {
       <header className={`flex-shrink-0 border-b transition-colors duration-300 ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
         <div className="px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Link href="/" className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 hover:opacity-90 transition-opacity">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-            </div>
+            </Link>
             <h1 className="text-base font-semibold">Arazzo Playground</h1>
             
             {/* Workflow info badge with tooltip */}
@@ -445,8 +445,8 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Workflow Selector */}
-            {spec && spec.workflows.length > 1 && (
+            {/* Workflow Selector - Only shown for diagram views */}
+            {spec && spec.workflows.length > 1 && viewMode !== 'documentation' && (
               <select
                 value={selectedWorkflow}
                 onChange={(e) => setSelectedWorkflow(e.target.value)}
@@ -491,6 +491,7 @@ export default function Home() {
                   <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>YAML Source</span>
                 </div>
                 <div className="flex items-center gap-1">
+                  <span className={`text-[10px] mr-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Load Example:</span>
                   <button
                     onClick={() => loadExample('pet-adoption.arazzo.yaml')}
                     disabled={isLoading}

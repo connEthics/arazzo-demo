@@ -28,9 +28,12 @@ export type BadgeVariant =
   | 'type-xpath'
   | 'type-string'
   | 'type-number'
+  | 'type-integer'
   | 'type-boolean'
   | 'type-object'
-  | 'type-array';
+  | 'type-array'
+  | 'type-null'
+  | 'type-unknown';
 
 interface BadgeProps {
   variant: BadgeVariant;
@@ -141,6 +144,10 @@ const variantStyles: Record<BadgeVariant, { light: string; dark: string }> = {
     light: 'bg-blue-100 text-blue-700 border-blue-200', 
     dark: 'bg-blue-900/50 text-blue-300 border-blue-700' 
   },
+  'type-integer': { 
+    light: 'bg-blue-100 text-blue-700 border-blue-200', 
+    dark: 'bg-blue-900/50 text-blue-300 border-blue-700' 
+  },
   'type-boolean': { 
     light: 'bg-pink-100 text-pink-700 border-pink-200', 
     dark: 'bg-pink-900/50 text-pink-300 border-pink-700' 
@@ -153,6 +160,14 @@ const variantStyles: Record<BadgeVariant, { light: string; dark: string }> = {
     light: 'bg-cyan-100 text-cyan-700 border-cyan-200', 
     dark: 'bg-cyan-900/50 text-cyan-300 border-cyan-700' 
   },
+  'type-null': { 
+    light: 'bg-gray-100 text-gray-700 border-gray-200', 
+    dark: 'bg-gray-800 text-gray-300 border-gray-600' 
+  },
+  'type-unknown': { 
+    light: 'bg-gray-100 text-gray-700 border-gray-200', 
+    dark: 'bg-gray-800 text-gray-300 border-gray-600' 
+  },
 };
 
 const sizeStyles = {
@@ -162,7 +177,7 @@ const sizeStyles = {
 };
 
 function Badge({ variant, children, isDark = false, size = 'sm', className = '' }: BadgeProps) {
-  const style = variantStyles[variant];
+  const style = variantStyles[variant] || variantStyles['type-unknown'];
   const colors = isDark ? style.dark : style.light;
 
   return (

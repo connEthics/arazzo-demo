@@ -60,6 +60,136 @@ function getMethodBadgeVariant(method: string): 'method-get' | 'method-post' | '
   return map[method] || 'method-get';
 }
 
+// Recursive component to display schema properties with validation rules
+function SchemaPropertyView({ 
+  name, 
+  schema, 
+  required, 
+  isDark, 
+  level = 0 
+}: { 
+  name: string; 
+  schema: any; 
+  required?: boolean; 
+  isDark: boolean; 
+  level?: number;
+}) {
+  const textClass = isDark ? 'text-white' : 'text-gray-900';
+  const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
+  const borderClass = isDark ? 'border-slate-700' : 'border-gray-200';
+  const bgClass = isDark ? 'bg-slate-800' : 'bg-gray-50';
+  
+  const isObject = schema.type === 'object' && schema.properties;
+  const isArray = schema.type === 'array';
+  
+  return (
+    <div className={`rounded border ${borderClass} ${bgClass} overflow-hidden mb-2`}>
+      {/* Header */}
+      <div className="px-3 py-2 flex flex-col gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <code className={`text-sm font-mono font-medium ${textClass}`}>{name}</code>
+          {schema.type && (
+            <Badge variant={`type-${schema.type}` as any} isDark={isDark} size="xs">
+              {schema.type}
+              {schema.format && ` (${schema.format})`}
+            </Badge>
+          )}
+          {required && (
+            <Badge variant="required" isDark={isDark} size="xs">Required</Badge>
+          )}
+        </div>
+        
+        {schema.description && (
+          <p className={`text-xs ${mutedClass}`}>{schema.description}</p>
+        )}
+      </div>
+
+      {/* Details Body */}
+      <div className={`px-3 pb-2 space-y-2 border-t ${borderClass} pt-2 bg-opacity-50 ${isDark ? 'bg-black/20' : 'bg-gray-50/50'}`}>
+        
+        {/* Default Value */}
+        {schema.default !== undefined && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className={mutedClass}>Default:</span>
+            <code className={`font-mono ${textClass}`}>{JSON.stringify(schema.default)}</code>
+          </div>
+        )}
+
+        {/* Enum Values */}
+        {schema.enum && (
+          <div className="flex flex-wrap gap-1">
+            {schema.enum.map((val: any, idx: number) => (
+              <Badge key={idx} variant="info" isDark={isDark} size="xs">{val}</Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Validation Rules */}
+        {(schema.minLength !== undefined || schema.maxLength !== undefined || schema.pattern || 
+          schema.minimum !== undefined || schema.maximum !== undefined) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            {schema.minLength !== undefined && (
+              <span className={mutedClass}>Min Len: <code className={textClass}>{schema.minLength}</code></span>
+            )}
+            {schema.maxLength !== undefined && (
+              <span className={mutedClass}>Max Len: <code className={textClass}>{schema.maxLength}</code></span>
+            )}
+            {schema.minimum !== undefined && (
+              <span className={mutedClass}>Min: <code className={textClass}>{schema.minimum}</code></span>
+            )}
+            {schema.maximum !== undefined && (
+              <span className={mutedClass}>Max: <code className={textClass}>{schema.maximum}</code></span>
+            )}
+            {schema.pattern && (
+              <span className={mutedClass}>Pattern: <code className={`${textClass} break-all`}>{schema.pattern}</code></span>
+            )}
+          </div>
+        )}
+
+        {/* Example */}
+        {schema.example !== undefined && (
+          <div className="text-xs">
+            <span className={`${mutedClass} block mb-0.5`}>Example:</span>
+            <code className={`block font-mono p-1 rounded ${isDark ? 'bg-black/30' : 'bg-white'} ${textClass} break-all`}>
+              {JSON.stringify(schema.example)}
+            </code>
+          </div>
+        )}
+
+        {/* Nested Properties (Object) */}
+        {isObject && (
+          <div className="mt-2 pl-2 border-l-2 border-indigo-400/30">
+            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Properties</span>
+            {Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => (
+              <SchemaPropertyView
+                key={propName}
+                name={propName}
+                schema={propSchema}
+                required={schema.required?.includes(propName)}
+                isDark={isDark}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Array Items */}
+        {isArray && schema.items && (
+          <div className="mt-2 pl-2 border-l-2 border-blue-400/30">
+            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Array Items</span>
+            <SchemaPropertyView
+              name="items"
+              schema={schema.items}
+              isDark={isDark}
+              level={level + 1}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & { 
   step: Step; 
   sourceForStep?: SourceDescription;
@@ -115,6 +245,16 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
     }
     return { type: 'object', properties };
   }, [step.outputs]);
+
+  // Extract x- extensions
+  const extensions = useMemo(() => {
+    return Object.entries(step)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [step]);
 
   return (
     <div className="space-y-4">
@@ -220,16 +360,19 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             </div>
             
             {/* Schema */}
-            {requestBodySchema && (
+            {requestBodySchema && requestBodySchema.properties && (
               <div>
-                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema</span>
-                <CodeBlock 
-                  code={JSON.stringify(requestBodySchema, null, 2)} 
-                  language="json" 
-                  isDark={isDark}
-                  maxHeight={120}
-                  forceExpanded={forceExpanded}
-                />
+                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
+                <div className="space-y-1">
+                  {Object.entries(requestBodySchema.properties as Record<string, any>).map(([name, schema]) => (
+                    <SchemaPropertyView 
+                      key={name} 
+                      name={name} 
+                      schema={schema} 
+                      isDark={isDark} 
+                    />
+                  ))}
+                </div>
               </div>
             )}
             
@@ -294,16 +437,19 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             )}
 
             {/* Response Schema */}
-            {responseSchema && (
+            {responseSchema && responseSchema.properties && (
               <div>
-                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema</span>
-                <CodeBlock 
-                  code={JSON.stringify(responseSchema, null, 2)} 
-                  language="json" 
-                  isDark={isDark}
-                  maxHeight={100}
-                  forceExpanded={forceExpanded}
-                />
+                <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
+                <div className="space-y-1">
+                  {Object.entries(responseSchema.properties as Record<string, any>).map(([name, schema]) => (
+                    <SchemaPropertyView 
+                      key={name} 
+                      name={name} 
+                      schema={schema} 
+                      isDark={isDark} 
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -328,6 +474,28 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             isDark={isDark}
             onStepClick={onStepClick}
             onRefClick={onRefClick}
+          />
+        </Card>
+      )}
+
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card 
+          title="Extensions" 
+          isDark={isDark}
+          icon={
+            <svg className={`w-3 h-3 ${isDark ? 'text-pink-400' : 'text-pink-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+          }
+        >
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+            maxItems={5}
+            forceExpanded={forceExpanded}
           />
         </Card>
       )}
@@ -363,6 +531,16 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
     mutedClass = isDark ? 'text-slate-400' : 'text-gray-500' 
   } = props;
 
+  // Extract x- extensions
+  const extensions = useMemo(() => {
+    return Object.entries(source)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [source]);
+
   return (
     <div className="space-y-4">
       <Card title="Name" isDark={isDark}>
@@ -394,6 +572,18 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
           <p className={`text-sm ${mutedClass}`}>{source.description}</p>
         </Card>
       )}
+
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card title="Extensions" isDark={isDark}>
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+          />
+        </Card>
+      )}
     </div>
   );
 }
@@ -410,19 +600,20 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
   const isSingleInput = input.name !== 'Workflow Inputs' && workflowInputs?.properties?.[input.name];
   const inputSchema = isSingleInput ? workflowInputs?.properties?.[input.name] : null;
 
+  // Extract x- extensions from schema
+  const extensions = useMemo(() => {
+    if (!inputSchema) return [];
+    return Object.entries(inputSchema)
+      .filter(([key]) => key.startsWith('x-'))
+      .map(([key, value]) => ({
+        name: key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      }));
+  }, [inputSchema]);
+
   // If showing all workflow inputs
   if (!isSingleInput && workflowInputs?.properties) {
     const properties = Object.keys(workflowInputs.properties);
-    
-    const propertyItems = properties.map(propName => {
-      const propSchema = workflowInputs.properties![propName];
-      return {
-        name: propName,
-        value: propSchema?.description || (propSchema?.default !== undefined ? `Default: ${JSON.stringify(propSchema.default)}` : ''),
-        type: propSchema?.type as string | undefined,
-        required: workflowInputs.required?.includes(propName),
-      };
-    });
 
     return (
       <div className="space-y-4">
@@ -434,13 +625,17 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
 
         {properties.length > 0 && (
           <Card title="Properties" isDark={isDark}>
-            <PropertyList 
-              items={propertyItems}
-              isDark={isDark}
-              variant="detailed"
-              borderColor="border-emerald-400"
-              maxItems={6}
-            />
+            <div className="space-y-3">
+              {properties.map(propName => (
+                <SchemaPropertyView
+                  key={propName}
+                  name={propName}
+                  schema={workflowInputs.properties![propName]}
+                  required={workflowInputs.required?.includes(propName)}
+                  isDark={isDark}
+                />
+              ))}
+            </div>
           </Card>
         )}
       </div>
@@ -450,46 +645,24 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
   // Single input property view
   return (
     <div className="space-y-4">
-      <Card title="Name" isDark={isDark}>
-        <span className={`text-sm font-medium ${textClass}`}>{input.name}</span>
+      <Card title="Input Details" isDark={isDark}>
+        <SchemaPropertyView
+          name={input.name}
+          schema={inputSchema || {}}
+          required={workflowInputs?.required?.includes(input.name)}
+          isDark={isDark}
+        />
       </Card>
 
-      {inputSchema?.type && (
-        <Card title="Type" isDark={isDark}>
-          <Badge variant={`type-${inputSchema.type}` as 'type-string'} isDark={isDark}>
-            {inputSchema.type}
-            {inputSchema.format && ` (${inputSchema.format})`}
-          </Badge>
-        </Card>
-      )}
-
-      {workflowInputs?.required?.includes(input.name) && (
-        <Card title="Required" isDark={isDark}>
-          <Badge variant="required" isDark={isDark}>Required</Badge>
-        </Card>
-      )}
-
-      {inputSchema?.description && (
-        <Card title="Description" isDark={isDark}>
-          <p className={`text-sm ${mutedClass}`}>{inputSchema.description}</p>
-        </Card>
-      )}
-
-      {inputSchema?.default !== undefined && (
-        <Card title="Default Value" isDark={isDark}>
-          <CodeBlock code={JSON.stringify(inputSchema.default)} language="json" isDark={isDark} />
-        </Card>
-      )}
-
-      {inputSchema?.enum && (
-        <Card title="Allowed Values" isDark={isDark}>
-          <div className="flex flex-wrap gap-1">
-            {inputSchema.enum.map((val, idx) => (
-              <Badge key={idx} variant="info" isDark={isDark} size="xs">
-                {val}
-              </Badge>
-            ))}
-          </div>
+      {/* Extensions */}
+      {extensions.length > 0 && (
+        <Card title="Extensions" isDark={isDark}>
+          <PropertyList 
+            items={extensions}
+            isDark={isDark}
+            variant="compact"
+            borderColor="border-pink-400"
+          />
         </Card>
       )}
     </div>

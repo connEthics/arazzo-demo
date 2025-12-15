@@ -7,6 +7,7 @@ import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mer
 import StepCard from './StepCard';
 import { MarkdownText } from './primitives';
 import { SchemaViewer } from './arazzo';
+import { InputContent, OutputContent } from './DetailViews';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 
@@ -298,47 +299,29 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
         {/* Workflow Inputs */}
         {workflow.inputs && workflow.inputs.properties && Object.keys(workflow.inputs.properties).length > 0 && (
-          <div className={`p-4 rounded-lg border ${borderClass} ${codeBgClass} avoid-break`}>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <span className="text-emerald-500">↓</span> Inputs
-            </h3>
-            <div className="space-y-2">
-              {Object.entries(workflow.inputs.properties).map(([name, schema]) => (
-                <div key={name} className={`p-2 rounded border-l-2 border-emerald-400 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-                  <div className="flex items-center gap-2">
-                    <code className="font-mono text-sm font-medium">{name}</code>
-                    {workflow.inputs?.required?.includes(name) && (
-                      <span className="text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-600">required</span>
-                    )}
-                    {schema.type && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
-                        {schema.type}
-                      </span>
-                    )}
-                  </div>
-                  {schema.description && (
-                    <p className={`text-xs ${mutedClass} mt-1`}>{schema.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
+          <div className="avoid-break">
+            <InputContent 
+              input={{ name: 'Workflow Inputs', schema: {} }} 
+              workflowInputs={workflow.inputs}
+              isDark={isDark}
+              textClass={textClass}
+              mutedClass={mutedClass}
+              codeBgClass={codeBgClass}
+            />
           </div>
         )}
 
         {/* Workflow Outputs */}
         {workflow.outputs && Object.keys(workflow.outputs).length > 0 && (
-          <div className={`p-4 rounded-lg border ${borderClass} ${codeBgClass} avoid-break`}>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <span className="text-amber-500">↑</span> Outputs
-            </h3>
-            <div className="space-y-2">
-              {Object.entries(workflow.outputs).map(([name, expression]) => (
-                <div key={name} className={`p-2 rounded border-l-2 border-amber-400 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-                  <code className="font-mono text-sm font-medium">{name}</code>
-                  <code className={`text-xs ${mutedClass} font-mono block mt-1 break-all`}>{expression}</code>
-                </div>
-              ))}
-            </div>
+          <div className="avoid-break">
+            <OutputContent 
+              output={{ name: 'Workflow Outputs', value: '', allOutputs: workflow.outputs }}
+              workflowOutputs={workflow.outputs}
+              isDark={isDark}
+              textClass={textClass}
+              mutedClass={mutedClass}
+              codeBgClass={codeBgClass}
+            />
           </div>
         )}
       </div>
