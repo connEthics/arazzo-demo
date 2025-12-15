@@ -213,13 +213,13 @@ export function workflowToHorizontalSwimlane(
   lines.push('flowchart TB');
   lines.push('');
 
-  // Styles
+  // Styles - Consistent colors: Green=Input, Blue=Step, Amber=Output
   lines.push('  %% Styles');
   lines.push('  classDef clientLane fill:#e0f2fe,stroke:#0ea5e9,stroke-width:3px,color:#0c4a6e');
-  lines.push('  classDef apiLane fill:#fef3c7,stroke:#f59e0b,stroke-width:3px,color:#92400e');
+  lines.push('  classDef apiLane fill:#e0e7ff,stroke:#6366f1,stroke-width:3px,color:#3730a3');
   lines.push('  classDef stepNode fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#3730a3');
-  lines.push('  classDef inputNode fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#166534');
-  lines.push('  classDef outputNode fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#9d174d');
+  lines.push('  classDef inputNode fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#065f46');
+  lines.push('  classDef outputNode fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e');
   lines.push('');
 
   // Get all unique sources
@@ -235,7 +235,7 @@ export function workflowToHorizontalSwimlane(
   lines.push('    c_start(["🚀 Start"]):::inputNode');
   
   workflow.steps.forEach((step, idx) => {
-    lines.push(`    c_${idx}[/"📤 ${sanitizeLabel(step.stepId)}"/]:::clientLane`);
+    lines.push(`    c_${idx}[/"📤 ${sanitizeLabel(step.stepId)}"/]:::stepNode`);
   });
   
   if (workflow.outputs) {
@@ -255,7 +255,7 @@ export function workflowToHorizontalSwimlane(
       if (stepSource === source) {
         const method = extractHttpMethod(step.operationId);
         const opLabel = getOperationLabel(step);
-        lines.push(`    api_${idx}["${method || 'API'}: ${sanitizeLabel(opLabel)}"]:::apiLane`);
+        lines.push(`    api_${idx}["${method || 'API'}: ${sanitizeLabel(opLabel)}"]:::stepNode`);
       }
     });
     

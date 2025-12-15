@@ -372,6 +372,14 @@ workflows:
               >
                 Arazzo Spec
               </a>
+              <a
+                href="https://www.connethics.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                Privacy
+              </a>
             </div>
           </div>
         </div>

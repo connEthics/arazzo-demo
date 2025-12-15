@@ -173,8 +173,8 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   
   // New state
-  const [viewMode, setViewMode] = useState<ViewMode>('reactflow');
-  const [hideErrorFlows, setHideErrorFlows] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('mermaid-flowchart');
+  const [hideErrorFlows, setHideErrorFlows] = useState(true);
   const [hideOutputs, setHideOutputs] = useState(false);
   const [showStepNames, setShowStepNames] = useState(true);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -305,9 +305,9 @@ export default function Home() {
     }
   }, [spec, selectedWorkflow, hideErrorFlows]);
 
-  // Auto-parse on initial load
+  // Auto-load Pet Store example on initial load
   useEffect(() => {
-    parseAndVisualize();
+    loadExample('pet-adoption.arazzo.yaml');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -430,12 +430,12 @@ export default function Home() {
               >
                 Sequence
               </button>
-              <button
+              {/* <button
                 onClick={() => setViewMode('swimlane')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'swimlane' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
               >
                 Swimlane
-              </button>
+              </button> */}
               <button
                 onClick={() => setViewMode('documentation')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${viewMode === 'documentation' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
@@ -745,6 +745,7 @@ export default function Home() {
                       workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
                       onDetailSelect={setDetailData}
                     />
                   )}
@@ -757,10 +758,11 @@ export default function Home() {
                       workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
                       onDetailSelect={setDetailData}
                     />
                   )}
-                  {viewMode === 'swimlane' && (
+                  {/* {viewMode === 'swimlane' && (
                     <MermaidDiagram 
                       chart={swimlaneDiagram} 
                       isDark={isDark}
@@ -769,9 +771,10 @@ export default function Home() {
                       workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
                       onDetailSelect={setDetailData}
                     />
-                  )}
+                  )} */}
                 </>
               ) : (
                 <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>

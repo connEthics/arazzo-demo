@@ -25,7 +25,7 @@ export function workflowToMermaidFlowchart(
   lines.push(`flowchart ${direction}`);
   lines.push('');
   
-  // Styles
+  // Styles - Green for Input, Blue for Steps, Amber for Output
   lines.push('  %% Styles');
   lines.push('  classDef inputNode fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#065f46');
   lines.push('  classDef stepNode fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#3730a3');
@@ -160,7 +160,7 @@ export function workflowToMermaidSequence(
   });
   lines.push('');
 
-  // Workflow title
+  // Workflow title (input)
   lines.push(`  Note over Client: 🚀 ${sanitizeLabel(workflow.summary || workflow.workflowId)}`);
   lines.push('');
 
