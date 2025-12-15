@@ -96,7 +96,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
   const outputItems = useMemo(() => step.outputs 
     ? Object.entries(step.outputs).map(([key, value]) => ({
         name: key,
-        value: value,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
       }))
     : [], [step.outputs]);
 
@@ -511,7 +511,7 @@ export function OutputContent({ output, workflowOutputs, ...props }: ContentProp
   if (isAllOutputs && Object.keys(allOutputsData).length > 0) {
     const outputItems = Object.entries(allOutputsData).map(([name, expression]) => ({
       name,
-      value: expression,
+      value: typeof expression === 'string' ? expression : JSON.stringify(expression),
     }));
 
     return (
@@ -550,7 +550,11 @@ export function OutputContent({ output, workflowOutputs, ...props }: ContentProp
       )}
 
       <Card title="Expression" isDark={isDark}>
-        <CodeBlock code={output.value} language="expression" isDark={isDark} />
+        <CodeBlock 
+          code={typeof output.value === 'string' ? output.value : JSON.stringify(output.value, null, 2)} 
+          language="expression" 
+          isDark={isDark} 
+        />
       </Card>
     </div>
   );

@@ -248,15 +248,72 @@ export function extractHttpMethod(operationId?: string): string | null {
   return null;
 }
 
-export function extractExpressionSource(expr: string): { type: 'inputs' | 'steps'; source: string; field?: string } | null {
-  const inputMatch = expr.match(/\$inputs\.(\w+)/);
+export type ExpressionSource = 
+  | { type: 'inputs'; source: string }
+  | { type: 'steps'; source: string; field: string }
+  | { type: 'url' }
+  | { type: 'method' }
+  | { type: 'statusCode' }
+  | { type: 'request'; part: 'header' | 'query' | 'path' | 'body'; name?: string }
+  | { type: 'response'; part: 'header' | 'body'; name?: string }
+  | { type: 'components'; category: string; name: string };
+
+export function extractExpressionSource(expr: string): ExpressionSource | null {
+  // $url
+  if (expr === '$url') return { type: 'url' };
+  
+  // $method
+  if (expr === '$method') return { type: 'method' };
+  
+  // $statusCode
+  if (expr === '$statusCode') return { type: 'statusCode' };
+
+  // $inputs.name
+  const inputMatch = expr.match(/\$inputs\.([\w-]+)/);
   if (inputMatch) {
     return { type: 'inputs', source: inputMatch[1] };
   }
   
-  const stepMatch = expr.match(/\$steps\.(\w+)\.outputs\.(\w+)/);
+  // $steps.stepId.outputs.name
+  const stepMatch = expr.match(/\$steps\.([\w-]+)\.outputs\.([\w-]+)/);
   if (stepMatch) {
     return { type: 'steps', source: stepMatch[1], field: stepMatch[2] };
+  }
+
+  // $request.body
+  if (expr === '$request.body') return { type: 'request', part: 'body' };
+
+  // $request.header.name, $request.query.name, $request.path.name
+  const requestMatch = expr.match(/\$request\.(header|query|path)\.([\w-]+)/);
+  if (requestMatch) {
+    return { 
+      type: 'request', 
+      part: requestMatch[1] as 'header' | 'query' | 'path', 
+      name: requestMatch[2] 
+    };
+  }
+
+  // $response.body
+  if (expr === '$response.body') return { type: 'response', part: 'body' };
+
+  // $response.header.name
+  const responseMatch = expr.match(/\$response\.header\.([\w-]+)/);
+  if (responseMatch) {
+    return { 
+      type: 'response', 
+      part: 'header', 
+      name: responseMatch[1] 
+    };
+  }
+
+  // $components.category.name
+  const componentMatch = expr.match(/\$components\.(inputs|parameters|successActions|failureActions)\.([\w-]+)/);
+  if (componentMatch) {
+    return { 
+      type: 'components', 
+      category: componentMatch[1], 
+      name: componentMatch[2] 
+    };
   }
   
   return null;
