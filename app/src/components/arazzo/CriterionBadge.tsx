@@ -75,7 +75,7 @@ function CriterionBadge({ criterion, isDark, showDetails = false, className = ''
           {typeInfo.label}
         </Badge>
         <code className={`text-[10px] font-mono ${textClass}`}>
-          {criterion.condition}
+          {typeof criterion.condition === 'string' ? criterion.condition : JSON.stringify(criterion.condition)}
         </code>
       </div>
     );
@@ -105,7 +105,7 @@ function CriterionBadge({ criterion, isDark, showDetails = false, className = ''
       )}
       
       <code className={`text-[10px] font-mono ${textClass} block break-all`}>
-        {criterion.condition}
+        {typeof criterion.condition === 'string' ? criterion.condition : JSON.stringify(criterion.condition)}
       </code>
     </div>
   );

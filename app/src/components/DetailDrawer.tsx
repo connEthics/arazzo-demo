@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import type { Step, SourceDescription, WorkflowInputs } from '@/types/arazzo';
 import { StepContent, SourceContent, InputContent, OutputContent } from './DetailViews';
-import { Badge } from './primitives';
+import { Badge, MarkdownText } from './primitives';
 
 // Types for different detail views
 export type DetailType = 'step' | 'source' | 'input' | 'output';
@@ -98,8 +98,8 @@ function DetailDrawer({ data, isDark = false, onClose, workflowInputs, workflowO
 
       {/* Subtitle */}
       {data.type === 'step' && data.step?.description && (
-        <div className={`flex-shrink-0 px-4 py-2 border-b text-xs ${isDark ? 'border-slate-800 text-slate-400' : 'border-gray-100 text-gray-500'}`}>
-          {data.step.description}
+        <div className={`flex-shrink-0 px-4 py-2 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
+          <MarkdownText content={data.step.description} isDark={isDark} variant="compact" />
         </div>
       )}
       {data.type === 'source' && data.source?.type && (

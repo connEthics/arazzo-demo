@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Step, SourceDescription } from '@/types/arazzo';
 import { StepContent } from './DetailViews';
+import { MarkdownText } from './primitives';
 
 interface StepCardProps {
   step: Step;
@@ -108,7 +109,9 @@ export default function StepCard({
             )}
           </div>
           {step.description && (
-            <p className={`text-sm ${mutedClass} mt-0.5 truncate`}>{step.description}</p>
+            <div className={`text-sm ${mutedClass} mt-0.5 line-clamp-2`}>
+              <MarkdownText content={step.description} isDark={isDark} variant="compact" />
+            </div>
           )}
         </div>
         <svg 

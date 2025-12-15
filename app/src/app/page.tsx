@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Arazzo Playground - Interactive OpenAPI Workflow Visualizer",
@@ -44,6 +45,12 @@ const LayersIcon = () => (
   </svg>
 );
 
+const ShieldCheckIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
 const features = [
   {
     icon: <FlowIcon />,
@@ -56,9 +63,9 @@ const features = [
     description: "Edit your Arazzo specifications with VS Code's powerful Monaco editor featuring syntax highlighting and code folding.",
   },
   {
-    icon: <LayersIcon />,
-    title: "Multiple View Modes",
-    description: "Switch between interactive diagrams, Mermaid flowcharts, and sequence diagrams to visualize your workflows.",
+    icon: <ShieldCheckIcon />,
+    title: "100% Spec Compliant",
+    description: "Built strictly against Arazzo 1.0.1 specification and validated with comprehensive test suites.",
   },
   {
     icon: <ExportIcon />,
@@ -71,9 +78,9 @@ const features = [
     description: "View comprehensive details about each step including parameters, success criteria, outputs, and API operations.",
   },
   {
-    icon: <LightningIcon />,
-    title: "Real-time Parsing",
-    description: "See changes instantly as you edit. The visualizer updates in real-time as you modify your YAML specification.",
+    icon: <LayersIcon />,
+    title: "Multiple View Modes",
+    description: "Switch between interactive diagrams, Mermaid flowcharts, and sequence diagrams to visualize your workflows.",
   },
 ];
 
@@ -139,6 +146,7 @@ export default function LandingPage() {
             {/* Subheadline */}
             <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-10">
               The most intuitive way to understand, edit and share{" "}
+              <span className="text-indigo-400 font-medium">standard-compliant</span>{" "}
               <a href="https://spec.openapis.org/arazzo/latest.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4">
                 Arazzo
               </a>{" "}
@@ -188,20 +196,43 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-                {/* Screenshot placeholder - using gradient as placeholder */}
-                <div className="aspect-[16/9] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <p className="text-slate-400 text-lg">Interactive API Workflow Visualizer</p>
-                    <p className="text-slate-500 text-sm mt-2">Edit YAML • View Diagrams • Export Mermaid</p>
-                  </div>
+                {/* Screenshot */}
+                <div className="relative aspect-[16/9]">
+                  <Image
+                    src="/screenshots/flowchart-view-with-step-detail.png"
+                    alt="Arazzo Playground - Flowchart view with interactive step details"
+                    fill
+                    className="object-cover object-top"
+                    priority
+                  />
                 </div>
               </div>
             </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Trust/Compliance Section */}
+      <section className="py-10 border-y border-slate-800 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 text-slate-400">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+              <span className="font-medium text-slate-300">Arazzo 1.0.1 Compliant</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium text-slate-300">Validated against Test Suite</span>
+            </div>
+            <Link href="/showcase" className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors font-medium group">
+              View Compliance Matrix
+              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>
@@ -235,6 +266,68 @@ export default function LandingPage() {
                 <p className="text-slate-400">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Documentation Preview Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <div className="relative rounded-2xl border border-slate-800 bg-slate-900/50 p-2 shadow-2xl shadow-purple-500/10 overflow-hidden">
+                <div className="rounded-xl bg-slate-950 overflow-hidden">
+                  {/* Fake browser chrome */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 border-b border-slate-800">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    </div>
+                    <div className="flex-1 mx-4">
+                      <div className="bg-slate-800 rounded-md px-3 py-1 text-xs text-slate-400 text-center">
+                        arazzo.connethics.com/playground — Documentation View
+                      </div>
+                    </div>
+                  </div>
+                  {/* Screenshot */}
+                  <div className="relative aspect-[16/9]">
+                    <Image
+                      src="/screenshots/documentation-step-detail.png"
+                      alt="Arazzo Playground - Documentation view with step details and markdown rendering"
+                      fill
+                      className="object-cover object-top"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+                Beautiful{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                  Documentation
+                </span>
+              </h2>
+              <p className="text-slate-400 text-lg mb-6">
+                Turn your Arazzo specifications into interactive documentation automatically.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Rich Markdown support for descriptions",
+                  "Interactive step details and parameters",
+                  "Clear visualization of inputs and outputs",
+                  "Dark mode optimized for readability",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>

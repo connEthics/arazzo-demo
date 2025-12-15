@@ -6,6 +6,7 @@ import Link from 'next/link';
 import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
 import { StepContent, SourceContent, InputContent, OutputContent } from '@/components/DetailViews';
 import StepCard from '@/components/StepCard';
+import ComplianceMatrix from '@/components/ComplianceMatrix';
 import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction, FailureAction, ReusableObject, PayloadReplacement } from '@/types/arazzo';
 import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList } from '@/components/arazzo';
 import { Badge, Card, CodeBlock, PropertyList } from '@/components/primitives';
@@ -55,6 +56,94 @@ const sampleWorkflowInputs: WorkflowInputs = {
 const sampleWorkflowOutputs: Record<string, string> = {
   adoptedPet: '$steps.select-pet.outputs.selectedPet',
   orderConfirmation: '$steps.place-order.outputs.order',
+};
+
+// Spec Examples Data
+const loginStep: Step = {
+  stepId: 'loginStep',
+  description: 'This step demonstrates the user login step',
+  operationId: 'loginUser',
+  parameters: [
+    { name: 'username', in: 'query', value: '$inputs.username' },
+    { name: 'password', in: 'query', value: '$inputs.password' }
+  ],
+  successCriteria: [
+    { condition: '$statusCode == 200' }
+  ],
+  outputs: {
+    tokenExpires: '$response.header.X-Expires-After',
+    rateLimit: '$response.header.X-Rate-Limit',
+    sessionToken: '$response.body'
+  }
+};
+
+const getPetStep: Step = {
+  stepId: 'getPetStep',
+  description: 'retrieve a pet by status from the GET pets endpoint',
+  operationPath: '{$sourceDescriptions.petStoreDescription.url}#/paths/~1pet~1findByStatus/get',
+  parameters: [
+    { name: 'status', in: 'query', value: 'available' },
+    { name: 'Authorization', in: 'header', value: '$steps.loginUser.outputs.sessionToken' }
+  ],
+  successCriteria: [
+    { condition: '$statusCode == 200' }
+  ],
+  outputs: {
+    availablePets: '$response.body'
+  }
+};
+
+const stepWithSuccessAction: Step = {
+  stepId: 'source-step',
+  operationId: 'op1',
+  onSuccess: [
+    {
+      name: 'JoinWaitingList',
+      type: 'goto',
+      stepId: 'joinWaitingListStep',
+      criteria: [
+        {
+          context: '$response.body',
+          condition: '$[?count(@.pets) > 0]',
+          type: 'jsonpath'
+        }
+      ]
+    }
+  ]
+};
+
+const stepWithFailureAction: Step = {
+  stepId: 'flaky-step',
+  operationId: 'op2',
+  onFailure: [
+    {
+      name: 'retryStep',
+      type: 'retry',
+      retryAfter: 1,
+      retryLimit: 5,
+      criteria: [
+        { condition: '$statusCode == 503' }
+      ]
+    }
+  ]
+};
+
+const runtimeExpressionsStep: Step = {
+  stepId: 'runtime-expressions-demo',
+  description: 'Demonstrates usage of runtime expressions for dynamic values',
+  operationId: 'updatePet',
+  parameters: [
+    { name: 'petId', in: 'path', value: '$request.path.id' },
+    { name: 'callbackUrl', in: 'query', value: '$url' },
+    { name: 'originalMethod', in: 'header', value: '$method' }
+  ],
+  successCriteria: [
+    { condition: '$statusCode == 200' }
+  ],
+  outputs: {
+    updatedPet: '$response.body',
+    serverHeader: '$response.header.Server'
+  }
 };
 
 // Sample Mermaid diagrams
@@ -392,11 +481,12 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
 
 export default function ShowcasePage() {
   const [isDark, setIsDark] = useState(true);
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('compliance');
   const [detailData, setDetailData] = useState<DetailData | null>(null);
 
   const sections = [
-    { id: 'overview', label: 'Overview' },
+    { id: 'compliance', label: 'Compliance Matrix' },
+    { id: 'spec-examples', label: 'Spec Examples' },
     { id: 'primitives', label: 'Primitives' },
     { id: 'arazzo', label: 'Arazzo Components' },
     { id: 'badges', label: 'Badges' },
@@ -470,54 +560,86 @@ export default function ShowcasePage() {
         <main className="flex-1 overflow-auto p-8">
           <div className="max-w-5xl mx-auto space-y-8">
             
-            {/* Overview */}
-            {activeSection === 'overview' && (
-              <div className="space-y-6">
+            {/* Compliance Matrix */}
+            {activeSection === 'compliance' && (
+              <ComplianceMatrix isDark={isDark} />
+            )}
+
+            {/* Spec Examples */}
+            {activeSection === 'spec-examples' && (
+              <div className="space-y-8">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Arazzo Playground Components</h2>
+                  <h2 className="text-2xl font-bold mb-2">Spec Examples Visualization</h2>
                   <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                    This showcase displays the UI components used in the Arazzo Playground application. 
-                    Browse through different sections to see components in action.
+                    Visual representation of the Arazzo 1.0.1 specification examples used in our test suite.
+                    These demonstrate how the parser and UI handle standard spec patterns.
                   </p>
                 </div>
-                
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mb-3">
-                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                      </svg>
-                    </div>
-                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Design Tokens</h3>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Consistent colors, spacing, and typography.
-                    </p>
-                  </div>
-                  
-                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
-                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3">
-                      <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                      </svg>
-                    </div>
-                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>UI Components</h3>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Buttons, inputs, cards, and more.
-                    </p>
-                  </div>
-                  
-                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mb-3">
-                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Visualization</h3>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Mermaid diagrams and React Flow.
-                    </p>
-                  </div>
-                </div>
+
+                <ComponentShowcase
+                  title="Basic Step (Spec 4.6.5.2)"
+                  description="Example of a basic step with parameters, success criteria, and outputs."
+                  isDark={isDark}
+                >
+                  <StepCard 
+                    step={loginStep} 
+                    stepIndex={0} 
+                    workflowId="loginUser"
+                    isDark={isDark} 
+                  />
+                </ComponentShowcase>
+
+                <ComponentShowcase
+                  title="Step with Operation Path (Spec 4.6.5.2)"
+                  description="Example of a step using operationPath instead of operationId."
+                  isDark={isDark}
+                >
+                  <StepCard 
+                    step={getPetStep} 
+                    stepIndex={1} 
+                    workflowId="loginUser"
+                    isDark={isDark} 
+                  />
+                </ComponentShowcase>
+
+                <ComponentShowcase
+                  title="Step with Success Action (Spec 4.6.7.2)"
+                  description="Example of a step with a conditional 'goto' success action using JSONPath."
+                  isDark={isDark}
+                >
+                  <StepCard 
+                    step={stepWithSuccessAction} 
+                    stepIndex={2} 
+                    workflowId="workflow-with-actions"
+                    isDark={isDark} 
+                  />
+                </ComponentShowcase>
+
+                <ComponentShowcase
+                  title="Step with Failure Action (Spec 4.6.8.2)"
+                  description="Example of a step with a 'retry' failure action."
+                  isDark={isDark}
+                >
+                  <StepCard 
+                    step={stepWithFailureAction} 
+                    stepIndex={3} 
+                    workflowId="workflow-with-actions"
+                    isDark={isDark} 
+                  />
+                </ComponentShowcase>
+
+                <ComponentShowcase
+                  title="Runtime Expressions (Spec 4.7)"
+                  description="Example demonstrating $url, $method, $request and $response expressions."
+                  isDark={isDark}
+                >
+                  <StepCard 
+                    step={runtimeExpressionsStep} 
+                    stepIndex={4} 
+                    workflowId="expressions-workflow"
+                    isDark={isDark} 
+                  />
+                </ComponentShowcase>
               </div>
             )}
 
