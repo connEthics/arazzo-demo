@@ -4,3 +4,6 @@ export { default as PayloadReplacements } from './PayloadReplacements';
 export { default as DependsOnList } from './DependsOnList';
 export { default as ActionList } from './ActionList';
 export { default as SchemaViewer } from './SchemaViewer';
+export { default as SourceDescriptionsList } from './SourceDescriptionsList';
+export { default as ArazzoSpecHeader } from './ArazzoSpecHeader';
+export { default as WorkflowList } from './WorkflowList';

@@ -6,10 +6,10 @@ import Link from 'next/link';
 import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
 import { StepContent, SourceContent, InputContent, OutputContent } from '@/components/DetailViews';
 import StepCard from '@/components/StepCard';
-import ComplianceMatrix from '@/components/ComplianceMatrix';
-import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction, FailureAction, ReusableObject, PayloadReplacement } from '@/types/arazzo';
-import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList } from '@/components/arazzo';
+import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction, FailureAction, ReusableObject, PayloadReplacement, Workflow, ArazzoInfo } from '@/types/arazzo';
+import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList, SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from '@/components/arazzo';
 import { Badge, Card, CodeBlock, PropertyList } from '@/components/primitives';
+import ComplianceMatrix from '@/components/ComplianceMatrix';
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
@@ -58,126 +58,99 @@ const sampleWorkflowOutputs: Record<string, string> = {
   orderConfirmation: '$steps.place-order.outputs.order',
 };
 
-// Spec Examples Data
-const loginStep: Step = {
-  stepId: 'loginStep',
-  description: 'This step demonstrates the user login step',
-  operationId: 'loginUser',
-  parameters: [
-    { name: 'username', in: 'query', value: '$inputs.username' },
-    { name: 'password', in: 'query', value: '$inputs.password' }
-  ],
-  successCriteria: [
-    { condition: '$statusCode == 200' }
-  ],
-  outputs: {
-    tokenExpires: '$response.header.X-Expires-After',
-    rateLimit: '$response.header.X-Rate-Limit',
-    sessionToken: '$response.body'
-  }
+// Sample Arazzo Info for ArazzoSpecHeader
+const sampleArazzoInfo: ArazzoInfo = {
+  title: 'Pet Store Adoption Workflow',
+  version: '1.0.0',
+  summary: 'API workflows for adopting pets from the store',
+  description: 'This Arazzo description defines workflows for finding available pets, selecting a pet, and placing an adoption order.',
 };
 
-const getPetStep: Step = {
-  stepId: 'getPetStep',
-  description: 'retrieve a pet by status from the GET pets endpoint',
-  operationPath: '{$sourceDescriptions.petStoreDescription.url}#/paths/~1pet~1findByStatus/get',
-  parameters: [
-    { name: 'status', in: 'query', value: 'available' },
-    { name: 'Authorization', in: 'header', value: '$steps.loginUser.outputs.sessionToken' }
-  ],
-  successCriteria: [
-    { condition: '$statusCode == 200' }
-  ],
-  outputs: {
-    availablePets: '$response.body'
-  }
-};
+// Sample Workflows for WorkflowList
+const sampleWorkflows: Workflow[] = [
+  {
+    workflowId: 'pet-adoption',
+    summary: 'Complete Pet Adoption Flow',
+    description: 'Full workflow from finding a pet to completing the adoption order',
+    steps: [
+      { stepId: 'find-pets', operationId: 'findPetsByStatus' },
+      { stepId: 'select-pet', operationId: 'getPetById' },
+      { stepId: 'place-order', operationId: 'placeOrder' },
+    ],
+    inputs: {
+      type: 'object',
+      properties: {
+        petType: { type: 'string' },
+        maxPrice: { type: 'number' },
+      },
+    },
+    outputs: {
+      orderId: '$steps.place-order.outputs.id',
+      petDetails: '$steps.select-pet.outputs.pet',
+    },
+  },
+  {
+    workflowId: 'pet-search',
+    summary: 'Search Available Pets',
+    description: 'Simple workflow to search for available pets by status',
+    steps: [
+      { stepId: 'search', operationId: 'findPetsByStatus' },
+    ],
+  },
+];
 
-const stepWithSuccessAction: Step = {
-  stepId: 'source-step',
-  operationId: 'op1',
-  onSuccess: [
-    {
-      name: 'JoinWaitingList',
-      type: 'goto',
-      stepId: 'joinWaitingListStep',
-      criteria: [
-        {
-          context: '$response.body',
-          condition: '$[?count(@.pets) > 0]',
-          type: 'jsonpath'
-        }
-      ]
-    }
-  ]
-};
-
-const stepWithFailureAction: Step = {
-  stepId: 'flaky-step',
-  operationId: 'op2',
-  onFailure: [
-    {
-      name: 'retryStep',
-      type: 'retry',
-      retryAfter: 1,
-      retryLimit: 5,
-      criteria: [
-        { condition: '$statusCode == 503' }
-      ]
-    }
-  ]
-};
-
-const runtimeExpressionsStep: Step = {
-  stepId: 'runtime-expressions-demo',
-  description: 'Demonstrates usage of runtime expressions for dynamic values',
-  operationId: 'updatePet',
-  parameters: [
-    { name: 'petId', in: 'path', value: '$request.path.id' },
-    { name: 'callbackUrl', in: 'query', value: '$url' },
-    { name: 'originalMethod', in: 'header', value: '$method' }
-  ],
-  successCriteria: [
-    { condition: '$statusCode == 200' }
-  ],
-  outputs: {
-    updatedPet: '$response.body',
-    serverHeader: '$response.header.Server'
-  }
-};
-
-// Sample Mermaid diagrams
+// Sample Mermaid diagrams - Representative of Arazzo workflow visualization
 const sampleFlowchart = `flowchart TD
-    Start([Start]) --> A[find-available-pets]
-    A --> B{Success?}
-    B -->|Yes| C[select-pet]
-    B -->|No| End1([End])
-    C --> D[place-order]
-    D --> E{Order OK?}
-    E -->|Yes| End2([Success])
-    E -->|No| F[handle-error]
-    F --> End1
+    %% Styles - Matching Arazzo color scheme
+    classDef inputNode fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#065f46
+    classDef stepNode fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#3730a3
+    classDef outputNode fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e
+    classDef errorNode fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#991b1b
     
-    style A fill:#818cf8,stroke:#4f46e5,color:#fff
-    style C fill:#818cf8,stroke:#4f46e5,color:#fff
-    style D fill:#818cf8,stroke:#4f46e5,color:#fff
-    style F fill:#f87171,stroke:#dc2626,color:#fff`;
+    %% Input
+    INPUT[/"📥 Inputs: petType, maxPrice"/]:::inputNode
+    
+    %% Steps
+    S1["1. [GET] find-available-pets"]:::stepNode
+    S2["2. [GET] select-pet"]:::stepNode
+    S3["3. [POST] place-order"]:::stepNode
+    ERR["handle-error"]:::errorNode
+    
+    %% Output
+    OUTPUT[/"📤 Outputs: orderConfirmation, selectedPet"/]:::outputNode
+    
+    %% Connections
+    INPUT --> S1
+    S1 -->|success| S2
+    S1 -->|failure| ERR
+    S2 -->|success| S3
+    S2 -->|failure| ERR
+    S3 -->|success| OUTPUT
+    S3 -->|failure| ERR`;
 
-const sampleSequence = `sequenceDiagram
+const sampleSequence = `%%{init: {"theme": "base", "themeVariables": {"noteBkgColor": "#f8fafc", "noteBorderColor": "#cbd5e1", "noteTextColor": "#334155"}}}%%
+sequenceDiagram
     participant Client
     participant petstore as Pet Store API
     
-    Client->>petstore: findPetsByStatus(available)
-    petstore-->>Client: 200 OK (pets[])
-    Note right of Client: outputs: availablePets
+    Note over Client,petstore: 🚀 Workflow Inputs: petType, maxPrice
     
-    Client->>petstore: getPetById(petId)
-    petstore-->>Client: 200 OK (pet)
-    Note right of Client: outputs: selectedPet
+    Note over Client,petstore: 🔹 1. find-available-pets
+    Client->>petstore: [GET] findPetsByStatus
+    petstore-->>Client: 200 OK
+    Note right of Client: 📦 availablePets
     
-    Client->>petstore: placeOrder(order)
-    petstore-->>Client: 200 OK (order)
-    Note right of Client: outputs: orderConfirmation`;
+    Note over Client,petstore: 🔹 2. select-pet
+    Client->>petstore: [GET] getPetById
+    petstore-->>Client: 200 OK
+    Note right of Client: 📦 selectedPet
+    
+    Note over Client,petstore: 🔹 3. place-order
+    Client->>petstore: [POST] placeOrder
+    petstore-->>Client: 200 OK
+    Note right of Client: 📦 orderConfirmation
+    
+    Note over Client,petstore: ✅ Outputs: orderConfirmation, selectedPet`;
 
 // Sample React Flow nodes and edges
 const sampleNodes = [
@@ -482,6 +455,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
 export default function ShowcasePage() {
   const [isDark, setIsDark] = useState(true);
   const [activeSection, setActiveSection] = useState('compliance');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [detailData, setDetailData] = useState<DetailData | null>(null);
 
   const sections = [
@@ -503,47 +477,111 @@ export default function ShowcasePage() {
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
       <header className={`flex-shrink-0 border-b ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`lg:hidden p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+            
             <Link 
               href="/playground"
-              className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`hidden sm:flex items-center gap-2 text-sm ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               Back to Playground
             </Link>
-            <div className={`w-px h-6 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-            <h1 className="text-xl font-bold">Component Showcase</h1>
+            <div className={`hidden sm:block w-px h-6 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+            <h1 className="text-lg sm:text-xl font-bold">Component Showcase</h1>
           </div>
           
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-          >
-            {isDark ? (
+          <div className="flex items-center gap-2">
+            {/* Mobile: back link */}
+            <Link 
+              href="/playground"
+              className={`sm:hidden p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              aria-label="Back to Playground"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
+            </Link>
+            
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+            >
+              {isDark ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main content */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex relative">
+        {/* Mobile overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        
         {/* Sidebar navigation */}
-        <nav className={`w-56 flex-shrink-0 border-r ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-gray-200 bg-white'}`}>
-          <div className="p-4 space-y-1">
+        <nav className={`
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+          fixed lg:static
+          inset-y-0 left-0
+          w-64 lg:w-56
+          flex-shrink-0 
+          border-r 
+          z-40
+          transition-transform duration-300 ease-in-out
+          ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}
+        `}>
+          <div className="p-4 space-y-1 h-full overflow-y-auto">
+            {/* Mobile close button */}
+            <div className="lg:hidden flex justify-end mb-4">
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
             {sections.map((section) => (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeSection === section.id
                     ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
@@ -557,8 +595,8 @@ export default function ShowcasePage() {
         </nav>
 
         {/* Content area */}
-        <main className="flex-1 overflow-auto p-8">
-          <div className="max-w-5xl mx-auto space-y-8">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
             
             {/* Compliance Matrix */}
             {activeSection === 'compliance' && (
@@ -582,64 +620,63 @@ export default function ShowcasePage() {
                   isDark={isDark}
                 >
                   <StepCard 
-                    step={loginStep} 
+                    step={sampleStep} 
                     stepIndex={0} 
                     workflowId="loginUser"
                     isDark={isDark} 
                   />
                 </ComponentShowcase>
+              </div>
+            )}
 
-                <ComponentShowcase
-                  title="Step with Operation Path (Spec 4.6.5.2)"
-                  description="Example of a step using operationPath instead of operationId."
-                  isDark={isDark}
-                >
-                  <StepCard 
-                    step={getPetStep} 
-                    stepIndex={1} 
-                    workflowId="loginUser"
-                    isDark={isDark} 
-                  />
-                </ComponentShowcase>
-
-                <ComponentShowcase
-                  title="Step with Success Action (Spec 4.6.7.2)"
-                  description="Example of a step with a conditional 'goto' success action using JSONPath."
-                  isDark={isDark}
-                >
-                  <StepCard 
-                    step={stepWithSuccessAction} 
-                    stepIndex={2} 
-                    workflowId="workflow-with-actions"
-                    isDark={isDark} 
-                  />
-                </ComponentShowcase>
-
-                <ComponentShowcase
-                  title="Step with Failure Action (Spec 4.6.8.2)"
-                  description="Example of a step with a 'retry' failure action."
-                  isDark={isDark}
-                >
-                  <StepCard 
-                    step={stepWithFailureAction} 
-                    stepIndex={3} 
-                    workflowId="workflow-with-actions"
-                    isDark={isDark} 
-                  />
-                </ComponentShowcase>
-
-                <ComponentShowcase
-                  title="Runtime Expressions (Spec 4.7)"
-                  description="Example demonstrating $url, $method, $request and $response expressions."
-                  isDark={isDark}
-                >
-                  <StepCard 
-                    step={runtimeExpressionsStep} 
-                    stepIndex={4} 
-                    workflowId="expressions-workflow"
-                    isDark={isDark} 
-                  />
-                </ComponentShowcase>
+            {/* Overview */}
+            {activeSection === 'overview' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Arazzo Playground Components</h2>
+                  <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                    This showcase displays the UI components used in the Arazzo Playground application. 
+                    Browse through different sections to see components in action.
+                  </p>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mb-3">
+                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                    </div>
+                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Design Tokens</h3>
+                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Consistent colors, spacing, and typography.
+                    </p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3">
+                      <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                      </svg>
+                    </div>
+                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>UI Components</h3>
+                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Buttons, inputs, cards, and more.
+                    </p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mb-3">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <h3 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Visualization</h3>
+                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Mermaid diagrams and React Flow.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -992,6 +1029,163 @@ export default function ShowcasePage() {
                     isDark={isDark}
                     collapsible
                   />
+                </ComponentShowcase>
+
+                {/* SchemaViewer Component */}
+                <ComponentShowcase
+                  title="SchemaViewer"
+                  description="Displays JSON Schema with nested properties, types, and examples"
+                  isDark={isDark}
+                >
+                  <div className="space-y-4">
+                    <SchemaViewer
+                      name="Pet"
+                      schema={{
+                        type: 'object',
+                        description: 'A pet object from the store',
+                        properties: {
+                          id: { type: 'integer', description: 'Unique pet identifier', example: 12345 },
+                          name: { type: 'string', description: 'Pet name', example: 'Buddy' },
+                          status: { type: 'string', enum: ['available', 'pending', 'sold'], description: 'Pet availability status' },
+                          category: {
+                            type: 'object',
+                            description: 'Pet category',
+                            properties: {
+                              id: { type: 'integer' },
+                              name: { type: 'string', example: 'Dogs' },
+                            },
+                          },
+                          tags: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            description: 'List of tags for the pet',
+                          },
+                        },
+                      }}
+                      isDark={isDark}
+                    />
+                    
+                    <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Collapsed by default</h4>
+                    <SchemaViewer
+                      name="Order"
+                      schema={{
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          petId: { type: 'integer' },
+                          quantity: { type: 'integer', example: 1 },
+                          status: { type: 'string', enum: ['placed', 'approved', 'delivered'] },
+                        },
+                      }}
+                      isDark={isDark}
+                      defaultCollapsed={true}
+                    />
+                  </div>
+                </ComponentShowcase>
+
+                {/* SourceDescriptionsList Component */}
+                <ComponentShowcase
+                  title="SourceDescriptionsList"
+                  description="Displays a list of API source descriptions with type badges and URLs"
+                  isDark={isDark}
+                >
+                  <div className="space-y-4">
+                    <SourceDescriptionsList
+                      sources={[
+                        { name: 'petstore', type: 'openapi', url: './openapi/petstore.yaml', description: 'Pet Store API' },
+                        { name: 'userService', type: 'openapi', url: 'https://api.example.com/users/openapi.json', description: 'User management service' },
+                        { name: 'externalWorkflow', type: 'arazzo', url: './workflows/auth.arazzo.yaml' },
+                      ]}
+                      isDark={isDark}
+                      showDescription={true}
+                    />
+                    
+                    <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Compact mode</h4>
+                    <SourceDescriptionsList
+                      sources={[
+                        { name: 'petstore', type: 'openapi', url: './openapi/petstore.yaml' },
+                        { name: 'authService', type: 'openapi', url: './openapi/auth.yaml' },
+                      ]}
+                      isDark={isDark}
+                      compact={true}
+                    />
+                  </div>
+                </ComponentShowcase>
+
+                {/* ArazzoSpecHeader Component */}
+                <ComponentShowcase
+                  title="ArazzoSpecHeader"
+                  description="Reusable header for displaying Arazzo specification info"
+                  isDark={isDark}
+                >
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Default (with icon)</h4>
+                      <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                        <ArazzoSpecHeader
+                          info={sampleArazzoInfo}
+                          arazzoVersion="1.0.1"
+                          isDark={isDark}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Centered (for documentation)</h4>
+                      <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                        <ArazzoSpecHeader
+                          info={sampleArazzoInfo}
+                          arazzoVersion="1.0.1"
+                          isDark={isDark}
+                          centered={true}
+                          size="lg"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Small size (no icon)</h4>
+                      <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                        <ArazzoSpecHeader
+                          info={sampleArazzoInfo}
+                          arazzoVersion="1.0.1"
+                          isDark={isDark}
+                          showIcon={false}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </ComponentShowcase>
+
+                {/* WorkflowList Component */}
+                <ComponentShowcase
+                  title="WorkflowList"
+                  description="Displays workflows as interactive cards or table of contents"
+                  isDark={isDark}
+                >
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cards variant (for Overview)</h4>
+                      <WorkflowList
+                        workflows={sampleWorkflows}
+                        isDark={isDark}
+                        selectedWorkflow="pet-adoption"
+                        onWorkflowSelect={(id) => alert(`Selected: ${id}`)}
+                        variant="cards"
+                      />
+                    </div>
+                    
+                    <div>
+                      <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>TOC variant with steps (for Documentation)</h4>
+                      <WorkflowList
+                        workflows={sampleWorkflows}
+                        isDark={isDark}
+                        variant="toc"
+                        showSteps={true}
+                      />
+                    </div>
+                  </div>
                 </ComponentShowcase>
               </div>
             )}

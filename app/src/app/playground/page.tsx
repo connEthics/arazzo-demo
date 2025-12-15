@@ -7,16 +7,17 @@ import { Node, Edge } from '@xyflow/react';
 import ArazzoFlow from '@/components/ArazzoFlow';
 import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
 import DocumentationView from '@/components/DocumentationView';
+import OverviewView from '@/components/OverviewView';
+import IntroView from '@/components/IntroView';
 import { parseArazzoSpec, workflowToFlow } from '@/lib/arazzo-parser';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
-import { workflowToHorizontalSwimlane } from '@/lib/swimlane-converter';
 import { ArazzoSpec, Step } from '@/types/arazzo';
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
-type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence' | 'swimlane' | 'documentation';
+type ViewMode = 'documentation' | 'overview' | 'intro' | 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence';
 
 // Icons
 const SunIcon = () => (
@@ -173,8 +174,8 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   
   // New state
-  const [viewMode, setViewMode] = useState<ViewMode>('mermaid-flowchart');
-  const [hideErrorFlows, setHideErrorFlows] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  const [hideErrorFlows, setHideErrorFlows] = useState(false);
   const [hideOutputs, setHideOutputs] = useState(false);
   const [showStepNames, setShowStepNames] = useState(true);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -184,6 +185,10 @@ export default function Home() {
   // Navigation state for documentation view
   const [docNavigationTarget, setDocNavigationTarget] = useState<{workflowId: string; stepId: string} | null>(null);
   const [docExpandAll, setDocExpandAll] = useState<boolean | undefined>(undefined);
+  
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileShowEditor, setMobileShowEditor] = useState(true);
 
   // Get current workflow and its data
   const currentWorkflow = useMemo(() => {
@@ -226,18 +231,6 @@ export default function Home() {
     }
   }, [getSourceForStep]);
 
-  // Handle step click from drawer (goto links) - find and open another step
-  const handleStepClickInDrawer = useCallback((stepId: string) => {
-    const step = currentWorkflowSteps.find(s => s.stepId === stepId);
-    if (step) {
-      setDetailData({ 
-        type: 'step', 
-        step,
-        sourceForStep: getSourceForStep(step)
-      });
-    }
-  }, [currentWorkflowSteps, getSourceForStep]);
-
   // Generate Mermaid diagrams
   const mermaidFlowchart = useMemo(() => {
     if (!spec || !selectedWorkflow) return '';
@@ -256,16 +249,6 @@ export default function Home() {
       return '';
     }
   }, [spec, selectedWorkflow, hideErrorFlows, hideOutputs, showStepNames]);
-
-  // Generate Swimlane diagram
-  const swimlaneDiagram = useMemo(() => {
-    if (!spec || !selectedWorkflow) return '';
-    try {
-      return workflowToHorizontalSwimlane(spec, selectedWorkflow, { hideErrorFlows });
-    } catch {
-      return '';
-    }
-  }, [spec, selectedWorkflow, hideErrorFlows]);
 
   // Parse YAML and update visualization
   const parseAndVisualize = useCallback(() => {
@@ -305,7 +288,7 @@ export default function Home() {
     }
   }, [spec, selectedWorkflow, hideErrorFlows]);
 
-  // Auto-load Pet Store example on initial load
+  // Auto-load petstore example on initial load
   useEffect(() => {
     loadExample('pet-adoption.arazzo.yaml');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -340,11 +323,7 @@ export default function Home() {
 
   // Copy Mermaid to clipboard
   const copyMermaidToClipboard = useCallback(async () => {
-    const content = viewMode === 'mermaid-flowchart' 
-      ? mermaidFlowchart 
-      : viewMode === 'mermaid-sequence' 
-        ? mermaidSequence 
-        : swimlaneDiagram;
+    const content = viewMode === 'mermaid-flowchart' ? mermaidFlowchart : mermaidSequence;
     try {
       await navigator.clipboard.writeText(content);
     } catch {
@@ -358,7 +337,7 @@ export default function Home() {
       document.execCommand('copy');
       document.body.removeChild(textArea);
     }
-  }, [viewMode, mermaidFlowchart, mermaidSequence, swimlaneDiagram]);
+  }, [viewMode, mermaidFlowchart, mermaidSequence]);
 
   // Navigate to documentation view with a specific step
   const navigateToDocStep = useCallback((workflowId: string, stepId: string) => {
@@ -382,36 +361,80 @@ export default function Home() {
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
       {/* Compact Header */}
       <header className={`flex-shrink-0 border-b transition-colors duration-300 ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
-        <div className="px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`lg:hidden p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+            
             <Link href="/" className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 hover:opacity-90 transition-opacity">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </Link>
-            <h1 className="text-base font-semibold">Arazzo Playground</h1>
-            
-            {/* Workflow info badge with tooltip */}
-            {spec && (
-              <div className="relative group">
-                <span className={`px-2 py-0.5 rounded text-xs flex items-center gap-1.5 ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                  {spec.info.title} v{spec.info.version}
-                  {spec.info.description && (
-                    <InfoIcon />
-                  )}
-                </span>
-                {spec.info.description && (
-                  <div className={`absolute left-0 top-full mt-2 z-50 w-80 p-3 rounded-lg shadow-xl border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>
-                    <p className="text-xs leading-relaxed">{spec.info.description}</p>
-                  </div>
-                )}
-              </div>
-            )}
+            <h1 className="text-base font-semibold hidden sm:block">Arazzo Playground</h1>
+            <h1 className="text-base font-semibold sm:hidden">Arazzo</h1>
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
-            <div className={`flex rounded-lg p-0.5 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Desktop: Left Group - Docs & Overview */}
+            <div className={`hidden lg:flex rounded-lg p-0.5 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
+              <button
+                onClick={() => setViewMode('documentation')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${viewMode === 'documentation' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                <DocumentIcon />
+                Docs
+              </button>
+              <button
+                onClick={() => setViewMode('overview')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'overview' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                Overview
+              </button>
+            </div>
+
+            {/* Desktop: Workflow Selector */}
+            {spec && spec.workflows.length > 0 && (
+              <div className={`hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-lg border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200'}`}>
+                <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+                <select
+                  value={selectedWorkflow}
+                  onChange={(e) => setSelectedWorkflow(e.target.value)}
+                  className={`bg-transparent text-xs font-medium focus:outline-none cursor-pointer max-w-[140px] truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
+                >
+                  {spec.workflows.map((wf) => (
+                    <option key={wf.workflowId} value={wf.workflowId} className={isDark ? 'bg-slate-800' : 'bg-white'}>
+                      {wf.workflowId}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Desktop: Right Group - Workflow-specific views */}
+            <div className={`hidden lg:flex rounded-lg p-0.5 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
+              <button
+                onClick={() => setViewMode('intro')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'intro' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                Intro
+              </button>
               <button
                 onClick={() => setViewMode('reactflow')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'reactflow' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
@@ -430,35 +453,41 @@ export default function Home() {
               >
                 Sequence
               </button>
-              {/* <button
-                onClick={() => setViewMode('swimlane')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'swimlane' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
-              >
-                Swimlane
-              </button> */}
-              <button
-                onClick={() => setViewMode('documentation')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${viewMode === 'documentation' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
-              >
-                <DocumentIcon />
-                Docs
-              </button>
             </div>
-
-            {/* Workflow Selector - Only shown for diagram views */}
-            {spec && spec.workflows.length > 1 && viewMode !== 'documentation' && (
-              <select
-                value={selectedWorkflow}
-                onChange={(e) => setSelectedWorkflow(e.target.value)}
-                className={`rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'} border`}
-              >
-                {spec.workflows.map((wf) => (
-                  <option key={wf.workflowId} value={wf.workflowId}>
-                    {wf.summary || wf.workflowId}
-                  </option>
-                ))}
-              </select>
-            )}
+            
+            {/* Mobile: Edit/Visualize toggle */}
+            <button
+              onClick={() => {
+                if (mobileShowEditor) {
+                  setMobileShowEditor(false);
+                  parseAndVisualize();
+                } else {
+                  setMobileShowEditor(true);
+                }
+              }}
+              className={`lg:hidden px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                mobileShowEditor 
+                  ? (isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-500')
+                  : (isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+              }`}
+            >
+              {mobileShowEditor ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Visualize
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  Edit
+                </>
+              )}
+            </button>
             
             {/* Theme Toggle */}
             <button
@@ -470,13 +499,136 @@ export default function Home() {
             </button>
           </div>
         </div>
+        
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        
+        {/* Mobile Menu Panel */}
+        <div className={`
+          lg:hidden
+          fixed top-0 left-0 bottom-0 w-72 z-50
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-white border-r border-gray-200'}
+        `}>
+          <div className="p-4">
+            {/* Mobile Menu Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Menu</h2>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Workflow Selector */}
+            {spec && spec.workflows.length > 0 && (
+              <div className="mb-6">
+                <label className={`block text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Workflow
+                </label>
+                <select
+                  value={selectedWorkflow}
+                  onChange={(e) => {
+                    setSelectedWorkflow(e.target.value);
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-gray-100 text-gray-900 border-gray-200'} border`}
+                >
+                  {spec.workflows.map((wf) => (
+                    <option key={wf.workflowId} value={wf.workflowId}>
+                      {wf.workflowId}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* View Mode Options */}
+            <div className="space-y-1">
+              <label className={`block text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                View Mode
+              </label>
+              {[
+                { id: 'documentation', label: 'Documentation', icon: DocumentIcon },
+                { id: 'overview', label: 'Overview', icon: null },
+                { id: 'intro', label: 'Intro', icon: null },
+                { id: 'reactflow', label: 'Interactive Diagram', icon: null },
+                { id: 'mermaid-flowchart', label: 'Flowchart', icon: null },
+                { id: 'mermaid-sequence', label: 'Sequence Diagram', icon: null },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setViewMode(item.id as ViewMode);
+                    setMobileShowEditor(false);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    viewMode === item.id && !mobileShowEditor
+                      ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
+                      : (isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-600 hover:bg-gray-100')
+                  }`}
+                >
+                  {item.icon && <item.icon />}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Load Examples */}
+            <div className="mt-6 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-gray-200'}">
+              <label className={`block text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                Load Example
+              </label>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    loadExample('pet-adoption.arazzo.yaml');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={isLoading}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  Pet Store
+                </button>
+                <button
+                  onClick={() => {
+                    loadExample('ecommerce-onboarding.arazzo.yaml');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={isLoading}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  E-Commerce
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       {/* Main Content - Full Height */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - YAML Editor (collapsible & expandable) */}
+        {/* On mobile: full width when mobileShowEditor is true, hidden otherwise */}
         <div 
-          className={`relative flex flex-col border-r transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} ${isPanelCollapsed ? 'w-12' : isEditorExpanded ? 'w-full' : 'w-[400px] min-w-[300px] max-w-[700px]'}`}
+          className={`
+            relative flex flex-col border-r transition-all duration-300 
+            ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} 
+            ${isPanelCollapsed ? 'hidden lg:flex lg:w-12' : ''} 
+            ${!isPanelCollapsed && isEditorExpanded ? 'w-full' : ''} 
+            ${!isPanelCollapsed && !isEditorExpanded ? 'lg:w-[400px] lg:min-w-[300px] lg:max-w-[700px]' : ''}
+            ${mobileShowEditor ? 'flex w-full lg:w-auto' : 'hidden lg:flex'}
+          `}
           style={{ resize: isPanelCollapsed || isEditorExpanded ? 'none' : 'horizontal', overflow: 'hidden' }}
         >
 
@@ -491,31 +643,33 @@ export default function Home() {
                   <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>YAML Source</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className={`text-[10px] mr-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Load Example:</span>
+                  {/* Desktop only: Load example buttons */}
+                  <span className={`hidden sm:inline text-[10px] mr-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Load Example:</span>
                   <button
                     onClick={() => loadExample('pet-adoption.arazzo.yaml')}
                     disabled={isLoading}
-                    className={`px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                    className={`hidden sm:inline-block px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
                   >
                     Pet Store
                   </button>
                   <button
                     onClick={() => loadExample('ecommerce-onboarding.arazzo.yaml')}
                     disabled={isLoading}
-                    className={`px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                    className={`hidden sm:inline-block px-2 py-0.5 text-[10px] rounded transition-colors disabled:opacity-50 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
                   >
                     E-Commerce
                   </button>
+                  {/* Desktop only: Expand/Collapse buttons */}
                   <button
                     onClick={() => setIsEditorExpanded(!isEditorExpanded)}
-                    className={`p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
+                    className={`hidden lg:inline-block p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
                     title={isEditorExpanded ? "Collapse Editor" : "Expand Editor"}
                   >
                     {isEditorExpanded ? <CollapseIcon /> : <ExpandIcon />}
                   </button>
                   <button
                     onClick={() => setIsPanelCollapsed(true)}
-                    className={`ml-1 p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
+                    className={`hidden lg:inline-block ml-1 p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
                     title="Hide YAML Editor"
                   >
                     <ChevronLeftIcon />
@@ -599,15 +753,16 @@ export default function Home() {
         </div>
 
         {/* Right Panel - Visualization (Full Width) - Hidden when editor is expanded */}
+        {/* On mobile: hidden when mobileShowEditor is true */}
         {!isEditorExpanded && (
-        <div className={`flex-1 flex flex-col overflow-hidden relative ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
+        <div className={`flex-1 flex-col overflow-hidden relative ${isDark ? 'bg-slate-950' : 'bg-gray-50'} ${mobileShowEditor ? 'hidden lg:flex' : 'flex'}`}>
           {/* Options Bar */}
-          <div className={`flex-shrink-0 px-4 py-1.5 flex items-center justify-between border-b ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-gray-200 bg-white/50'}`}>
-            <div className="flex items-center gap-3">
-              {/* Toggle YAML Panel Button */}
+          <div className={`flex-shrink-0 px-3 sm:px-4 py-1.5 flex items-center justify-between border-b ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-gray-200 bg-white/50'}`}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Toggle YAML Panel Button - Hidden on mobile */}
               <button
                 onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`hidden lg:flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                   isPanelCollapsed 
                     ? (isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-500')
                     : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
@@ -620,10 +775,10 @@ export default function Home() {
                 {isPanelCollapsed ? 'Show YAML' : 'Hide'}
               </button>
 
-              <div className={`w-px h-4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+              <div className={`hidden lg:block w-px h-4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
 
-              {/* Hide Error Flows Toggle - Not shown in documentation mode */}
-              {viewMode !== 'documentation' && (
+              {/* Hide Error Flows Toggle - Only for diagram views */}
+              {(viewMode === 'reactflow' || viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence' || viewMode === 'intro') && (
                 <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                   <input
                     type="checkbox"
@@ -664,7 +819,7 @@ export default function Home() {
 
             <div className="flex items-center gap-2">
               {/* Copy Mermaid Button - For Mermaid modes */}
-              {(viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence' || viewMode === 'swimlane') && (
+              {(viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence') && (
                 <button
                   onClick={copyMermaidToClipboard}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
@@ -726,6 +881,22 @@ export default function Home() {
                   initialStepId={docNavigationTarget?.stepId}
                   expandAll={docExpandAll}
                 />
+              ) : viewMode === 'overview' && spec ? (
+                <OverviewView
+                  spec={spec}
+                  isDark={isDark}
+                  selectedWorkflow={selectedWorkflow}
+                  onWorkflowSelect={(workflowId) => {
+                    setSelectedWorkflow(workflowId);
+                    setViewMode('intro');
+                  }}
+                />
+              ) : viewMode === 'intro' && spec && currentWorkflow ? (
+                <IntroView
+                  spec={spec}
+                  workflow={currentWorkflow}
+                  isDark={isDark}
+                />
               ) : nodes.length > 0 || (spec && selectedWorkflow) ? (
                 <>
                   {viewMode === 'reactflow' && (
@@ -746,7 +917,7 @@ export default function Home() {
                       workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
-                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
+                      selectedType={detailData?.type === 'source' ? null : detailData?.type || null}
                       onDetailSelect={setDetailData}
                     />
                   )}
@@ -759,23 +930,10 @@ export default function Home() {
                       workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
-                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
+                      selectedType={detailData?.type === 'source' ? null : detailData?.type || null}
                       onDetailSelect={setDetailData}
                     />
                   )}
-                  {/* {viewMode === 'swimlane' && (
-                    <MermaidDiagram 
-                      chart={swimlaneDiagram} 
-                      isDark={isDark}
-                      steps={currentWorkflowSteps}
-                      sources={spec?.sourceDescriptions || []}
-                      workflowInputs={currentWorkflowInputs}
-                      workflowOutputs={currentWorkflowOutputs}
-                      selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
-                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
-                      onDetailSelect={setDetailData}
-                    />
-                  )} */}
                 </>
               ) : (
                 <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
@@ -789,8 +947,8 @@ export default function Home() {
               )}
             </div>
             
-            {/* Detail Drawer - Side Panel (hidden in documentation view) */}
-            {viewMode !== 'documentation' && (
+            {/* Detail Drawer - Side Panel (hidden in documentation, overview, and intro views) */}
+            {viewMode !== 'documentation' && viewMode !== 'overview' && viewMode !== 'intro' && (
               <DetailDrawer
                 data={detailData}
                 isDark={isDark}
@@ -799,7 +957,6 @@ export default function Home() {
                 workflowOutputs={currentWorkflowOutputs}
                 workflowId={selectedWorkflow}
                 onNavigateToDoc={navigateToDocStep}
-                onStepClick={handleStepClickInDrawer}
               />
             )}
           </div>

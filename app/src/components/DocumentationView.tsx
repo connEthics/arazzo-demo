@@ -6,7 +6,7 @@ import type { ArazzoSpec, Step, SourceDescription, Workflow } from '@/types/araz
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
 import StepCard from './StepCard';
 import { MarkdownText } from './primitives';
-import { SchemaViewer } from './arazzo';
+import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from './arazzo';
 import { InputContent, OutputContent } from './DetailViews';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
@@ -55,111 +55,38 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
       {/* Documentation Content - Full width for better use of screen space */}
       <div ref={contentRef} className={`max-w-7xl mx-auto px-6 lg:px-12 py-8 print:p-6 print:max-w-none ${textClass}`}>
         {/* Cover / Header */}
-        <header className="text-center mb-12 print:mb-8 pb-8 border-b print:border-b-2" style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
-          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center print:hidden">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-bold mb-2 print:text-3xl">{spec.info.title}</h1>
-          <p className={`text-lg ${mutedClass} mb-4`}>Version {spec.info.version}</p>
-          {spec.info.description && (
-            <div className="max-w-3xl mx-auto">
-              <MarkdownText content={spec.info.description} isDark={isDark} />
-            </div>
-          )}
-          <div className={`mt-6 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-100 text-gray-600'}`}>
-            <span>Arazzo Specification</span>
-            <span className="font-mono">{spec.arazzo}</span>
-          </div>
+        <header className="mb-12 print:mb-8 pb-8 border-b print:border-b-2" style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
+          <ArazzoSpecHeader
+            info={spec.info}
+            arazzoVersion={spec.arazzo}
+            isDark={isDark}
+            centered={true}
+            size="lg"
+          />
         </header>
 
         {/* Source Descriptions */}
         {spec.sourceDescriptions && spec.sourceDescriptions.length > 0 && (
           <section className="mb-10 print:mb-6">
             <h2 className="text-2xl font-bold mb-4 print:text-xl">API Sources</h2>
-            <div className="grid md:grid-cols-2 gap-3">
-              {spec.sourceDescriptions.map((source, idx) => (
-                <div key={idx} className={`p-4 rounded-lg border ${borderClass} ${codeBgClass}`}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${source.type === 'openapi' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                      {source.type}
-                    </span>
-                    <span className="font-semibold">{source.name}</span>
-                  </div>
-                  <code className={`text-xs ${mutedClass} break-all`}>{source.url}</code>
-                  {source.description && (
-                    <MarkdownText content={source.description} isDark={isDark} variant="compact" className="mt-2" />
-                  )}
-                </div>
-              ))}
-            </div>
+            <SourceDescriptionsList 
+              sources={spec.sourceDescriptions} 
+              isDark={isDark} 
+              showDescription={true}
+            />
           </section>
         )}
 
         {/* Table of Contents */}
         <section className="mb-10 print:mb-6">
           <h2 className="text-2xl font-bold mb-4 print:text-xl">Table of Contents</h2>
-          <nav className={`p-4 rounded-lg border ${borderClass} ${codeBgClass}`}>
-            <ol className="list-decimal list-inside space-y-3">
-              {/* Schemas section in TOC */}
-              {spec.components?.schemas && Object.keys(spec.components.schemas).length > 0 && (
-                <li className="space-y-1">
-                  <a href="#schemas" className="text-indigo-600 hover:underline font-medium">
-                    Data Models
-                  </a>
-                  <span className={`text-sm ${mutedClass} ml-2`}>— {Object.keys(spec.components.schemas).length} schema(s)</span>
-                </li>
-              )}
-              {/* Workflows */}
-              {spec.workflows.map((workflow, idx) => (
-                <li key={workflow.workflowId} className="space-y-1">
-                  <a href={`#workflow-${workflow.workflowId}`} className="text-indigo-600 hover:underline font-medium">
-                    {workflow.summary || workflow.workflowId}
-                  </a>
-                  {workflow.description && (
-                    <span className={`text-sm ${mutedClass} ml-2`}>— {workflow.description.slice(0, 80)}{workflow.description.length > 80 ? '...' : ''}</span>
-                  )}
-                  {/* Steps sub-list */}
-                  <ol className="list-none ml-6 mt-2 space-y-1">
-                    {workflow.steps.map((step, stepIdx) => (
-                      <li key={step.stepId}>
-                        <a 
-                          href={`#step-${workflow.workflowId}-${step.stepId}`} 
-                          className={`text-sm hover:text-indigo-600 hover:underline ${mutedClass}`}
-                        >
-                          {stepIdx + 1}. {step.stepId}
-                        </a>
-                      </li>
-                    ))}
-                  </ol>
-                </li>
-              ))}
-            </ol>
-          </nav>
+          <WorkflowList
+            workflows={spec.workflows}
+            isDark={isDark}
+            variant="toc"
+            showSteps={true}
+          />
         </section>
-
-        {/* Component Schemas Section */}
-        {spec.components?.schemas && Object.keys(spec.components.schemas).length > 0 && (
-          <section id="schemas" className="mb-16 print:mb-10">
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <span className={`text-xs font-semibold uppercase px-2 py-1 rounded bg-indigo-100 text-indigo-700`}>
-                  Data Models
-                </span>
-                <h2 className="text-2xl font-bold print:text-xl">Component Schemas</h2>
-              </div>
-              <p className={`mt-2 ${mutedClass}`}>
-                Reusable data structures and schema definitions used across workflows.
-              </p>
-            </div>
-            <SchemaViewer 
-              schemas={spec.components.schemas} 
-              isDark={isDark}
-              forceExpanded={expandAll}
-            />
-          </section>
-        )}
 
         {/* Workflows */}
         {spec.workflows.map((workflow, workflowIdx) => (
@@ -289,9 +216,7 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
         </div>
         <code className={`text-sm ${mutedClass} font-mono`}>{workflow.workflowId}</code>
         {workflow.description && (
-          <div className="mt-3">
-            <MarkdownText content={workflow.description} isDark={isDark} />
-          </div>
+          <p className={`mt-3 ${mutedClass}`}>{workflow.description}</p>
         )}
       </div>
 

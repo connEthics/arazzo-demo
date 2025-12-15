@@ -118,7 +118,7 @@ The `vercel.json` in the root configures:
 ### Arazzo Spec Structure
 
 ```yaml
-arazzo: 1.0.0
+arazzo: 1.0.1
 info:
   title: My Workflow
   version: 1.0.0
@@ -192,12 +192,16 @@ The main codebase is **open source but not free to use**. All rights are reserve
 
 The components in [`app/src/components/arazzo/`](app/src/components/arazzo/) are released under the **MIT License** and are free to use:
 
-- `ActionList.tsx`
-- `CriterionBadge.tsx`
-- `DependsOnList.tsx`
-- `PayloadReplacements.tsx`
-- `ReusableRef.tsx`
-- `index.ts`
+- `ActionList.tsx` - Displays onSuccess/onFailure actions
+- `ArazzoSpecHeader.tsx` - Spec info header display
+- `CriterionBadge.tsx` - Success/failure criteria badges
+- `DependsOnList.tsx` - Step dependencies visualization
+- `PayloadReplacements.tsx` - Request body replacement display
+- `ReusableRef.tsx` - Component reference display
+- `SchemaViewer.tsx` - JSON Schema viewer
+- `SourceDescriptionsList.tsx` - API source descriptions
+- `WorkflowList.tsx` - Workflow listing component
+- `index.ts` - Component exports
 
 **Conditions:**
 - Include a link to the original project: https://github.com/connEthics/arazzo-demo

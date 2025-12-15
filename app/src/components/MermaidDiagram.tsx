@@ -207,13 +207,29 @@ export default function MermaidDiagram({
     const svg = containerRef.current.querySelector('svg');
     if (!svg) return;
 
-    // Find all notes and color them based on content
-    svg.querySelectorAll('.note, [class*="note"]').forEach(note => {
-      const noteText = note.textContent || '';
-      const rect = note.querySelector('rect');
+    // Find all note groups - Mermaid uses various selectors
+    // Look for g elements that contain both a rect and text with note content
+    const allGroups = svg.querySelectorAll('g');
+    
+    allGroups.forEach(group => {
+      const rect = group.querySelector('rect');
+      const textContent = group.textContent || '';
+      
+      // Skip if no rect or this is an actor/other element
       if (!rect) return;
       
-      if (noteText.includes('🚀')) {
+      // Check if this group contains note-like content (emojis we use)
+      const isInputNote = textContent.includes('🚀');
+      const isOutputNote = textContent.includes('✅');
+      const isStepOutputNote = textContent.includes('📦');
+      const isStepNote = textContent.includes('🔹') || textContent.includes('📌');
+      
+      // Only process if it matches one of our note types
+      if (!isInputNote && !isOutputNote && !isStepOutputNote && !isStepNote) return;
+      
+      const groupEl = group as unknown as HTMLElement;
+      
+      if (isInputNote) {
         // Input note - Green, CLICKABLE with visual indicator
         rect.setAttribute('fill', '#d1fae5');
         rect.setAttribute('stroke', '#10b981');
@@ -223,18 +239,16 @@ export default function MermaidDiagram({
         rect.style.cursor = 'pointer';
         rect.style.filter = 'drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3))';
         
-        // Add hover effect
-        const noteEl = note as HTMLElement;
-        noteEl.style.cursor = 'pointer';
-        noteEl.addEventListener('mouseenter', () => {
+        groupEl.style.cursor = 'pointer';
+        groupEl.onmouseenter = () => {
           rect.setAttribute('stroke-width', '3');
           rect.style.filter = 'drop-shadow(0 4px 8px rgba(16, 185, 129, 0.5))';
-        });
-        noteEl.addEventListener('mouseleave', () => {
+        };
+        groupEl.onmouseleave = () => {
           rect.setAttribute('stroke-width', '2.5');
           rect.style.filter = 'drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3))';
-        });
-      } else if (noteText.includes('✅')) {
+        };
+      } else if (isOutputNote) {
         // Output note - Amber, CLICKABLE with visual indicator
         rect.setAttribute('fill', '#fef3c7');
         rect.setAttribute('stroke', '#f59e0b');
@@ -244,18 +258,16 @@ export default function MermaidDiagram({
         rect.style.cursor = 'pointer';
         rect.style.filter = 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3))';
         
-        // Add hover effect
-        const noteEl = note as HTMLElement;
-        noteEl.style.cursor = 'pointer';
-        noteEl.addEventListener('mouseenter', () => {
+        groupEl.style.cursor = 'pointer';
+        groupEl.onmouseenter = () => {
           rect.setAttribute('stroke-width', '3');
           rect.style.filter = 'drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5))';
-        });
-        noteEl.addEventListener('mouseleave', () => {
+        };
+        groupEl.onmouseleave = () => {
           rect.setAttribute('stroke-width', '2.5');
           rect.style.filter = 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3))';
-        });
-      } else if (noteText.includes('📦')) {
+        };
+      } else if (isStepOutputNote) {
         // Step output - Light gray, NOT clickable (info only)
         rect.setAttribute('fill', '#f8fafc');
         rect.setAttribute('stroke', '#cbd5e1');
@@ -263,36 +275,36 @@ export default function MermaidDiagram({
         rect.setAttribute('rx', '4');
         rect.setAttribute('ry', '4');
         rect.style.cursor = 'default';
-        // Disable click events
-        (note as HTMLElement).style.pointerEvents = 'none';
-      } else if (noteText.includes('📌')) {
-        // Step name - Blue, clickable
+        groupEl.style.pointerEvents = 'none';
+      } else if (isStepNote) {
+        // Step header note - Blue/Indigo style, CLICKABLE
         rect.setAttribute('fill', '#e0e7ff');
         rect.setAttribute('stroke', '#6366f1');
-        rect.setAttribute('stroke-width', '2');
-        rect.setAttribute('rx', '6');
-        rect.setAttribute('ry', '6');
+        rect.setAttribute('stroke-width', '2.5');
+        rect.setAttribute('rx', '8');
+        rect.setAttribute('ry', '8');
         rect.style.cursor = 'pointer';
-        rect.style.filter = 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2))';
+        rect.style.filter = 'drop-shadow(0 2px 6px rgba(99, 102, 241, 0.3))';
         
-        const noteEl = note as HTMLElement;
-        noteEl.style.cursor = 'pointer';
-        noteEl.addEventListener('mouseenter', () => {
+        groupEl.style.cursor = 'pointer';
+        groupEl.onmouseenter = () => {
+          rect.setAttribute('stroke-width', '3');
+          rect.setAttribute('fill', '#c7d2fe');
+          rect.style.filter = 'drop-shadow(0 4px 10px rgba(99, 102, 241, 0.5))';
+        };
+        groupEl.onmouseleave = () => {
           rect.setAttribute('stroke-width', '2.5');
-          rect.style.filter = 'drop-shadow(0 3px 6px rgba(99, 102, 241, 0.4))';
-        });
-        noteEl.addEventListener('mouseleave', () => {
-          rect.setAttribute('stroke-width', '2');
-          rect.style.filter = 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2))';
-        });
+          rect.setAttribute('fill', '#e0e7ff');
+          rect.style.filter = 'drop-shadow(0 2px 6px rgba(99, 102, 241, 0.3))';
+        };
       }
     });
 
-    // Disable click on actors for now
+    // Disable click on actors
     svg.querySelectorAll('.actor').forEach(actor => {
       (actor as HTMLElement).style.pointerEvents = 'none';
     });
-  }, [svgContent]);
+  }, [svgContent, selectedStepId, selectedType]);
 
   // Handle click on SVG elements
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -409,6 +421,21 @@ export default function MermaidDiagram({
         } 
       });
       return;
+    }
+
+    // Check for step header notes (🔹) - these are clickable step identifiers
+    if (groupText.includes('🔹')) {
+      // Extract step info from the note text: "🔹 1. [GET] step-id"
+      for (const step of steps) {
+        if (groupText.includes(step.stepId)) {
+          e.stopPropagation();
+          const sourceForStep = getSourceForStep(step);
+          onDetailSelect?.({ type: 'step', step, sourceForStep });
+          onStepSelect?.(step);
+          onNodeClick?.(step.stepId);
+          return;
+        }
+      }
     }
 
     // Check for sequence diagram final note with outputs (✅ Complete)
