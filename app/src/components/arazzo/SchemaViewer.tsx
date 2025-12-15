@@ -7,10 +7,18 @@ import { Badge, CodeBlock } from '../primitives';
 // ═══════════════════════════════════════════════════════════════════════════════
 // SchemaViewer Component
 // Displays component schemas from Arazzo specification
+// Supports both collection view (schemas prop) and single property view (name/schema props)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface SchemaViewerProps {
-  schemas: Record<string, SchemaDefinition>;
+  // Collection mode - display multiple schemas
+  schemas?: Record<string, SchemaDefinition>;
+  // Single schema mode - display a single property
+  name?: string;
+  schema?: any;
+  required?: boolean;
+  level?: number;
+  // Common props
   isDark?: boolean;
   forceExpanded?: boolean;
 }
@@ -134,7 +142,153 @@ function SchemaCard({ name, schema, isDark, forceExpanded }: SchemaCardProps) {
   );
 }
 
-function SchemaViewer({ schemas, isDark = false, forceExpanded }: SchemaViewerProps) {
+// Single property schema viewer (recursive, for inline use in DetailViews)
+function SingleSchemaViewer({ 
+  name, 
+  schema, 
+  required, 
+  isDark = false, 
+  level = 0 
+}: { 
+  name: string; 
+  schema: any; 
+  required?: boolean; 
+  isDark: boolean; 
+  level?: number;
+}) {
+  const textClass = isDark ? 'text-white' : 'text-gray-900';
+  const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
+  const borderClass = isDark ? 'border-slate-700' : 'border-gray-200';
+  const bgClass = isDark ? 'bg-slate-800' : 'bg-gray-50';
+  
+  const isObject = schema.type === 'object' && schema.properties;
+  const isArray = schema.type === 'array';
+  
+  return (
+    <div className={`rounded border ${borderClass} ${bgClass} overflow-hidden mb-2`}>
+      {/* Header */}
+      <div className="px-3 py-2 flex flex-col gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <code className={`text-sm font-mono font-medium ${textClass}`}>{name}</code>
+          {schema.type && (
+            <Badge variant={`type-${schema.type}` as any} isDark={isDark} size="xs">
+              {schema.type}
+              {schema.format && ` (${schema.format})`}
+            </Badge>
+          )}
+          {required && (
+            <Badge variant="required" isDark={isDark} size="xs">Required</Badge>
+          )}
+        </div>
+        
+        {schema.description && (
+          <p className={`text-xs ${mutedClass}`}>{schema.description}</p>
+        )}
+      </div>
+
+      {/* Details Body */}
+      <div className={`px-3 pb-2 space-y-2 border-t ${borderClass} pt-2 bg-opacity-50 ${isDark ? 'bg-black/20' : 'bg-gray-50/50'}`}>
+        
+        {/* Default Value */}
+        {schema.default !== undefined && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className={mutedClass}>Default:</span>
+            <code className={`font-mono ${textClass}`}>{JSON.stringify(schema.default)}</code>
+          </div>
+        )}
+
+        {/* Enum Values */}
+        {schema.enum && (
+          <div className="flex flex-wrap gap-1">
+            {schema.enum.map((val: any, idx: number) => (
+              <Badge key={idx} variant="info" isDark={isDark} size="xs">{val}</Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Validation Rules */}
+        {(schema.minLength !== undefined || schema.maxLength !== undefined || schema.pattern || 
+          schema.minimum !== undefined || schema.maximum !== undefined) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            {schema.minLength !== undefined && (
+              <span className={mutedClass}>Min Len: <code className={textClass}>{schema.minLength}</code></span>
+            )}
+            {schema.maxLength !== undefined && (
+              <span className={mutedClass}>Max Len: <code className={textClass}>{schema.maxLength}</code></span>
+            )}
+            {schema.minimum !== undefined && (
+              <span className={mutedClass}>Min: <code className={textClass}>{schema.minimum}</code></span>
+            )}
+            {schema.maximum !== undefined && (
+              <span className={mutedClass}>Max: <code className={textClass}>{schema.maximum}</code></span>
+            )}
+            {schema.pattern && (
+              <span className={mutedClass}>Pattern: <code className={`${textClass} break-all`}>{schema.pattern}</code></span>
+            )}
+          </div>
+        )}
+
+        {/* Example */}
+        {schema.example !== undefined && (
+          <div className="text-xs">
+            <span className={`${mutedClass} block mb-0.5`}>Example:</span>
+            <code className={`block font-mono p-1 rounded ${isDark ? 'bg-black/30' : 'bg-white'} ${textClass} break-all`}>
+              {JSON.stringify(schema.example)}
+            </code>
+          </div>
+        )}
+
+        {/* Nested Properties (Object) */}
+        {isObject && (
+          <div className="mt-2 pl-2 border-l-2 border-indigo-400/30">
+            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Properties</span>
+            {Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => (
+              <SingleSchemaViewer
+                key={propName}
+                name={propName}
+                schema={propSchema}
+                required={schema.required?.includes(propName)}
+                isDark={isDark}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Array Items */}
+        {isArray && schema.items && (
+          <div className="mt-2 pl-2 border-l-2 border-blue-400/30">
+            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Array Items</span>
+            <SingleSchemaViewer
+              name="items"
+              schema={schema.items}
+              isDark={isDark}
+              level={level + 1}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SchemaViewer({ schemas, name, schema, required, level = 0, isDark = false, forceExpanded }: SchemaViewerProps) {
+  // Single schema mode (for inline property display in DetailViews)
+  if (name && schema) {
+    return (
+      <SingleSchemaViewer
+        name={name}
+        schema={schema}
+        required={required}
+        isDark={isDark}
+        level={level}
+      />
+    );
+  }
+
+  // Collection mode (for displaying multiple schemas)
+  if (!schemas) return null;
+  
   const schemaNames = Object.keys(schemas);
 
   if (schemaNames.length === 0) {
@@ -145,11 +299,11 @@ function SchemaViewer({ schemas, isDark = false, forceExpanded }: SchemaViewerPr
     <div className="space-y-4">
       {/* Schema Cards */}
       <div className="space-y-3">
-        {schemaNames.map((name) => (
+        {schemaNames.map((schemaName) => (
           <SchemaCard
-            key={name}
-            name={name}
-            schema={schemas[name]}
+            key={schemaName}
+            name={schemaName}
+            schema={schemas[schemaName]}
             isDark={isDark}
             forceExpanded={forceExpanded}
           />

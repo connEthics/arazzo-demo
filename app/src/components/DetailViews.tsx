@@ -5,7 +5,7 @@ import type { Step, SourceDescription, WorkflowInputs, Parameter, Criterion } fr
 import { isReusableObject } from '@/types/arazzo';
 
 // Import Arazzo components
-import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements } from './arazzo';
+import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements, SchemaViewer } from './arazzo';
 import { Card, Badge, CodeBlock, PropertyList, MarkdownText } from './primitives';
 
 interface ContentProps {
@@ -15,9 +15,14 @@ interface ContentProps {
   codeBgClass?: string;
 }
 
+interface GeneratedSchema {
+  type: string;
+  properties: Record<string, any>;
+}
+
 // Utility functions for schema generation
-function generateSchemaFromPayload(payload: Record<string, unknown>): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
+function generateSchemaFromPayload(payload: Record<string, unknown>): GeneratedSchema {
+  const properties: Record<string, any> = {};
   
   for (const [key, value] of Object.entries(payload)) {
     if (typeof value === 'string') {
@@ -60,137 +65,7 @@ function getMethodBadgeVariant(method: string): 'method-get' | 'method-post' | '
   return map[method] || 'method-get';
 }
 
-// Recursive component to display schema properties with validation rules
-function SchemaPropertyView({ 
-  name, 
-  schema, 
-  required, 
-  isDark, 
-  level = 0 
-}: { 
-  name: string; 
-  schema: any; 
-  required?: boolean; 
-  isDark: boolean; 
-  level?: number;
-}) {
-  const textClass = isDark ? 'text-white' : 'text-gray-900';
-  const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
-  const borderClass = isDark ? 'border-slate-700' : 'border-gray-200';
-  const bgClass = isDark ? 'bg-slate-800' : 'bg-gray-50';
-  
-  const isObject = schema.type === 'object' && schema.properties;
-  const isArray = schema.type === 'array';
-  
-  return (
-    <div className={`rounded border ${borderClass} ${bgClass} overflow-hidden mb-2`}>
-      {/* Header */}
-      <div className="px-3 py-2 flex flex-col gap-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <code className={`text-sm font-mono font-medium ${textClass}`}>{name}</code>
-          {schema.type && (
-            <Badge variant={`type-${schema.type}` as any} isDark={isDark} size="xs">
-              {schema.type}
-              {schema.format && ` (${schema.format})`}
-            </Badge>
-          )}
-          {required && (
-            <Badge variant="required" isDark={isDark} size="xs">Required</Badge>
-          )}
-        </div>
-        
-        {schema.description && (
-          <p className={`text-xs ${mutedClass}`}>{schema.description}</p>
-        )}
-      </div>
-
-      {/* Details Body */}
-      <div className={`px-3 pb-2 space-y-2 border-t ${borderClass} pt-2 bg-opacity-50 ${isDark ? 'bg-black/20' : 'bg-gray-50/50'}`}>
-        
-        {/* Default Value */}
-        {schema.default !== undefined && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className={mutedClass}>Default:</span>
-            <code className={`font-mono ${textClass}`}>{JSON.stringify(schema.default)}</code>
-          </div>
-        )}
-
-        {/* Enum Values */}
-        {schema.enum && (
-          <div className="flex flex-wrap gap-1">
-            {schema.enum.map((val: any, idx: number) => (
-              <Badge key={idx} variant="info" isDark={isDark} size="xs">{val}</Badge>
-            ))}
-          </div>
-        )}
-
-        {/* Validation Rules */}
-        {(schema.minLength !== undefined || schema.maxLength !== undefined || schema.pattern || 
-          schema.minimum !== undefined || schema.maximum !== undefined) && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            {schema.minLength !== undefined && (
-              <span className={mutedClass}>Min Len: <code className={textClass}>{schema.minLength}</code></span>
-            )}
-            {schema.maxLength !== undefined && (
-              <span className={mutedClass}>Max Len: <code className={textClass}>{schema.maxLength}</code></span>
-            )}
-            {schema.minimum !== undefined && (
-              <span className={mutedClass}>Min: <code className={textClass}>{schema.minimum}</code></span>
-            )}
-            {schema.maximum !== undefined && (
-              <span className={mutedClass}>Max: <code className={textClass}>{schema.maximum}</code></span>
-            )}
-            {schema.pattern && (
-              <span className={mutedClass}>Pattern: <code className={`${textClass} break-all`}>{schema.pattern}</code></span>
-            )}
-          </div>
-        )}
-
-        {/* Example */}
-        {schema.example !== undefined && (
-          <div className="text-xs">
-            <span className={`${mutedClass} block mb-0.5`}>Example:</span>
-            <code className={`block font-mono p-1 rounded ${isDark ? 'bg-black/30' : 'bg-white'} ${textClass} break-all`}>
-              {JSON.stringify(schema.example)}
-            </code>
-          </div>
-        )}
-
-        {/* Nested Properties (Object) */}
-        {isObject && (
-          <div className="mt-2 pl-2 border-l-2 border-indigo-400/30">
-            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Properties</span>
-            {Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => (
-              <SchemaPropertyView
-                key={propName}
-                name={propName}
-                schema={propSchema}
-                required={schema.required?.includes(propName)}
-                isDark={isDark}
-                level={level + 1}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Array Items */}
-        {isArray && schema.items && (
-          <div className="mt-2 pl-2 border-l-2 border-blue-400/30">
-            <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-2`}>Array Items</span>
-            <SchemaPropertyView
-              name="items"
-              schema={schema.items}
-              isDark={isDark}
-              level={level + 1}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & { 
+export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & {  
   step: Step; 
   sourceForStep?: SourceDescription;
   onStepClick?: (stepId: string) => void;
@@ -237,9 +112,9 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
   }, [step.requestBody]);
 
   // Generate response schema from outputs
-  const responseSchema = useMemo(() => {
+  const responseSchema = useMemo((): GeneratedSchema | null => {
     if (!step.outputs || Object.keys(step.outputs).length === 0) return null;
-    const properties: Record<string, unknown> = {};
+    const properties: Record<string, any> = {};
     for (const [key, value] of Object.entries(step.outputs)) {
       properties[key] = { type: 'string', description: `Extracted from: ${value}` };
     }
@@ -335,11 +210,11 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
       )}
 
       {/* Request Body */}
-      {step.requestBody && (
+      {!!step.requestBody && (
         <Card 
           title="Request Body" 
           isDark={isDark}
-          badge={step.requestBody.contentType && <Badge variant="info" isDark={isDark} size="xs">{step.requestBody.contentType}</Badge>}
+          badge={step.requestBody?.contentType && <Badge variant="info" isDark={isDark} size="xs">{step.requestBody.contentType}</Badge>}
           icon={
             <svg className={`w-3 h-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -351,7 +226,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             <div>
               <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Payload</span>
               <CodeBlock 
-                code={JSON.stringify(step.requestBody.payload, null, 2)} 
+                code={typeof step.requestBody?.payload === 'string' ? step.requestBody.payload : JSON.stringify(step.requestBody?.payload, null, 2) || ''} 
                 language="json" 
                 isDark={isDark}
                 maxHeight={150}
@@ -359,16 +234,16 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
               />
             </div>
             
-            {/* Schema */}
-            {requestBodySchema && requestBodySchema.properties && (
+            {/* Schema Structure */}
+            {requestBodySchema?.properties && (
               <div>
                 <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
                 <div className="space-y-1">
-                  {Object.entries(requestBodySchema.properties as Record<string, any>).map(([name, schema]) => (
-                    <SchemaPropertyView 
-                      key={name} 
-                      name={name} 
-                      schema={schema} 
+                  {Object.entries(requestBodySchema.properties).map(([propName, propSchema]) => (
+                    <SchemaViewer 
+                      key={propName} 
+                      name={propName} 
+                      schema={propSchema} 
                       isDark={isDark} 
                     />
                   ))}
@@ -377,7 +252,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             )}
             
             {/* Payload Replacements */}
-            {step.requestBody.replacements && step.requestBody.replacements.length > 0 && (
+            {step.requestBody?.replacements && step.requestBody.replacements.length > 0 && (
               <PayloadReplacements 
                 replacements={step.requestBody.replacements} 
                 isDark={isDark} 
@@ -437,12 +312,12 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             )}
 
             {/* Response Schema */}
-            {responseSchema && responseSchema.properties && (
+            {responseSchema?.properties && (
               <div>
                 <span className={`text-[10px] uppercase font-semibold ${mutedClass} block mb-1`}>Schema Structure</span>
                 <div className="space-y-1">
-                  {Object.entries(responseSchema.properties as Record<string, any>).map(([name, schema]) => (
-                    <SchemaPropertyView 
+                  {Object.entries(responseSchema.properties).map(([name, schema]) => (
+                    <SchemaViewer 
                       key={name} 
                       name={name} 
                       schema={schema} 
@@ -627,7 +502,7 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
           <Card title="Properties" isDark={isDark}>
             <div className="space-y-3">
               {properties.map(propName => (
-                <SchemaPropertyView
+                <SchemaViewer
                   key={propName}
                   name={propName}
                   schema={workflowInputs.properties![propName]}
@@ -646,7 +521,7 @@ export function InputContent({ input, workflowInputs, ...props }: ContentProps &
   return (
     <div className="space-y-4">
       <Card title="Input Details" isDark={isDark}>
-        <SchemaPropertyView
+        <SchemaViewer
           name={input.name}
           schema={inputSchema || {}}
           required={workflowInputs?.required?.includes(input.name)}
