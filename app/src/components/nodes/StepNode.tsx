@@ -4,12 +4,15 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { Step } from '@/types/arazzo';
 
+type LayoutDirection = 'horizontal' | 'vertical';
+
 interface StepNodeData {
   step: Step;
   hasOnSuccess: boolean;
   hasOnFailure: boolean;
   hasSkip: boolean;
   method: string | null;
+  direction?: LayoutDirection;
   [key: string]: unknown;
 }
 
@@ -21,29 +24,33 @@ const methodStyles: Record<string, string> = {
   GET: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   POST: 'bg-blue-100 text-blue-700 border-blue-200',
   PUT: 'bg-amber-100 text-amber-700 border-amber-200',
-  DELETE: 'bg-red-100 text-red-700 border-red-200',
+  DELETE: 'bg-red-100 text-red-700 border-red-100',
 };
 
 function StepNode({ data }: StepNodeProps) {
-  const { step, hasOnSuccess, hasOnFailure, hasSkip, method } = data || {};
+  const { step, hasOnSuccess, hasOnFailure, hasSkip, method, direction = 'vertical' } = data || {};
+  
+  // Dynamic handle positions based on layout direction
+  const targetPosition = direction === 'horizontal' ? Position.Left : Position.Top;
+  const sourcePosition = direction === 'horizontal' ? Position.Right : Position.Bottom;
 
   // Guard against undefined step
   if (!step) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] p-3">
-        <Handle type="target" position={Position.Top} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
+        <Handle type="target" position={targetPosition} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
         <span className="text-gray-400 text-sm">Loading step...</span>
-        <Handle type="source" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
+        <Handle type="source" position={sourcePosition} className="!w-2.5 !h-2.5 !bg-gray-400 !border-2 !border-white" />
       </div>
     );
   }
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] max-w-[280px] overflow-hidden">
-      {/* Handle top */}
+      {/* Handle top/left */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetPosition}
         className="!w-2.5 !h-2.5 !bg-indigo-500 !border-2 !border-white"
       />
       
@@ -123,10 +130,10 @@ function StepNode({ data }: StepNodeProps) {
         )}
       </div>
       
-      {/* Handle bottom */}
+      {/* Handle bottom/right */}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={sourcePosition}
         className="!w-2.5 !h-2.5 !bg-indigo-500 !border-2 !border-white"
       />
     </div>

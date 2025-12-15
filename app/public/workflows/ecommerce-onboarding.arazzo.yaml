@@ -16,26 +16,44 @@ info:
   title: E-Commerce Customer Onboarding - Advanced
   version: "3.0.0"
   description: |
-    Enterprise-grade customer onboarding workflow demonstrating:
-    - Cross-system synchronization (Magento ↔ Stripe ↔ Salesforce)
-    - Idempotent operations with conflict resolution
+    **Enterprise-grade** customer onboarding workflow demonstrating:
+    
+    - Cross-system synchronization (**Magento** ↔ **Stripe** ↔ **Salesforce**)
+    - Idempotent operations with *conflict resolution*
     - Comprehensive error handling and recovery
+    
+    ### Key Features
+    - **Schema-driven**: All data models defined as reusable components
+    - **Semantic linking**: Related attributes (email, name, phone) linked across schemas
+    - **Error resilience**: 409 Conflict, rate limiting, validation errors handled
 
 sourceDescriptions:
   - name: magentoApi
     url: https://magento.example.com/rest/default/schema
     type: openapi
-    description: Adobe Commerce (Magento) REST API
+    description: |
+      **Adobe Commerce (Magento)** REST API for:
+      - Customer management
+      - Order processing
+      - Product catalog
     
   - name: stripeApi
     url: https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml
     type: openapi
-    description: Stripe Payment Gateway API
+    description: |
+      **Stripe Payment Gateway** API for:
+      - Customer billing profiles
+      - Payment methods
+      - Subscriptions
     
   - name: salesforceApi
     url: https://developer.salesforce.com/docs/api-explorer/sobject/Contact
     type: openapi
-    description: Salesforce CRM REST API
+    description: |
+      **Salesforce CRM** REST API for:
+      - Contact management
+      - Lead tracking
+      - Account associations
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # REUSABLE COMPONENTS
@@ -208,11 +226,18 @@ workflows:
   - workflowId: customer-onboarding-advanced
     summary: Customer Account Creation with 409 Conflict Handling
     description: |
-      Creates customer across Magento, Stripe, and Salesforce with:
-      ⚡ 409 Conflict handling when customer already exists
-      ⚡ Skip step if customer found in Magento
-      ⚡ Conditional sync based on existing accounts
-      ⚡ Retry logic for rate limits
+      **Enterprise Customer Onboarding** - Creates customer across multiple systems:
+      
+      ### Key Capabilities
+      - **409 Conflict handling**: Graceful recovery when customer already exists
+      - **Conditional branching**: Skip creation if customer found in Magento
+      - **Cross-system sync**: Consistent data across *Magento*, *Stripe*, and *Salesforce*
+      - **Retry with backoff**: Automatic retry for rate-limited requests
+      
+      ### Data Flow
+      1. Check if customer exists in **Magento** (primary source)
+      2. Create/sync **Stripe** payment profile with linked `email` and `name`
+      3. Create/sync **Salesforce** contact for CRM tracking
     
     inputs:
       type: object
@@ -279,7 +304,12 @@ workflows:
       # STEP 1: Check if customer already exists in Magento
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: checkExistingCustomer
-        description: Check if customer email already exists in Magento
+        description: |
+          **Pre-flight check** - Verifies if customer `email` exists in Magento.
+          
+          - Returns `total_count > 0` if customer found
+          - Extracts existing `stripe_customer_id` from custom attributes
+          - Triggers conditional branching via `onSuccess`
         operationId: magentoApi.searchCustomers
         parameters:
           - name: searchCriteria[filterGroups][0][filters][0][field]
@@ -320,7 +350,16 @@ workflows:
       # STEP 2a: Create NEW customer in Magento
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: createMagentoCustomer
-        description: Create customer account in Adobe Commerce (Magento)
+        description: |
+          **Create customer** in Adobe Commerce (Magento).
+          
+          Maps input fields to Magento customer model:
+          - `email` → `customer.email`
+          - `firstName` → `customer.firstname`
+          - `lastName` → `customer.lastname`
+          - `phone` → `addresses[0].telephone`
+          
+          *Handles 409 Conflict* by redirecting to `checkExistingCustomer`
         operationId: magentoApi.createCustomer
         requestBody:
           contentType: application/json
@@ -376,7 +415,14 @@ workflows:
       # STEP 2b: Sync EXISTING customer (skip creation)
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: syncExistingCustomer
-        description: Retrieve existing customer details for sync
+        description: |
+          **Retrieve existing customer** details for cross-system sync.
+          
+          Checks for existing integrations:
+          - `stripe_customer_id` custom attribute
+          - `salesforce_contact_id` custom attribute
+          
+          *Conditionally skips* Stripe creation if already synced.
         operationId: magentoApi.getCustomer
         parameters:
           - name: customerId
@@ -414,7 +460,17 @@ workflows:
       # STEP 3: Create Stripe Customer (with duplicate handling)
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: createStripeCustomer
-        description: Create customer in Stripe for payment processing
+        description: |
+          **Create Stripe customer** for payment processing.
+          
+          ### Field Mapping (semantic links)
+          | Input | Stripe Field | Notes |
+          |-------|--------------|-------|
+          | `email` | `email` | Primary identifier |
+          | `firstName` + `lastName` | `name` | Combined full name |
+          | `phone` | `phone` | E.164 format |
+          
+          Uses **Idempotency-Key** to prevent duplicates.
         operationId: stripeApi.createCustomer
         requestBody:
           contentType: application/x-www-form-urlencoded
@@ -469,7 +525,14 @@ workflows:
       # STEP 3b: Find existing Stripe customer (fallback on conflict)
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: findExistingStripeCustomer
-        description: Search for existing Stripe customer by email
+        description: |
+          **Fallback search** - Find existing Stripe customer by `email`.
+          
+          Used when:
+          - 409 Conflict returned from `createStripeCustomer`
+          - Idempotency key mismatch detected
+          
+          Returns first matching customer for linking.
         operationId: stripeApi.searchCustomers
         parameters:
           - name: query
@@ -491,7 +554,18 @@ workflows:
       # STEP 4: Create Salesforce Contact (with upsert logic)
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: createSalesforceContact
-        description: Create or update contact in Salesforce CRM
+        description: |
+          **Upsert Salesforce Contact** - Create or update in CRM.
+          
+          ### Semantic Field Mapping
+          - `email` → `Email` (external ID for upsert)
+          - `firstName` → `FirstName`
+          - `lastName` → `LastName`
+          - `phone` → `Phone`
+          
+          **Cross-reference IDs** stored for data integrity:
+          - `Magento_Customer_ID__c`
+          - `Stripe_Customer_ID__c`
         operationId: salesforceApi.upsertContact
         parameters:
           - name: External_ID__c
@@ -539,7 +613,15 @@ workflows:
       # STEP 5: Update Magento with External IDs
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: updateMagentoWithExternalIds
-        description: Update Magento customer with Stripe and Salesforce IDs
+        description: |
+          **Link external systems** - Update Magento with cross-references.
+          
+          Stores integration IDs as custom attributes:
+          - `stripe_customer_id` → Stripe customer reference
+          - `salesforce_contact_id` → Salesforce contact reference
+          - `sync_status` → Set to *completed*
+          
+          Enables **bidirectional sync** and audit trail.
         operationId: magentoApi.updateCustomer
         parameters:
           - name: customerId
@@ -574,7 +656,11 @@ workflows:
       # STEP 6: Verify all external accounts exist (for existing customers)
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: verifyExternalAccounts
-        description: Verify Stripe and Salesforce accounts exist
+        description: |
+          **Verification step** - Confirms Stripe and Salesforce accounts exist.
+          
+          Used for *existing customers* to validate integration state.
+          Retrieves customer by `stripe_customer_id` stored in Magento.
         operationId: stripeApi.retrieveCustomer
         parameters:
           - name: customer
@@ -593,7 +679,13 @@ workflows:
       # ERROR HANDLERS
       # ─────────────────────────────────────────────────────────────────────────
       - stepId: handleValidationError
-        description: Handle validation errors
+        description: |
+          **Error handler** - Logs validation errors from Magento.
+          
+          Triggered by `400 Bad Request` responses, typically:
+          - Invalid `email` format
+          - Missing required fields (`firstname`, `lastname`)
+          - Address validation failures
         operationId: magentoApi.logError
         requestBody:
           contentType: application/json
@@ -609,7 +701,13 @@ workflows:
           errorType: VALIDATION_ERROR
 
       - stepId: handleStripeError
-        description: Handle Stripe API errors
+        description: |
+          **Stripe error handler** - Logs payment gateway errors.
+          
+          Common error scenarios:
+          - Invalid API key format
+          - Card declined events
+          - Rate limiting (*429 responses*)
         operationId: magentoApi.logError
         requestBody:
           contentType: application/json
@@ -625,7 +723,12 @@ workflows:
           errorType: STRIPE_ERROR
 
       - stepId: updateExistingSalesforceContact
-        description: Update existing Salesforce contact on conflict
+        description: |
+          **Conflict resolution** - Updates existing Salesforce contact.
+          
+          Links Magento and Stripe IDs to pre-existing contact:
+          - `Magento_Customer_ID__c` → Cross-system reference
+          - `Stripe_Customer_ID__c` → Payment profile link
         operationId: salesforceApi.updateContact
         parameters:
           - name: contactId

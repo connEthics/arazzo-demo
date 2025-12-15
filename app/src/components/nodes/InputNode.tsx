@@ -4,11 +4,14 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { SchemaProperty } from '@/types/arazzo';
 
+type LayoutDirection = 'horizontal' | 'vertical';
+
 interface InputNodeData {
   label: string;
   properties: string[];
   required: string[];
   schema: Record<string, SchemaProperty>;
+  direction?: LayoutDirection;
   [key: string]: unknown;
 }
 
@@ -17,7 +20,10 @@ interface InputNodeProps {
 }
 
 function InputNode({ data }: InputNodeProps) {
-  const { label, properties = [], required = [], schema = {} } = data;
+  const { label, properties = [], required = [], schema = {}, direction = 'vertical' } = data;
+  
+  // Dynamic handle position based on layout direction
+  const sourcePosition = direction === 'horizontal' ? Position.Right : Position.Bottom;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] overflow-hidden">
@@ -65,7 +71,7 @@ function InputNode({ data }: InputNodeProps) {
       {/* Handle */}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={sourcePosition}
         className="!w-2.5 !h-2.5 !bg-emerald-500 !border-2 !border-white"
       />
     </div>

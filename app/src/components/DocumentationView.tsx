@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import type { ArazzoSpec, Step, SourceDescription, Workflow } from '@/types/arazzo';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
 import StepCard from './StepCard';
+import { MarkdownText } from './primitives';
+import { SchemaViewer } from './arazzo';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 
@@ -61,7 +63,9 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
           <h1 className="text-4xl font-bold mb-2 print:text-3xl">{spec.info.title}</h1>
           <p className={`text-lg ${mutedClass} mb-4`}>Version {spec.info.version}</p>
           {spec.info.description && (
-            <p className={`text-base ${mutedClass} max-w-3xl mx-auto`}>{spec.info.description}</p>
+            <div className="max-w-3xl mx-auto">
+              <MarkdownText content={spec.info.description} isDark={isDark} />
+            </div>
           )}
           <div className={`mt-6 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-100 text-gray-600'}`}>
             <span>Arazzo Specification</span>
@@ -84,7 +88,7 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
                   </div>
                   <code className={`text-xs ${mutedClass} break-all`}>{source.url}</code>
                   {source.description && (
-                    <p className={`text-sm ${mutedClass} mt-2`}>{source.description}</p>
+                    <MarkdownText content={source.description} isDark={isDark} variant="compact" className="mt-2" />
                   )}
                 </div>
               ))}
@@ -97,6 +101,16 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
           <h2 className="text-2xl font-bold mb-4 print:text-xl">Table of Contents</h2>
           <nav className={`p-4 rounded-lg border ${borderClass} ${codeBgClass}`}>
             <ol className="list-decimal list-inside space-y-3">
+              {/* Schemas section in TOC */}
+              {spec.components?.schemas && Object.keys(spec.components.schemas).length > 0 && (
+                <li className="space-y-1">
+                  <a href="#schemas" className="text-indigo-600 hover:underline font-medium">
+                    Data Models
+                  </a>
+                  <span className={`text-sm ${mutedClass} ml-2`}>— {Object.keys(spec.components.schemas).length} schema(s)</span>
+                </li>
+              )}
+              {/* Workflows */}
               {spec.workflows.map((workflow, idx) => (
                 <li key={workflow.workflowId} className="space-y-1">
                   <a href={`#workflow-${workflow.workflowId}`} className="text-indigo-600 hover:underline font-medium">
@@ -123,6 +137,28 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
             </ol>
           </nav>
         </section>
+
+        {/* Component Schemas Section */}
+        {spec.components?.schemas && Object.keys(spec.components.schemas).length > 0 && (
+          <section id="schemas" className="mb-16 print:mb-10">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className={`text-xs font-semibold uppercase px-2 py-1 rounded bg-indigo-100 text-indigo-700`}>
+                  Data Models
+                </span>
+                <h2 className="text-2xl font-bold print:text-xl">Component Schemas</h2>
+              </div>
+              <p className={`mt-2 ${mutedClass}`}>
+                Reusable data structures and schema definitions used across workflows.
+              </p>
+            </div>
+            <SchemaViewer 
+              schemas={spec.components.schemas} 
+              isDark={isDark}
+              forceExpanded={expandAll}
+            />
+          </section>
+        )}
 
         {/* Workflows */}
         {spec.workflows.map((workflow, workflowIdx) => (
@@ -252,7 +288,9 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
         </div>
         <code className={`text-sm ${mutedClass} font-mono`}>{workflow.workflowId}</code>
         {workflow.description && (
-          <p className={`mt-3 ${mutedClass}`}>{workflow.description}</p>
+          <div className="mt-3">
+            <MarkdownText content={workflow.description} isDark={isDark} />
+          </div>
         )}
       </div>
 

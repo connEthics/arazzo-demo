@@ -6,6 +6,7 @@ Interactive visualizer for [Arazzo](https://spec.openapis.org/arazzo/latest.html
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)
 ![React Flow](https://img.shields.io/badge/React_Flow-12-purple)
 ![Mermaid](https://img.shields.io/badge/Mermaid-11-pink)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ## 🚀 Demo
 
@@ -13,15 +14,23 @@ Interactive visualizer for [Arazzo](https://spec.openapis.org/arazzo/latest.html
 
 ## ✨ Features
 
-- 🔄 **Interactive Flow View** - Drag, zoom, and explore workflow nodes with React Flow
-- 📊 **Mermaid Flowchart** - Export-ready flowchart diagrams
-- 🔀 **Sequence Diagrams** - Visualize API interactions between actors
-- 📋 **Copy to Clipboard** - One-click Mermaid syntax export
-- 🌙 **Dark/Light Mode** - Easy on the eyes
-- 📱 **Responsive** - Works on desktop and mobile
-- 🎯 **Step Details** - Click any step to see parameters, inputs, outputs
-- 📄 **Live YAML Editor** - Edit and visualize in real-time
-- 📁 **Example Workflows** - Pet Store & E-Commerce onboarding demos
+### Visualization Modes
+- 🔄 **Interactive Flow View** - Drag, zoom, and explore workflow nodes with React Flow + ELK.js auto-layout
+- 📊 **Mermaid Flowchart** - Flowchart diagrams with conditional paths
+- 🔀 **Sequence Diagrams** - Visualize API interactions between actors with request/response flows
+- 🏊 **Swimlane View** - Actor-based lanes showing event exchanges between API sources
+- 📖 **Documentation View** - Comprehensive workflow documentation with step details
+
+### Editor & Export
+- 📄 **Live YAML Editor** - Monaco-powered editor with syntax highlighting
+- 📋 **Copy to Clipboard** - One-click Mermaid syntax export for all diagram types
+- 🌙 **Dark/Light Mode** - Theme toggle for comfortable viewing
+
+### Interactivity
+- 🎯 **Step Details** - Click any step to see parameters, inputs, outputs, and success criteria
+- 🔗 **Clickable Nodes** - Input/Output nodes open workflow details panel
+- ↔️ **Layout Toggle** - Switch between horizontal and vertical flow layouts
+- 📁 **Example Workflows** - Pet Store adoption demo included
 
 ## 🏃 Quick Start
 
@@ -61,19 +70,24 @@ arazzo-demo/
 ├── app/                        # Next.js application
 │   ├── src/
 │   │   ├── app/               # App router pages
+│   │   │   ├── playground/    # Main visualizer page
+│   │   │   └── showcase/      # Demo showcase
 │   │   ├── components/        # React components
-│   │   │   ├── ArazzoFlow.tsx        # React Flow visualization
-│   │   │   ├── MermaidDiagram.tsx    # Mermaid rendering
-│   │   │   ├── DetailDrawer.tsx      # Step details panel
-│   │   │   └── OpenApiDetails.tsx    # OpenAPI operation view
+│   │   │   ├── ArazzoFlow.tsx        # React Flow + ELK.js visualization
+│   │   │   ├── MermaidDiagram.tsx    # Mermaid rendering with click handling
+│   │   │   ├── DetailDrawer.tsx      # Step details side panel
+│   │   │   ├── DocumentationView.tsx # Full documentation renderer
+│   │   │   └── nodes/                # Custom React Flow nodes
 │   │   ├── lib/               # Core logic
 │   │   │   ├── arazzo-parser.ts      # YAML parsing & flow conversion
-│   │   │   └── mermaid-converter.ts  # Mermaid syntax generation
+│   │   │   ├── mermaid-converter.ts  # Flowchart & sequence generation
+│   │   │   └── swimlane-converter.ts # Swimlane diagram generation
 │   │   └── types/             # TypeScript definitions
 │   └── public/
 │       ├── workflows/         # Example Arazzo specs (.yaml)
 │       └── openapi/           # Example OpenAPI specs
-├── vercel.json                # Vercel deployment config
+├── workflows/                 # Additional workflow examples
+├── openapi/                   # Additional OpenAPI specs
 └── README.md
 ```
 
@@ -135,16 +149,68 @@ workflows:
           result: $response.body.data
 ```
 
+## 📦 Open Source Components
+
+This project is built with the following open source libraries:
+
+| Component | Version | License | Description |
+|-----------|---------|---------|-------------|
+| [Next.js](https://nextjs.org/) | 16.0.9 | MIT | React framework for production |
+| [React](https://react.dev/) | 19.2.1 | MIT | UI component library |
+| [@xyflow/react](https://reactflow.dev/) | 12.10.0 | MIT | Interactive node-based diagrams |
+| [ELK.js](https://github.com/kieler/elkjs) | 0.11.0 | EPL-2.0 | Eclipse Layout Kernel for automatic graph layout |
+| [Mermaid](https://mermaid.js.org/) | 11.12.2 | MIT | Diagram and flowchart generation |
+| [Monaco Editor](https://microsoft.github.io/monaco-editor/) | 4.7.0 | MIT | VS Code's code editor |
+| [js-yaml](https://github.com/nodeca/js-yaml) | 4.1.1 | MIT | YAML parser and serializer |
+| [react-markdown](https://github.com/remarkjs/react-markdown) | 10.1.0 | MIT | Markdown renderer for React |
+| [Tailwind CSS](https://tailwindcss.com/) | 4.x | MIT | Utility-first CSS framework |
+| [TypeScript](https://www.typescriptlang.org/) | 5.x | Apache-2.0 | Typed JavaScript |
+
 ## 📚 Resources
 
 - [Arazzo Specification](https://spec.openapis.org/arazzo/latest.html)
 - [OpenAPI Initiative](https://www.openapis.org/)
 - [React Flow Documentation](https://reactflow.dev/)
 - [Mermaid Documentation](https://mermaid.js.org/)
+- [ELK.js Documentation](https://eclipse.dev/elk/)
 
 ## 📄 License
 
-MIT © [connEthics](https://github.com/connEthics)
+This project has a **dual license** structure:
+
+### 📋 Main Project - Proprietary License
+
+The main codebase is **open source but not free to use**. All rights are reserved by connEthics.
+
+- ✅ You may **view and study** the source code for educational purposes
+- ❌ You may **NOT** use, copy, modify, or distribute without explicit authorization
+- 📧 For licensing inquiries: [connethics.com](https://connethics.com)
+
+👉 See the full license terms in [LICENSE.md](LICENSE.md)
+
+### 🆓 Arazzo Components - MIT License
+
+The components in [`app/src/components/arazzo/`](app/src/components/arazzo/) are released under the **MIT License** and are free to use:
+
+- `ActionList.tsx`
+- `CriterionBadge.tsx`
+- `DependsOnList.tsx`
+- `PayloadReplacements.tsx`
+- `ReusableRef.tsx`
+- `index.ts`
+
+**Conditions:**
+- Include a link to the original project: https://github.com/connEthics/arazzo-demo
+- Include the MIT License notice
+
+👉 See the MIT license in [app/src/components/arazzo/LICENSE](app/src/components/arazzo/LICENSE)
+
+### Third-Party Dependencies
+
+This project uses open source dependencies with the following licenses:
+- **MIT License**: Next.js, React, React Flow, Mermaid, Monaco Editor, js-yaml, react-markdown, Tailwind CSS
+- **EPL-2.0**: ELK.js
+- **Apache-2.0**: TypeScript
 
 ---
 

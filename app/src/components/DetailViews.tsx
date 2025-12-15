@@ -6,7 +6,7 @@ import { isReusableObject } from '@/types/arazzo';
 
 // Import Arazzo components
 import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements } from './arazzo';
-import { Card, Badge, CodeBlock, PropertyList } from './primitives';
+import { Card, Badge, CodeBlock, PropertyList, MarkdownText } from './primitives';
 
 interface ContentProps {
   isDark: boolean;
@@ -133,7 +133,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             )}
           </div>
           {step.description && (
-            <p className={`text-xs ${mutedClass} mt-2`}>{step.description}</p>
+            <MarkdownText content={step.description} isDark={isDark} variant="compact" className="mt-2" />
           )}
         </Card>
       )}
@@ -150,7 +150,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forc
             <code className={`text-sm font-mono ${textClass}`}>{step.workflowId}</code>
           </div>
           {step.description && (
-            <p className={`text-xs ${mutedClass} mt-2`}>{step.description}</p>
+            <MarkdownText content={step.description} isDark={isDark} variant="compact" className="mt-2" />
           )}
         </Card>
       )}

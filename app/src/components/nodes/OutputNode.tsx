@@ -3,10 +3,13 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
+type LayoutDirection = 'horizontal' | 'vertical';
+
 interface OutputNodeData {
   label: string;
   properties: string[];
   expressions: Record<string, string>;
+  direction?: LayoutDirection;
   [key: string]: unknown;
 }
 
@@ -15,14 +18,17 @@ interface OutputNodeProps {
 }
 
 function OutputNode({ data }: OutputNodeProps) {
-  const { label, properties = [], expressions = {} } = data;
+  const { label, properties = [], expressions = {}, direction = 'vertical' } = data;
+  
+  // Dynamic handle position based on layout direction
+  const targetPosition = direction === 'horizontal' ? Position.Left : Position.Top;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] overflow-hidden">
-      {/* Handle top */}
+      {/* Handle top/left */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetPosition}
         className="!w-2.5 !h-2.5 !bg-amber-500 !border-2 !border-white"
       />
       

@@ -9,13 +9,14 @@ import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
 import DocumentationView from '@/components/DocumentationView';
 import { parseArazzoSpec, workflowToFlow } from '@/lib/arazzo-parser';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
+import { workflowToHorizontalSwimlane } from '@/lib/swimlane-converter';
 import { ArazzoSpec, Step } from '@/types/arazzo';
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
-type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence' | 'documentation';
+type ViewMode = 'reactflow' | 'mermaid-flowchart' | 'mermaid-sequence' | 'swimlane' | 'documentation';
 
 // Icons
 const SunIcon = () => (
@@ -172,8 +173,8 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   
   // New state
-  const [viewMode, setViewMode] = useState<ViewMode>('reactflow');
-  const [hideErrorFlows, setHideErrorFlows] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('mermaid-flowchart');
+  const [hideErrorFlows, setHideErrorFlows] = useState(true);
   const [hideOutputs, setHideOutputs] = useState(false);
   const [showStepNames, setShowStepNames] = useState(true);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -225,6 +226,18 @@ export default function Home() {
     }
   }, [getSourceForStep]);
 
+  // Handle step click from drawer (goto links) - find and open another step
+  const handleStepClickInDrawer = useCallback((stepId: string) => {
+    const step = currentWorkflowSteps.find(s => s.stepId === stepId);
+    if (step) {
+      setDetailData({ 
+        type: 'step', 
+        step,
+        sourceForStep: getSourceForStep(step)
+      });
+    }
+  }, [currentWorkflowSteps, getSourceForStep]);
+
   // Generate Mermaid diagrams
   const mermaidFlowchart = useMemo(() => {
     if (!spec || !selectedWorkflow) return '';
@@ -243,6 +256,16 @@ export default function Home() {
       return '';
     }
   }, [spec, selectedWorkflow, hideErrorFlows, hideOutputs, showStepNames]);
+
+  // Generate Swimlane diagram
+  const swimlaneDiagram = useMemo(() => {
+    if (!spec || !selectedWorkflow) return '';
+    try {
+      return workflowToHorizontalSwimlane(spec, selectedWorkflow, { hideErrorFlows });
+    } catch {
+      return '';
+    }
+  }, [spec, selectedWorkflow, hideErrorFlows]);
 
   // Parse YAML and update visualization
   const parseAndVisualize = useCallback(() => {
@@ -282,9 +305,9 @@ export default function Home() {
     }
   }, [spec, selectedWorkflow, hideErrorFlows]);
 
-  // Auto-parse on initial load
+  // Auto-load Pet Store example on initial load
   useEffect(() => {
-    parseAndVisualize();
+    loadExample('pet-adoption.arazzo.yaml');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -317,7 +340,11 @@ export default function Home() {
 
   // Copy Mermaid to clipboard
   const copyMermaidToClipboard = useCallback(async () => {
-    const content = viewMode === 'mermaid-flowchart' ? mermaidFlowchart : mermaidSequence;
+    const content = viewMode === 'mermaid-flowchart' 
+      ? mermaidFlowchart 
+      : viewMode === 'mermaid-sequence' 
+        ? mermaidSequence 
+        : swimlaneDiagram;
     try {
       await navigator.clipboard.writeText(content);
     } catch {
@@ -331,7 +358,7 @@ export default function Home() {
       document.execCommand('copy');
       document.body.removeChild(textArea);
     }
-  }, [viewMode, mermaidFlowchart, mermaidSequence]);
+  }, [viewMode, mermaidFlowchart, mermaidSequence, swimlaneDiagram]);
 
   // Navigate to documentation view with a specific step
   const navigateToDocStep = useCallback((workflowId: string, stepId: string) => {
@@ -403,6 +430,12 @@ export default function Home() {
               >
                 Sequence
               </button>
+              {/* <button
+                onClick={() => setViewMode('swimlane')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'swimlane' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                Swimlane
+              </button> */}
               <button
                 onClick={() => setViewMode('documentation')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${viewMode === 'documentation' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white') : (isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700')}`}
@@ -588,16 +621,18 @@ export default function Home() {
 
               <div className={`w-px h-4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
 
-              {/* Hide Error Flows Toggle */}
-              <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                <input
-                  type="checkbox"
-                  checked={hideErrorFlows}
-                  onChange={(e) => setHideErrorFlows(e.target.checked)}
-                  className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Hide errors
-              </label>
+              {/* Hide Error Flows Toggle - Not shown in documentation mode */}
+              {viewMode !== 'documentation' && (
+                <label className={`flex items-center gap-1.5 text-[11px] cursor-pointer select-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  <input
+                    type="checkbox"
+                    checked={hideErrorFlows}
+                    onChange={(e) => setHideErrorFlows(e.target.checked)}
+                    className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  Hide errors
+                </label>
+              )}
 
               {/* Hide Outputs Toggle (Sequence mode only) */}
               {viewMode === 'mermaid-sequence' && (
@@ -628,7 +663,7 @@ export default function Home() {
 
             <div className="flex items-center gap-2">
               {/* Copy Mermaid Button - For Mermaid modes */}
-              {(viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence') && (
+              {(viewMode === 'mermaid-flowchart' || viewMode === 'mermaid-sequence' || viewMode === 'swimlane') && (
                 <button
                   onClick={copyMermaidToClipboard}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'}`}
@@ -707,8 +742,10 @@ export default function Home() {
                       isDark={isDark} 
                       steps={currentWorkflowSteps}
                       sources={spec?.sourceDescriptions || []}
+                      workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
                       onDetailSelect={setDetailData}
                     />
                   )}
@@ -718,11 +755,26 @@ export default function Home() {
                       isDark={isDark}
                       steps={currentWorkflowSteps}
                       sources={spec?.sourceDescriptions || []}
+                      workflowInputs={currentWorkflowInputs}
                       workflowOutputs={currentWorkflowOutputs}
                       selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
                       onDetailSelect={setDetailData}
                     />
                   )}
+                  {/* {viewMode === 'swimlane' && (
+                    <MermaidDiagram 
+                      chart={swimlaneDiagram} 
+                      isDark={isDark}
+                      steps={currentWorkflowSteps}
+                      sources={spec?.sourceDescriptions || []}
+                      workflowInputs={currentWorkflowInputs}
+                      workflowOutputs={currentWorkflowOutputs}
+                      selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
+                      selectedType={detailData?.type === 'step' ? 'step' : detailData?.type === 'input' ? 'input' : detailData?.type === 'output' ? 'output' : null}
+                      onDetailSelect={setDetailData}
+                    />
+                  )} */}
                 </>
               ) : (
                 <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
@@ -746,6 +798,7 @@ export default function Home() {
                 workflowOutputs={currentWorkflowOutputs}
                 workflowId={selectedWorkflow}
                 onNavigateToDoc={navigateToDocStep}
+                onStepClick={handleStepClickInDrawer}
               />
             )}
           </div>
