@@ -3,8 +3,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import DetailDrawer, { DetailData } from './DetailDrawer';
 import StepInspector, { InspectorStep } from './StepInspector';
-import InputEditor from './InputEditor';
-import OutputEditor from './OutputEditor';
+import InputPanel from './InputPanel';
+import OutputPanel from './OutputPanel';
 import { ExpressionSuggestion } from './ExpressionInput';
 import { Action } from './ActionFormEditor';
 import type { Step, WorkflowInputs, SourceDescription } from '@/types/arazzo';
@@ -190,9 +190,7 @@ export default function Inspector({
   }, [data, convertToInspectorStep]);
 
   // Check if editing is available for this selection
-  const canEdit = (data?.type === 'step' && !!onStepUpdate) || 
-                  (data?.type === 'input' && !!onInputUpdate) || 
-                  (data?.type === 'output' && !!onOutputUpdate);
+  const canEditStep = data?.type === 'step' && !!onStepUpdate;
 
   // Empty state
   if (!data) {
@@ -211,10 +209,38 @@ export default function Inspector({
     );
   }
 
+  // For input/output, use unified panels with built-in mode toggle
+  if (data.type === 'input') {
+    return (
+      <InputPanel
+        inputs={workflowInputs}
+        onInputsChange={onInputUpdate}
+        initialMode={initialMode}
+        isDark={isDark}
+        onClose={onClose}
+        expressionSuggestions={expressionSuggestions}
+      />
+    );
+  }
+
+  if (data.type === 'output') {
+    return (
+      <OutputPanel
+        outputs={workflowOutputs}
+        onOutputsChange={onOutputUpdate}
+        initialMode={initialMode}
+        isDark={isDark}
+        onClose={onClose}
+        expressionSuggestions={expressionSuggestions}
+      />
+    );
+  }
+
+  // For steps, keep the existing behavior with DetailDrawer/StepInspector
   return (
     <div className={`h-full flex flex-col ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-      {/* Mode Toggle Header */}
-      {canEdit && (
+      {/* Mode Toggle Header - Only for steps */}
+      {canEditStep && (
         <div className={`flex-shrink-0 px-4 py-2 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <button
@@ -251,7 +277,7 @@ export default function Inspector({
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {mode === 'read' || !canEdit ? (
+        {mode === 'read' || !canEditStep ? (
           <DetailDrawer
             data={data}
             isDark={isDark}
@@ -260,7 +286,7 @@ export default function Inspector({
             workflowOutputs={workflowOutputs}
             workflowId={workflowId}
           />
-        ) : data?.type === 'step' ? (
+        ) : (
           <StepInspector
             step={currentInspectorStep}
             onStepChange={handleStepChange}
@@ -269,30 +295,6 @@ export default function Inspector({
             isDark={isDark}
             availableSteps={availableSteps}
             expressionSuggestions={expressionSuggestions}
-          />
-        ) : data?.type === 'input' && workflowInputs && onInputUpdate ? (
-          <InputEditor
-            inputs={workflowInputs}
-            onInputsChange={onInputUpdate}
-            onClose={onClose}
-            isDark={isDark}
-          />
-        ) : data?.type === 'output' && workflowOutputs && onOutputUpdate ? (
-          <OutputEditor
-            outputs={workflowOutputs}
-            onOutputsChange={onOutputUpdate}
-            onClose={onClose}
-            isDark={isDark}
-            expressionSuggestions={expressionSuggestions}
-          />
-        ) : (
-          <DetailDrawer
-            data={data}
-            isDark={isDark}
-            onClose={onClose || (() => {})}
-            workflowInputs={workflowInputs}
-            workflowOutputs={workflowOutputs}
-            workflowId={workflowId}
           />
         )}
       </div>

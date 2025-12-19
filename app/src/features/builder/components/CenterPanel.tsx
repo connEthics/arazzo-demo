@@ -24,6 +24,10 @@ interface CenterPanelProps {
   // Detail selection for diagrams
   detailData: DetailData | null;
   onDetailSelect: (data: DetailData | null) => void;
+  
+  // View mode switching from documentation
+  onViewFlowchart?: (workflowId: string) => void;
+  onViewSequence?: (workflowId: string) => void;
 }
 
 function CenterPanel({
@@ -34,6 +38,8 @@ function CenterPanel({
   showErrorFlow,
   detailData,
   onDetailSelect,
+  onViewFlowchart,
+  onViewSequence,
 }: CenterPanelProps) {
   const { state } = useBuilder();
   
@@ -95,6 +101,8 @@ function CenterPanel({
           <UnifiedDocumentationView 
             spec={state.spec} 
             isDark={false}
+            onViewFlowchart={onViewFlowchart}
+            onViewSequence={onViewSequence}
           />
         </div>
       )}

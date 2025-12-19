@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useBuilder } from '../context/BuilderContext';
-import { sampleSpec, sampleSources } from '../data/sample-workflow';
 import yaml from 'js-yaml';
+import type { ArazzoSpec } from '@/types/arazzo';
 
 type ImportMode = 'sample' | 'url' | 'paste';
 
@@ -37,12 +37,42 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
   const sourceCount = Object.keys(state.sources).length;
   const hasWorkflow = state.spec.workflows[0]?.steps.length > 0;
 
-  const handleLoadSample = () => {
-    dispatch({
-      type: 'LOAD_SAMPLE',
-      payload: { spec: sampleSpec, sources: sampleSources }
-    });
-    setImportExpanded(false);
+  const handleLoadSample = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch the Arazzo workflow from public/workflows
+      const workflowResponse = await fetch('/workflows/pet-adoption.arazzo.yaml');
+      const workflowYaml = await workflowResponse.text();
+      const spec = yaml.load(workflowYaml) as ArazzoSpec;
+
+      // Fetch the OpenAPI source referenced in the workflow
+      const sources: Record<string, any> = {};
+      for (const sourceDesc of spec.sourceDescriptions || []) {
+        try {
+          // Resolve relative URL (./openapi/petstore.yaml -> /openapi/petstore.yaml)
+          const sourceUrl = sourceDesc.url.startsWith('./') 
+            ? sourceDesc.url.substring(1) 
+            : sourceDesc.url;
+          const sourceResponse = await fetch(sourceUrl);
+          const sourceYaml = await sourceResponse.text();
+          sources[sourceDesc.name] = yaml.load(sourceYaml);
+        } catch (err) {
+          console.warn(`Failed to load source ${sourceDesc.name}:`, err);
+        }
+      }
+
+      dispatch({
+        type: 'LOAD_SAMPLE',
+        payload: { spec, sources }
+      });
+      setImportExpanded(false);
+    } catch (err) {
+      console.error('Failed to load sample workflow:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load sample workflow');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const parseSpec = (content: string): any => {

@@ -65,6 +65,28 @@ function BuilderPageContent() {
     setMobilePanel('center');
   }, []);
 
+  // Handle view flowchart from documentation
+  const handleViewFlowchart = useCallback((workflowId: string) => {
+    // Find the workflow index by workflowId
+    const index = state.spec.workflows.findIndex(w => w.workflowId === workflowId);
+    if (index !== -1 && index !== selectedWorkflowIndex) {
+      dispatch({ type: 'SET_WORKFLOW_INDEX', payload: index });
+    }
+    setViewMode('flowchart');
+    setMobilePanel('center');
+  }, [state.spec.workflows, selectedWorkflowIndex, dispatch]);
+
+  // Handle view sequence from documentation
+  const handleViewSequence = useCallback((workflowId: string) => {
+    // Find the workflow index by workflowId
+    const index = state.spec.workflows.findIndex(w => w.workflowId === workflowId);
+    if (index !== -1 && index !== selectedWorkflowIndex) {
+      dispatch({ type: 'SET_WORKFLOW_INDEX', payload: index });
+    }
+    setViewMode('sequence');
+    setMobilePanel('center');
+  }, [state.spec.workflows, selectedWorkflowIndex, dispatch]);
+
   const handleExportYaml = useCallback(() => {
     try {
       const yamlContent = yaml.dump(state.spec, { 
@@ -191,6 +213,8 @@ function BuilderPageContent() {
                 showErrorFlow={showErrorFlow}
                 detailData={detailData}
                 onDetailSelect={handleDetailSelect}
+                onViewFlowchart={handleViewFlowchart}
+                onViewSequence={handleViewSequence}
               />
             </div>
 
