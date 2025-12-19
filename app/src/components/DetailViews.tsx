@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import type { Step, SourceDescription, WorkflowInputs, Parameter, Criterion } from '@/types/arazzo';
 import { isReusableObject } from '@/types/arazzo';
+import { extractHttpMethod, getMethodBadgeVariant } from '@/lib/arazzo-utils';
 
 // Import Arazzo components
 import { ReusableRef, CriterionBadge, ActionList, PayloadReplacements, SchemaViewer } from './arazzo';
@@ -41,28 +42,6 @@ function generateSchemaFromPayload(payload: Record<string, unknown>): GeneratedS
   }
   
   return { type: 'object', properties };
-}
-
-function extractHttpMethod(operationId?: string): string | null {
-  if (!operationId) return null;
-  const op = operationId.toLowerCase();
-  if (op.includes('get') || op.includes('find') || op.includes('list') || op.includes('search') || op.includes('retrieve')) return 'GET';
-  if (op.includes('post') || op.includes('create') || op.includes('place') || op.includes('add') || op.includes('upsert')) return 'POST';
-  if (op.includes('put') || op.includes('update')) return 'PUT';
-  if (op.includes('delete') || op.includes('remove')) return 'DELETE';
-  if (op.includes('patch')) return 'PATCH';
-  return null;
-}
-
-function getMethodBadgeVariant(method: string): 'method-get' | 'method-post' | 'method-put' | 'method-delete' | 'method-patch' {
-  const map: Record<string, 'method-get' | 'method-post' | 'method-put' | 'method-delete' | 'method-patch'> = {
-    GET: 'method-get',
-    POST: 'method-post',
-    PUT: 'method-put',
-    DELETE: 'method-delete',
-    PATCH: 'method-patch',
-  };
-  return map[method] || 'method-get';
 }
 
 export function StepContent({ step, sourceForStep, onStepClick, onRefClick, forceExpanded, ...props }: ContentProps & {  

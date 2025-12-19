@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import type { Step, SourceDescription } from '@/types/arazzo';
 import { StepContent } from './DetailViews';
 import { MarkdownText } from './primitives';
+import { extractHttpMethod } from '@/lib/arazzo-utils';
 
 interface StepCardProps {
   step: Step;
@@ -56,22 +57,17 @@ export default function StepCard({
 
   const sourceForStep = getSourceForStep();
 
-  // Get HTTP method color (Swagger-style)
+  // Get HTTP method color (Swagger-style) - using centralized extractHttpMethod
   const getMethodColor = (operationId: string) => {
-    const opLower = operationId.toLowerCase();
-    if (opLower.includes('get') || opLower.includes('find') || opLower.includes('list') || opLower.includes('search')) {
-      return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
+    const method = extractHttpMethod(operationId);
+    switch (method) {
+      case 'GET': return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
+      case 'POST': return { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500' };
+      case 'PUT':
+      case 'PATCH': return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
+      case 'DELETE': return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
+      default: return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
     }
-    if (opLower.includes('create') || opLower.includes('add') || opLower.includes('post')) {
-      return { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500' };
-    }
-    if (opLower.includes('update') || opLower.includes('put') || opLower.includes('patch')) {
-      return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
-    }
-    if (opLower.includes('delete') || opLower.includes('remove')) {
-      return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
-    }
-    return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
   };
 
   const methodColor = step.operationId ? getMethodColor(step.operationId) : { bg: 'bg-gray-500', text: 'text-white', border: 'border-gray-500' };

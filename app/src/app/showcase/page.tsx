@@ -10,6 +10,21 @@ import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction,
 import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList, SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from '@/components/arazzo';
 import { Badge, Card, CodeBlock, PropertyList } from '@/components/primitives';
 import ComplianceMatrix from '@/components/ComplianceMatrix';
+import UnifiedDocumentationViewShowcase from '@/components/UnifiedDocumentationViewShowcase';
+import WorkflowManagerShowcase from '@/components/WorkflowManagerShowcase';
+import RightPanelModeToggleShowcase from '@/components/RightPanelModeToggleShowcase';
+import OpenAPILoaderShowcase from '@/components/OpenAPILoaderShowcase';
+import ViewModeSelectorShowcase from '@/components/ViewModeSelectorShowcase';
+import SourceManagerShowcase from '@/components/SourceManagerShowcase';
+import DisplayTogglesShowcase from '@/components/DisplayTogglesShowcase';
+import ExpressionAutocompleteShowcase from '@/components/ExpressionAutocompleteShowcase';
+import WorkflowSelectorShowcase from '@/components/WorkflowSelectorShowcase';
+import BuilderHeaderShowcase from '@/components/BuilderHeaderShowcase';
+import CanvasToolbarShowcase from '@/components/CanvasToolbarShowcase';
+import StepInspectorShowcase from '@/components/StepInspectorShowcase';
+import ResizableInspectorPanelShowcase from '@/components/ResizableInspectorPanelShowcase';
+import ActionFormEditorShowcase from '@/components/ActionFormEditorShowcase';
+import ExpressionInputShowcase from '@/components/ExpressionInputShowcase';
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
@@ -460,6 +475,21 @@ export default function ShowcasePage() {
 
   const sections = [
     { id: 'compliance', label: 'Compliance Matrix' },
+    { id: 'unified-doc', label: '🆕 Unified Doc View' },
+    { id: 'workflow-manager', label: '🆕 Workflow Manager' },
+    { id: 'right-panel-toggle', label: '🆕 Right Panel Toggle' },
+    { id: 'openapi-loader', label: '🆕 OpenAPI Loader' },
+    { id: 'view-mode-selector', label: '🆕 View Mode Selector' },
+    { id: 'source-manager', label: '🆕 Source Manager' },
+    { id: 'display-toggles', label: '🆕 Display Toggles' },
+    { id: 'expression-autocomplete', label: '🆕 Expression Autocomplete' },
+    { id: 'workflow-selector', label: '🆕 Workflow Selector' },
+    { id: 'builder-header', label: '🆕 Builder Header' },
+    { id: 'canvas-toolbar', label: '🆕 Canvas Toolbar' },
+    { id: 'step-inspector', label: '🆕 Step Inspector' },
+    { id: 'resizable-panel', label: '🆕 Resizable Panel' },
+    { id: 'action-form-editor', label: '🆕 Action Form Editor' },
+    { id: 'expression-input', label: '🆕 Expression Input' },
     { id: 'spec-examples', label: 'Spec Examples' },
     { id: 'primitives', label: 'Primitives' },
     { id: 'arazzo', label: 'Arazzo Components' },
@@ -601,6 +631,81 @@ export default function ShowcasePage() {
             {/* Compliance Matrix */}
             {activeSection === 'compliance' && (
               <ComplianceMatrix isDark={isDark} />
+            )}
+
+            {/* Unified Documentation View */}
+            {activeSection === 'unified-doc' && (
+              <UnifiedDocumentationViewShowcase isDark={isDark} />
+            )}
+
+            {/* Workflow Manager */}
+            {activeSection === 'workflow-manager' && (
+              <WorkflowManagerShowcase isDark={isDark} />
+            )}
+
+            {/* Right Panel Mode Toggle */}
+            {activeSection === 'right-panel-toggle' && (
+              <RightPanelModeToggleShowcase isDark={isDark} />
+            )}
+
+            {/* OpenAPI Loader */}
+            {activeSection === 'openapi-loader' && (
+              <OpenAPILoaderShowcase isDark={isDark} />
+            )}
+
+            {/* View Mode Selector */}
+            {activeSection === 'view-mode-selector' && (
+              <ViewModeSelectorShowcase isDark={isDark} />
+            )}
+
+            {/* Source Manager */}
+            {activeSection === 'source-manager' && (
+              <SourceManagerShowcase isDark={isDark} />
+            )}
+
+            {/* Display Toggles */}
+            {activeSection === 'display-toggles' && (
+              <DisplayTogglesShowcase isDark={isDark} />
+            )}
+
+            {/* Expression Autocomplete */}
+            {activeSection === 'expression-autocomplete' && (
+              <ExpressionAutocompleteShowcase isDark={isDark} />
+            )}
+
+            {/* Workflow Selector */}
+            {activeSection === 'workflow-selector' && (
+              <WorkflowSelectorShowcase isDark={isDark} />
+            )}
+
+            {/* Builder Header */}
+            {activeSection === 'builder-header' && (
+              <BuilderHeaderShowcase isDark={isDark} />
+            )}
+
+            {/* Canvas Toolbar */}
+            {activeSection === 'canvas-toolbar' && (
+              <CanvasToolbarShowcase isDark={isDark} />
+            )}
+
+            {/* Step Inspector */}
+            {activeSection === 'step-inspector' && (
+              <StepInspectorShowcase isDark={isDark} />
+            )}
+
+            {/* Resizable Inspector Panel */}
+            {activeSection === 'resizable-panel' && (
+              <ResizableInspectorPanelShowcase isDark={isDark} />
+            )}
+
+            {/* Action Form Editor */}
+            {activeSection === 'action-form-editor' && (
+              <ActionFormEditorShowcase isDark={isDark} />
+            )}
+
+            {/* Expression Input */}
+            {activeSection === 'expression-input' && (
+              <ExpressionInputShowcase isDark={isDark} />
             )}
 
             {/* Spec Examples */}
