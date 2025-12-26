@@ -398,20 +398,40 @@ workflows:
             shipDate: "2024-12-25T10:00:00Z"
             status: placed
             complete: false
+            metadata:
+              source: "web-app"
+              campaign: "holiday-special"
+          replacements:
+            - target: "metadata.source"
+              value: $inputs.source
+              default: "web-app"
         parameters:
           - name: Authorization
             in: header
             value: Bearer $steps.login.outputs.authToken
+          - name: X-Request-ID
+            in: header
+            value: $inputs.requestId
+          - name: region
+            in: cookie
+            value: "eu-west-1"
         
         successCriteria:
           - condition: $statusCode == 200
           - condition: $response.body.id != null
+          - context: $response.body.status
+            type: regex
+            condition: ^(placed|approved)$
+          - context: $response.body
+            type: jsonpath
+            condition: $.totalPrice > 0
         
         outputs:
           orderId: $response.body.id
           finalPrice: $response.body.totalPrice
           discountApplied: $response.body.discountApplied
           orderStatus: $response.body.status
+          estimatedDelivery: $response.body.shipDate
         
         # ⚡ onFailure: Handle 409 Conflict (pet already sold)
         onFailure:
@@ -427,6 +447,13 @@ workflows:
             stepId: endWithError
             criteria:
               - condition: $statusCode == 400
+          - name: retryOnTimeout
+            type: retry
+            retryAfter: 5
+            retryLimit: 3
+            criteria:
+              - condition: $statusCode == 408
+              - condition: $statusCode == 504
         
         onSuccess:
           - name: orderComplete
@@ -434,6 +461,10 @@ workflows:
             stepId: sendConfirmation
             criteria:
               - condition: $statusCode == 200
+        
+        x-custom-metadata:
+          importance: "critical"
+          owner: "checkout-team"
 
       # ═══════════════════════════════════════════════════════════════
       # STEP 5b: Place order WITHOUT coupon
