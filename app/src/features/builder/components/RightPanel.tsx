@@ -117,7 +117,19 @@ function RightPanel({
   // prioritizing the context selection (from Left Panel/Canvas) and then 
   // falling back to external selections (from Flowchart/Sequence).
   const selectedDetailData = useMemo((): DetailData | null => {
-    // 1. Try context selection first (used by Left Panel and Builder Canvas)
+    // 1. If in diagram mode (flowchart/sequence), prioritize the local selection (detailData)
+    if (viewMode !== 'builder' && detailData) {
+      if (detailData.type === 'step' && detailData.step) {
+        const stepId = detailData.step.stepId;
+        const step = workflow?.steps.find(s => s.stepId === stepId);
+        if (step) {
+          return { ...detailData, step, sourceForStep: getSourceForStep(step) };
+        }
+      }
+      return detailData;
+    }
+
+    // 2. Try context selection first (used by Left Panel and Builder Canvas)
     if (state.selectedNodeType === 'step' && state.selectedStepId) {
       const step = workflow?.steps.find(s => s.stepId === state.selectedStepId);
       if (step) {
@@ -143,7 +155,8 @@ function RightPanel({
       }
     }
 
-    // 2. If no context selection, try selection from props (used by Flowchart/Sequence)
+    // 3. If no context selection, try selection from props (used by Flowchart/Sequence)
+    // This fallback is still useful if viewMode is builder but we want to show something else (unlikely)
     if (detailData) {
       if (detailData.type === 'step' && detailData.step) {
         const stepId = detailData.step.stepId;
@@ -156,7 +169,7 @@ function RightPanel({
     }
 
     return null;
-  }, [state.selectedNodeType, state.selectedStepId, workflow, getSourceForStep, detailData]);
+  }, [state.selectedNodeType, state.selectedStepId, workflow, getSourceForStep, detailData, viewMode]);
 
   const handleClose = useCallback(() => {
     if (viewMode === 'builder') {
