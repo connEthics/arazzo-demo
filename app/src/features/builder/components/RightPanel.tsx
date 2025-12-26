@@ -20,6 +20,7 @@ interface RightPanelProps {
   // For diagram modes
   detailData: DetailData | null;
   onDetailClose: () => void;
+  onDetailSelect?: (data: DetailData | null) => void;
 
   // Mobile
   isMobile?: boolean;
@@ -33,6 +34,7 @@ function RightPanel({
   onToggle,
   detailData,
   onDetailClose,
+  onDetailSelect,
   isMobile = false,
   onMobileClose,
 }: RightPanelProps) {
@@ -111,6 +113,22 @@ function RightPanel({
       payload: { updates }
     });
   }, [dispatch]);
+
+  // Handle step click (navigation)
+  const handleStepClick = useCallback((stepId: string) => {
+    if (viewMode === 'builder') {
+      dispatch({ type: 'SELECT_STEP', payload: stepId });
+    } else if (onDetailSelect) {
+      const step = workflow?.steps.find(s => s.stepId === stepId);
+      if (step) {
+        onDetailSelect({
+          type: 'step',
+          step,
+          sourceForStep: getSourceForStep(step)
+        });
+      }
+    }
+  }, [viewMode, dispatch, onDetailSelect, workflow, getSourceForStep]);
 
   // Convert selected node to DetailData for drawer
   // This memo ensures we always have the freshest data from the global state,
@@ -201,6 +219,7 @@ function RightPanel({
       onReorderOutput={handleReorderOutput}
       onComponentsUpdate={handleComponentsUpdate}
       initialMode="read"
+      onStepClick={handleStepClick}
     />
   );
 

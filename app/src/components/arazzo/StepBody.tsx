@@ -476,6 +476,7 @@ export default function StepBody({
                                 onChange={(newActions) => handleUpdate({ onSuccess: newActions as SuccessAction[] })}
                                 isDark={isDark}
                                 availableSteps={availableSteps}
+                                onStepClick={onStepClick}
                             />
                         ) : (
                             <>
@@ -515,6 +516,7 @@ export default function StepBody({
                                 onChange={(newActions) => handleUpdate({ onFailure: newActions as FailureAction[] })}
                                 isDark={isDark}
                                 availableSteps={availableSteps}
+                                onStepClick={onStepClick}
                             />
                         ) : (
                             <>

@@ -854,6 +854,7 @@ function WorkflowSection({
               editable={editable}
               onStepUpdate={onStepUpdate}
               expressionSuggestions={expressionSuggestions}
+              availableSteps={workflow.steps.map(s => s.stepId)}
             />
           ))}
         </div>

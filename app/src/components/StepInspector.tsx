@@ -719,6 +719,7 @@ export default function StepInspector({
               isDark={isDark}
               readOnly={readOnly}
               availableSteps={availableSteps}
+              onStepClick={onStepClick}
             />
 
             <ActionFormEditor
@@ -728,6 +729,7 @@ export default function StepInspector({
               isDark={isDark}
               readOnly={readOnly}
               availableSteps={availableSteps}
+              onStepClick={onStepClick}
             />
           </div>
         )}

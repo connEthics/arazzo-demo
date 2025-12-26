@@ -60,8 +60,28 @@ function BuilderPageContent() {
           payload: { spec, sources } 
         });
 
-        // Select Input node by default
-        dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
+        // Select specific step by default
+        const defaultStepId = 'placeOrderWithCoupon';
+        const defaultStep = spec.workflows[0].steps.find(s => s.stepId === defaultStepId);
+        
+        if (defaultStep) {
+          dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: defaultStepId } });
+          
+          // Also set detailData for diagram highlighting
+          let sourceForStep;
+          if (defaultStep.operationId && defaultStep.operationId.includes('.')) {
+            const sourceName = defaultStep.operationId.split('.')[0];
+            sourceForStep = spec.sourceDescriptions?.find(s => s.name === sourceName);
+          }
+          
+          setDetailData({
+            type: 'step',
+            step: defaultStep,
+            sourceForStep
+          });
+        } else {
+          dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
+        }
       } catch (error) {
         console.error('Failed to load demo workflow:', error);
       }
@@ -76,7 +96,7 @@ function BuilderPageContent() {
   // -------------------------------------------------------------------------
   // View Mode State
   // -------------------------------------------------------------------------
-  const [viewMode, setViewMode] = useState<ViewMode>('builder');
+  const [viewMode, setViewMode] = useState<ViewMode>('flowchart');
   
   // -------------------------------------------------------------------------
   // Panel State
@@ -291,6 +311,7 @@ function BuilderPageContent() {
                   onToggle={() => setShowRightPanel(!showRightPanel)}
                   detailData={detailData}
                   onDetailClose={() => setDetailData(null)}
+                  onDetailSelect={handleDetailSelect}
                 />
               </div>
             )}
@@ -307,6 +328,7 @@ function BuilderPageContent() {
                   onDetailClose={() => setDetailData(null)}
                   isMobile
                   onMobileClose={() => setMobilePanel('center')}
+                  onDetailSelect={handleDetailSelect}
                 />
               </div>
             )}

@@ -82,6 +82,10 @@ export default function Inspector({
   onRefClick,
 }: InspectorProps) {
 
+  const availableSteps = useMemo(() =>
+    allSteps.map(s => s.stepId).filter(Boolean) as string[]
+  , [allSteps]);
+
   // Generate expression suggestions from context
   const expressionSuggestions = useMemo((): ExpressionSuggestion[] => {
     const suggestions: ExpressionSuggestion[] = [
@@ -202,8 +206,9 @@ export default function Inspector({
           workflowOutputs={workflowOutputs}
           workflowId={workflowId}
           onStepUpdate={handleStepUpdate}
-          availableSteps={allSteps.map(s => s.stepId)}
+          availableSteps={availableSteps}
           expressionSuggestions={expressionSuggestions}
+          onStepClick={onStepClick}
         />
       </div>
     </div>

@@ -28,6 +28,7 @@ interface StepCardProps {
   onStepUpdate?: (stepId: string, updates: Partial<Step>) => void;
   /** Expression suggestions for autocomplete in edit mode */
   expressionSuggestions?: ExpressionSuggestion[];
+  availableSteps?: string[];
 }
 
 export default function StepCard({
@@ -47,6 +48,7 @@ export default function StepCard({
   editable = false,
   onStepUpdate,
   expressionSuggestions = [],
+  availableSteps = [],
 }: StepCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -130,6 +132,7 @@ export default function StepCard({
             editable={editable}
             onStepUpdate={onStepUpdate ? (updates) => onStepUpdate(step.stepId, updates) : undefined}
             expressionSuggestions={expressionSuggestions}
+            availableSteps={availableSteps}
           />
         </div>
       </div>
