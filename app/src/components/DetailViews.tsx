@@ -260,16 +260,16 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
   }, [inputSchema]);
 
   // If showing all workflow inputs
-  if (!isSingleInput && workflowInputs?.properties) {
-    const properties = Object.keys(workflowInputs.properties);
+  if (!isSingleInput && (workflowInputs?.properties || (editable && input.name === 'Workflow Inputs'))) {
+    const properties = workflowInputs?.properties ? Object.keys(workflowInputs.properties) : [];
 
     return (
       <div className="space-y-4">
-        {properties.length > 0 && (
+        {(properties.length > 0 || editable) && (
           <Card isDark={isDark}>
             {editable ? (
               <WorkflowInputsEditor
-                inputs={workflowInputs}
+                inputs={workflowInputs || { type: 'object', properties: {} }}
                 onChange={(newInputs) => onUpdate?.(newInputs)}
                 isDark={isDark}
               />
@@ -279,8 +279,8 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
                   <SchemaViewer
                     key={propName}
                     name={propName}
-                    schema={workflowInputs.properties![propName]}
-                    required={workflowInputs.required?.includes(propName)}
+                    schema={workflowInputs!.properties![propName]}
+                    required={workflowInputs!.required?.includes(propName)}
                     isDark={isDark}
                   />
                 ))}

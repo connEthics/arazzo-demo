@@ -165,19 +165,19 @@ function BuilderCanvasContent({
       map.set(step.stepId, `node-${idx}`);
     });
     return map;
-  }, [state.spec.workflows]);
+  }, [state.spec.workflows, state.selectedWorkflowIndex]);
   
   // Get all valid stepIds for validation
   const validStepIds = useMemo(() => {
     const steps = state.spec.workflows[state.selectedWorkflowIndex]?.steps || [];
     return new Set(steps.map(s => s.stepId));
-  }, [state.spec.workflows]);
+  }, [state.spec.workflows, state.selectedWorkflowIndex]);
   
   // Get topological info (start/end steps)
   const topoInfo = useMemo(() => {
     const steps = state.spec.workflows[state.selectedWorkflowIndex]?.steps || [];
     return getTopologicalInfo(steps);
-  }, [state.spec.workflows]);
+  }, [state.spec.workflows, state.selectedWorkflowIndex]);
 
   // Sync nodes with global state steps - rebuild nodes when steps change
   useEffect(() => {
@@ -316,7 +316,7 @@ function BuilderCanvasContent({
     });
     
     setNodes(newNodes);
-  }, [state.spec.workflows, state.selectedStepId, state.selectedNodeType, operations, validStepIds, displayOptions.showPorts, topoInfo, setNodes]);
+  }, [state.spec.workflows, state.selectedWorkflowIndex, state.selectedStepId, state.selectedNodeType, operations, validStepIds, displayOptions.showPorts, topoInfo, setNodes]);
 
   // Sync edges with global state (onSuccess/onFailure/data links)
   useEffect(() => {
@@ -468,7 +468,7 @@ function BuilderCanvasContent({
     });
     
     setEdges(newEdges);
-  }, [state.spec.workflows, stepIdToNodeId, validStepIds, displayOptions.showErrorFlow, displayOptions.showDataFlow, topoInfo, setEdges]);
+  }, [state.spec.workflows, state.selectedWorkflowIndex, stepIdToNodeId, validStepIds, displayOptions.showErrorFlow, displayOptions.showDataFlow, topoInfo, setEdges]);
 
   // Update positions ref when nodes move
   const handleNodesChange = useCallback((changes: any) => {

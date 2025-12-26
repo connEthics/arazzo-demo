@@ -352,29 +352,7 @@ export default function UnifiedDocumentationView({
                     <div className="flex items-center gap-2">
                       <div className="w-1 h-5 bg-emerald-500 rounded-full" />
                       <span className={`text-sm font-semibold ${textClass}`}>Reusable Inputs</span>
-                      {spec.components?.inputs && (
-                        <Badge variant="info" isDark={isDark} size="xs">{Object.keys(spec.components.inputs).length}</Badge>
-                      )}
                     </div>
-                    {editable && (
-                      <button
-                        onClick={() => {
-                          const name = `input_${Object.keys(spec.components?.inputs || {}).length + 1}`;
-                          onComponentsUpdate?.({
-                            inputs: {
-                              ...(spec.components?.inputs || {}),
-                              [name]: { type: 'object', properties: {} }
-                            }
-                          });
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Input
-                      </button>
-                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(spec.components?.inputs || {}).map(([name, inputs]) => {
@@ -820,37 +798,6 @@ function WorkflowSection({
           </div>
         )}
 
-        {/* Sequence Diagram */}
-        {sequenceCode && (
-          <div className={`p-4 rounded-lg border ${borderClass} avoid-break`}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">Sequence Diagram</h3>
-              {onViewSequence && (
-                <button
-                  onClick={() => onViewSequence(workflow.workflowId)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
-                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
-                    : 'bg-violet-600 hover:bg-violet-500 text-white'
-                    }`}
-                  title="Open sequence view"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Open View
-                </button>
-              )}
-            </div>
-            <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram
-                chart={flowchartCode}
-                isDark={isDark}
-                steps={workflow.steps}
-                onNodeClick={handleMermaidClick}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Sequence Diagram */}
         {sequenceCode && (

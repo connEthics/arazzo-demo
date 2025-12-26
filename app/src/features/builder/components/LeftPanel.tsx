@@ -122,7 +122,7 @@ function LeftPanel({
   onYamlFullscreen,
   isMobile = false,
 }: LeftPanelProps) {
-  const [leftMode, setLeftMode] = useState<LeftMode>('operations');
+  const [leftMode, setLeftMode] = useState<LeftMode>('yaml');
   const [activeSourcesExpanded, setActiveSourcesExpanded] = useState(true);
   const [isResizing, setIsResizing] = useState(false);
 

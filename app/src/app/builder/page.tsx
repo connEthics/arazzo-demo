@@ -59,6 +59,9 @@ function BuilderPageContent() {
           type: 'LOAD_SAMPLE', 
           payload: { spec, sources } 
         });
+
+        // Select Input node by default
+        dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
       } catch (error) {
         console.error('Failed to load demo workflow:', error);
       }
