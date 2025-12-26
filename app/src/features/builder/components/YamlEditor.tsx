@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import yaml from 'js-yaml';
+import { parseDocument, LineCounter } from 'yaml';
 import { useBuilder } from '../context/BuilderContext';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
@@ -16,6 +17,8 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
   const [localYaml, setLocalYaml] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const editorRef = useRef<any>(null);
+  const decorationsRef = useRef<string[]>([]);
 
   // Convert current spec to YAML for display
   const specYaml = useMemo(() => {
@@ -37,6 +40,70 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
       setLocalYaml(specYaml);
     }
   }, [specYaml, isEditing]);
+
+  // Handle highlighting when lastModifiedPath changes
+  useEffect(() => {
+    if (!state.lastModifiedPath || !editorRef.current || isEditing) return;
+
+    try {
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(localYaml, { lineCounter });
+      const node = doc.getIn(state.lastModifiedPath, true) as any;
+      
+      if (node && node.range) {
+        // Get line number (1-based for Monaco)
+        // yaml package uses 0-based indexing for range
+        // lineCounter.linePos returns 1-based line and col
+        const startPos = lineCounter.linePos(node.range[0]);
+        const endPos = lineCounter.linePos(node.range[1]);
+        
+        if (startPos && endPos) {
+          const range = {
+            startLineNumber: startPos.line,
+            startColumn: startPos.col,
+            endLineNumber: endPos.line,
+            endColumn: endPos.col
+          };
+
+          // Reveal line
+          editorRef.current.revealLineInCenter(range.startLineNumber);
+
+          // Add decoration
+          const newDecorations = [
+            {
+              range,
+              options: {
+                isWholeLine: true,
+                className: isDark ? 'bg-indigo-900/40' : 'bg-indigo-100',
+                linesDecorationsClassName: isDark ? 'bg-indigo-500 w-1' : 'bg-indigo-500 w-1', // Gutter marker
+              },
+            },
+          ];
+
+          decorationsRef.current = editorRef.current.deltaDecorations(
+            decorationsRef.current,
+            newDecorations
+          );
+
+          // Remove decoration after 2 seconds
+          setTimeout(() => {
+            if (editorRef.current) {
+              decorationsRef.current = editorRef.current.deltaDecorations(
+                decorationsRef.current,
+                []
+              );
+            }
+          }, 2000);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to highlight YAML line:', e);
+    }
+  }, [state.lastModifiedPath, localYaml, isEditing, isDark]);
+
+  const handleEditorDidMount = (editor: any) => {
+    editorRef.current = editor;
+  };
 
   const handleEditorChange = (value: string | undefined) => {
     setLocalYaml(value || '');
@@ -125,6 +192,7 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
           theme={isDark ? 'vs-dark' : 'light'}
           value={localYaml}
           onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },
             fontSize: 11,

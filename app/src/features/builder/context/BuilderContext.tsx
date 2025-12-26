@@ -103,11 +103,15 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       const oldStepId = action.payload.stepId;
       const newStepId = action.payload.updates.stepId;
       const isRenaming = newStepId && newStepId !== oldStepId;
+      
+      // Find step index for path tracking
+      const stepIndex = state.spec.workflows[state.selectedWorkflowIndex]?.steps.findIndex(s => s.stepId === oldStepId);
 
       return {
         ...state,
         // Update selectedStepId if the stepId itself changed
         selectedStepId: newStepId ? newStepId : state.selectedStepId,
+        lastModifiedPath: stepIndex !== -1 ? ['workflows', state.selectedWorkflowIndex, 'steps', stepIndex] : undefined,
         spec: {
           ...state.spec,
           workflows: state.spec.workflows.map((wf, idx) =>
@@ -273,6 +277,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
     case 'UPDATE_WORKFLOW':
       return {
         ...state,
+        lastModifiedPath: ['workflows', state.spec.workflows.findIndex(w => w.workflowId === action.payload.workflowId)],
         spec: {
           ...state.spec,
           workflows: state.spec.workflows.map(wf =>
@@ -285,6 +290,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
     case 'UPDATE_COMPONENTS':
       return {
         ...state,
+        lastModifiedPath: ['components'],
         spec: {
           ...state.spec,
           components: {

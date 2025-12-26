@@ -12,6 +12,7 @@ export interface BuilderState {
   selectedWorkflowIndex: number; // Currently selected workflow index
   sources: Record<string, any>; // Parsed OAS content
   needsAutoLayout: boolean; // Flag to trigger auto-layout after loading
+  lastModifiedPath?: (string | number)[]; // Path to the last modified element for YAML highlighting
 }
 
 export type BuilderAction =
