@@ -3,6 +3,7 @@
 import { memo, useState, useMemo } from 'react';
 import type { Step, SourceDescription, Parameter } from '@/types/arazzo';
 import { isReusableObject } from '@/types/arazzo';
+import { extractHttpMethod, getMethodStyles, type HttpMethod } from '@/lib/arazzo-utils';
 
 interface OpenApiDetailsProps {
   step: Step;
@@ -315,27 +316,9 @@ function OpenApiDetails({ step, source, isDark = false }: OpenApiDetailsProps) {
   );
 }
 
-// Utilities
-function extractHttpMethod(operationId?: string): string | null {
-  if (!operationId) return null;
-  const op = operationId.toLowerCase();
-  if (op.includes('get') || op.includes('find') || op.includes('list') || op.includes('search') || op.includes('retrieve')) return 'GET';
-  if (op.includes('post') || op.includes('create') || op.includes('place') || op.includes('add') || op.includes('upsert')) return 'POST';
-  if (op.includes('put') || op.includes('update')) return 'PUT';
-  if (op.includes('delete') || op.includes('remove')) return 'DELETE';
-  if (op.includes('patch')) return 'PATCH';
-  return 'GET';
-}
-
+// Utilities - using centralized arazzo-utils
 function getMethodColor(method: string): string {
-  const colors: Record<string, string> = {
-    GET: 'bg-emerald-100 text-emerald-700',
-    POST: 'bg-blue-100 text-blue-700',
-    PUT: 'bg-amber-100 text-amber-700',
-    PATCH: 'bg-orange-100 text-orange-700',
-    DELETE: 'bg-red-100 text-red-700',
-  };
-  return colors[method] || 'bg-gray-100 text-gray-700';
+  return getMethodStyles(method as HttpMethod);
 }
 
 function getStatusColor(code: string): string {

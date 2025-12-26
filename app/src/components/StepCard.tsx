@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import type { Step, SourceDescription } from '@/types/arazzo';
 import { StepContent } from './DetailViews';
 import { MarkdownText } from './primitives';
+import { StepHeader } from './arazzo';
+import { extractHttpMethod } from '@/lib/arazzo-utils';
+import type { ExpressionSuggestion } from './ExpressionInput';
 
 interface StepCardProps {
   step: Step;
@@ -19,22 +22,31 @@ interface StepCardProps {
   onNavigate?: (workflowId: string, stepId: string) => void;
   onRefClick?: (reference: string) => void;
   forceExpanded?: boolean;
+  /** Enable edit mode */
+  editable?: boolean;
+  /** Callback to update step data (required for editable mode) */
+  onStepUpdate?: (stepId: string, updates: Partial<Step>) => void;
+  /** Expression suggestions for autocomplete in edit mode */
+  expressionSuggestions?: ExpressionSuggestion[];
 }
 
-export default function StepCard({ 
-  step, 
-  stepIndex, 
-  workflowId, 
-  allSteps = [], 
-  sources = [], 
-  isDark, 
-  textClass = isDark ? 'text-white' : 'text-gray-900', 
-  mutedClass = isDark ? 'text-slate-400' : 'text-gray-500', 
-  borderClass = isDark ? 'border-slate-700' : 'border-gray-200', 
-  codeBgClass = isDark ? 'bg-slate-800' : 'bg-gray-50', 
+export default function StepCard({
+  step,
+  stepIndex,
+  workflowId,
+  allSteps = [],
+  sources = [],
+  isDark,
+  textClass = isDark ? 'text-white' : 'text-gray-900',
+  mutedClass = isDark ? 'text-slate-400' : 'text-gray-500',
+  borderClass = isDark ? 'border-slate-700' : 'border-gray-200',
+  codeBgClass = isDark ? 'bg-slate-800' : 'bg-gray-50',
   onNavigate,
   onRefClick,
-  forceExpanded
+  forceExpanded,
+  editable = false,
+  onStepUpdate,
+  expressionSuggestions = [],
 }: StepCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -56,25 +68,29 @@ export default function StepCard({
 
   const sourceForStep = getSourceForStep();
 
-  // Get HTTP method color (Swagger-style)
+  // Get HTTP method color (Swagger-style) - using centralized extractHttpMethod
   const getMethodColor = (operationId: string) => {
-    const opLower = operationId.toLowerCase();
-    if (opLower.includes('get') || opLower.includes('find') || opLower.includes('list') || opLower.includes('search')) {
-      return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
+    const method = extractHttpMethod(operationId);
+    switch (method) {
+      case 'GET': return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
+      case 'POST': return { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500' };
+      case 'PUT':
+      case 'PATCH': return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
+      case 'DELETE': return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
+      default: return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
     }
-    if (opLower.includes('create') || opLower.includes('add') || opLower.includes('post')) {
-      return { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500' };
-    }
-    if (opLower.includes('update') || opLower.includes('put') || opLower.includes('patch')) {
-      return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
-    }
-    if (opLower.includes('delete') || opLower.includes('remove')) {
-      return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
-    }
-    return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
   };
 
   const methodColor = step.operationId ? getMethodColor(step.operationId) : { bg: 'bg-gray-500', text: 'text-white', border: 'border-gray-500' };
+
+  // Extract HTTP method and operation name
+  const httpMethod = step.operationId ? extractHttpMethod(step.operationId) : null;
+  const operationName = step.operationId?.includes('.')
+    ? step.operationId.split('.').pop()
+    : step.operationId;
+  const sourceName = step.operationId?.includes('.')
+    ? step.operationId.split('.')[0]
+    : null;
 
   // Handle step navigation
   const handleStepClick = (stepId: string) => {
@@ -82,52 +98,25 @@ export default function StepCard({
   };
 
   return (
-    <div 
+    <div
       id={`step-${workflowId}-${step.stepId}`}
-      className={`rounded-lg border overflow-hidden avoid-break transition-all ${borderClass} ${isDark ? 'bg-slate-800/50' : 'bg-white'}`}
+      className={`rounded-lg border avoid-break transition-all ${borderClass} ${isDark ? 'bg-slate-800/50' : 'bg-white'}`}
     >
       {/* Swagger-style Header */}
-      <div 
-        className={`flex items-center gap-3 p-3 cursor-pointer hover:opacity-90 transition-opacity border-l-4 ${methodColor.border}`}
+      <StepHeader
+        step={step}
+        variant="card"
+        index={stepIndex}
+        isDark={isDark}
         onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <span className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold ${methodColor.bg} ${methodColor.text}`}>
-          {stepIndex + 1}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-semibold text-base">{step.stepId}</h4>
-            {step.operationId && (
-              <code className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'}`}>
-                {step.operationId}
-              </code>
-            )}
-            {step.workflowId && (
-              <code className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>
-                workflow: {step.workflowId}
-              </code>
-            )}
-          </div>
-          {step.description && (
-            <div className={`text-sm ${mutedClass} mt-0.5 line-clamp-2`}>
-              <MarkdownText content={step.description} isDark={isDark} variant="compact" />
-            </div>
-          )}
-        </div>
-        <svg 
-          className={`w-5 h-5 ${mutedClass} transition-transform print:hidden ${isExpanded ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
+        className={`${isExpanded ? 'bg-slate-50 dark:bg-slate-800' : ''} rounded-t-lg`}
+        style={{ borderLeft: `4px solid ${methodColor.border.split('-')[1] === 'blue' ? '#3b82f6' : methodColor.border.split('-')[1] === 'emerald' ? '#10b981' : methodColor.border.split('-')[1] === 'amber' ? '#f59e0b' : methodColor.border.split('-')[1] === 'red' ? '#ef4444' : '#6366f1'}` }}
+      />
 
       {/* Expandable Content - Uses same StepContent as Drawer */}
-      <div className={`border-t ${borderClass} ${isExpanded ? '' : 'hidden print:block'}`}>
+      <div className={`border-t ${borderClass} ${isExpanded ? '' : 'hidden print:block'} rounded-b-lg`}>
         <div className="p-4">
-          <StepContent 
+          <StepContent
             step={step}
             sourceForStep={sourceForStep}
             isDark={isDark}
@@ -137,6 +126,10 @@ export default function StepCard({
             onStepClick={handleStepClick}
             onRefClick={onRefClick}
             forceExpanded={forceExpanded}
+            hideHeader={true}
+            editable={editable}
+            onStepUpdate={onStepUpdate ? (updates) => onStepUpdate(step.stepId, updates) : undefined}
+            expressionSuggestions={expressionSuggestions}
           />
         </div>
       </div>

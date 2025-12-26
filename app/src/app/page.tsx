@@ -199,8 +199,8 @@ export default function LandingPage() {
                 {/* Screenshot */}
                 <div className="relative aspect-[16/9]">
                   <Image
-                    src="/screenshots/flowchart-view-with-step-detail.png"
-                    alt="Arazzo Playground - Flowchart view with interactive step details"
+                    src="/screenshots/builder-preview.png"
+                    alt="Arazzo Builder - Interactive Workflow Editor"
                     fill
                     className="object-cover object-top"
                     priority

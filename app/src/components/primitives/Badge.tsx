@@ -57,8 +57,8 @@ const variantStyles: Record<BadgeVariant, { light: string; dark: string }> = {
     dark: 'bg-emerald-900/50 text-emerald-300 border-emerald-700' 
   },
   output: { 
-    light: 'bg-amber-100 text-amber-700 border-amber-200', 
-    dark: 'bg-amber-900/50 text-amber-300 border-amber-700' 
+    light: 'bg-violet-100 text-violet-700 border-violet-200', 
+    dark: 'bg-violet-900/50 text-violet-300 border-violet-700' 
   },
   success: { 
     light: 'bg-emerald-100 text-emerald-700 border-emerald-200', 

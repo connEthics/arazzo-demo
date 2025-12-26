@@ -198,8 +198,17 @@ export function workflowToMermaidSequence(
 
     // Outputs note (optionally hidden)
     if (!hideOutputs && step.outputs && Object.keys(step.outputs).length > 0) {
-      const outputs = Object.keys(step.outputs).join(', ');
-      lines.push(`  Note right of Client: 📦 ${sanitizeLabel(outputs)}`);
+      const outputKeys = Object.keys(step.outputs);
+      // Truncate long output lists
+      const maxOutputsToShow = 2;
+      const truncatedOutputs = outputKeys.length > maxOutputsToShow
+        ? outputKeys.slice(0, maxOutputsToShow).join(', ') + ` (+${outputKeys.length - maxOutputsToShow})`
+        : outputKeys.join(', ');
+      // Limit total length
+      const displayOutputs = truncatedOutputs.length > 40
+        ? truncatedOutputs.slice(0, 37) + '...'
+        : truncatedOutputs;
+      lines.push(`  Note right of Client: 📦 ${sanitizeLabel(displayOutputs)}`);
     }
 
     // Close step rect before error handling to avoid nesting issues
@@ -225,8 +234,17 @@ export function workflowToMermaidSequence(
 
   // Final output
   if (workflow.outputs) {
-    const outputs = Object.keys(workflow.outputs).join(', ');
-    lines.push(`  Note over Client: ✅ Complete: ${sanitizeLabel(outputs)}`);
+    const outputKeys = Object.keys(workflow.outputs);
+    // Truncate long output lists to avoid display issues
+    const maxOutputsToShow = 3;
+    const truncatedOutputs = outputKeys.length > maxOutputsToShow
+      ? outputKeys.slice(0, maxOutputsToShow).join(', ') + ` (+${outputKeys.length - maxOutputsToShow} more)`
+      : outputKeys.join(', ');
+    // Limit total length to prevent overflow
+    const displayOutputs = truncatedOutputs.length > 50 
+      ? truncatedOutputs.slice(0, 47) + '...'
+      : truncatedOutputs;
+    lines.push(`  Note over Client: ✅ Complete: ${sanitizeLabel(displayOutputs)}`);
   }
 
   return lines.join('\n');

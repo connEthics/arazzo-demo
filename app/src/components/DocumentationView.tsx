@@ -6,7 +6,7 @@ import type { ArazzoSpec, Step, SourceDescription, Workflow } from '@/types/araz
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
 import StepCard from './StepCard';
 import { MarkdownText } from './primitives';
-import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from './arazzo';
+import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList, WorkflowHeader, WorkflowBody } from './arazzo';
 import { InputContent, OutputContent } from './DetailViews';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
@@ -17,11 +17,31 @@ interface DocumentationViewProps {
   initialStepId?: string;
   initialWorkflowId?: string;
   expandAll?: boolean;
+  editable?: boolean;
+  onWorkflowUpdate?: (workflowId: string, updates: Partial<Workflow>) => void;
+  onStepUpdate?: (workflowId: string, stepId: string, updates: Partial<Step>) => void;
+  onReorderStep?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  expressionSuggestions?: any[];
 }
 
 
 
-export default function DocumentationView({ spec, isDark = false, initialStepId, initialWorkflowId, expandAll }: DocumentationViewProps) {
+export default function DocumentationView({
+  spec,
+  isDark = false,
+  initialStepId,
+  initialWorkflowId,
+  expandAll,
+  editable = false,
+  onWorkflowUpdate,
+  onStepUpdate,
+  onReorderStep,
+  onReorderInput,
+  onReorderOutput,
+  expressionSuggestions = []
+}: DocumentationViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Scroll to step when clicking on Mermaid diagram
@@ -69,9 +89,9 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
         {spec.sourceDescriptions && spec.sourceDescriptions.length > 0 && (
           <section className="mb-10 print:mb-6">
             <h2 className="text-2xl font-bold mb-4 print:text-xl">API Sources</h2>
-            <SourceDescriptionsList 
-              sources={spec.sourceDescriptions} 
-              isDark={isDark} 
+            <SourceDescriptionsList
+              sources={spec.sourceDescriptions}
+              isDark={isDark}
               showDescription={true}
             />
           </section>
@@ -90,7 +110,7 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
 
         {/* Workflows */}
         {spec.workflows.map((workflow, workflowIdx) => (
-          <WorkflowSection 
+          <WorkflowSection
             key={workflow.workflowId}
             workflow={workflow}
             spec={spec}
@@ -102,12 +122,18 @@ export default function DocumentationView({ spec, isDark = false, initialStepId,
             codeBgClass={codeBgClass}
             onStepClick={scrollToStep}
             expandAll={expandAll}
+            editable={editable}
+            onWorkflowUpdate={onWorkflowUpdate}
+            onStepUpdate={onStepUpdate}
+            onReorderInput={onReorderInput}
+            onReorderOutput={onReorderOutput}
+            expressionSuggestions={expressionSuggestions}
           />
         ))}
 
         {/* Footer - Properly positioned for print */}
         <footer className={`mt-12 pt-6 border-t text-center text-sm ${mutedClass} print:mt-8`} style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
-          <p>Generated with Arazzo Playground</p>
+          <p>Generated with Arazzo Builder</p>
           <p className="mt-1">
             Made with ❤️ by <a href="https://connethics.com" className="text-indigo-600 hover:underline print:text-indigo-600">connethics.com</a>
           </p>
@@ -179,9 +205,32 @@ interface WorkflowSectionProps {
   codeBgClass: string;
   onStepClick: (workflowId: string, stepId: string) => void;
   expandAll?: boolean;
+  editable?: boolean;
+  onWorkflowUpdate?: (workflowId: string, updates: Partial<Workflow>) => void;
+  onStepUpdate?: (workflowId: string, stepId: string, updates: Partial<Step>) => void;
+  onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  expressionSuggestions?: any[];
 }
 
-function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mutedClass, borderClass, codeBgClass, onStepClick, expandAll }: WorkflowSectionProps) {
+function WorkflowSection({
+  workflow,
+  spec,
+  workflowIndex,
+  isDark,
+  textClass,
+  mutedClass,
+  borderClass,
+  codeBgClass,
+  onStepClick,
+  expandAll,
+  editable,
+  onWorkflowUpdate,
+  onStepUpdate,
+  onReorderInput,
+  onReorderOutput,
+  expressionSuggestions
+}: WorkflowSectionProps) {
   // Generate Mermaid diagrams without errors
   const flowchartCode = useMemo(() => {
     try {
@@ -206,50 +255,25 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
 
   return (
     <section id={`workflow-${workflow.workflowId}`} className={`mb-16 print:mb-10 ${workflowIndex > 0 ? 'page-break' : ''}`}>
-      {/* Workflow Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`text-xs font-semibold uppercase px-2 py-1 rounded bg-indigo-100 text-indigo-700`}>
-            Workflow {workflowIndex + 1}
-          </span>
-          <h2 className="text-2xl font-bold print:text-xl">{workflow.summary || workflow.workflowId}</h2>
-        </div>
-        <code className={`text-sm ${mutedClass} font-mono`}>{workflow.workflowId}</code>
-        {workflow.description && (
-          <p className={`mt-3 ${mutedClass}`}>{workflow.description}</p>
-        )}
-      </div>
+      {/* Workflow Header - Unified */}
+      <WorkflowHeader
+        workflow={workflow}
+        index={workflowIndex}
+        isDark={isDark}
+        editable={editable}
+        onUpdate={(updates) => onWorkflowUpdate?.(workflow.workflowId, updates)}
+      />
 
-      {/* Two-column layout for inputs/outputs */}
-      <div className="grid lg:grid-cols-2 gap-4 mb-6">
-        {/* Workflow Inputs */}
-        {workflow.inputs && workflow.inputs.properties && Object.keys(workflow.inputs.properties).length > 0 && (
-          <div className="avoid-break">
-            <InputContent 
-              input={{ name: 'Workflow Inputs', schema: {} }} 
-              workflowInputs={workflow.inputs}
-              isDark={isDark}
-              textClass={textClass}
-              mutedClass={mutedClass}
-              codeBgClass={codeBgClass}
-            />
-          </div>
-        )}
-
-        {/* Workflow Outputs */}
-        {workflow.outputs && Object.keys(workflow.outputs).length > 0 && (
-          <div className="avoid-break">
-            <OutputContent 
-              output={{ name: 'Workflow Outputs', value: '', allOutputs: workflow.outputs }}
-              workflowOutputs={workflow.outputs}
-              isDark={isDark}
-              textClass={textClass}
-              mutedClass={mutedClass}
-              codeBgClass={codeBgClass}
-            />
-          </div>
-        )}
-      </div>
+      {/* Workflow Body - Unified (Inputs/Outputs) */}
+      <WorkflowBody
+        workflow={workflow}
+        isDark={isDark}
+        editable={editable}
+        onUpdate={(updates) => onWorkflowUpdate?.(workflow.workflowId, updates)}
+        onReorderInput={(start, end) => onReorderInput?.(workflow.workflowId, start, end)}
+        onReorderOutput={(start, end) => onReorderOutput?.(workflow.workflowId, start, end)}
+        expressionSuggestions={expressionSuggestions}
+      />
 
       {/* Diagrams - Full width, stacked vertically */}
       <div className="space-y-6 mb-8">
@@ -258,8 +282,8 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
           <div className={`p-4 rounded-lg border ${borderClass} avoid-break`}>
             <h3 className="text-lg font-semibold mb-3">Flowchart</h3>
             <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram 
-                chart={flowchartCode} 
+              <MermaidDiagram
+                chart={flowchartCode}
                 isDark={isDark}
                 steps={workflow.steps}
                 onNodeClick={handleMermaidClick}
@@ -273,8 +297,8 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
           <div className={`p-4 rounded-lg border ${borderClass} avoid-break`}>
             <h3 className="text-lg font-semibold mb-3">Sequence Diagram</h3>
             <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram 
-                chart={sequenceCode} 
+              <MermaidDiagram
+                chart={sequenceCode}
                 isDark={isDark}
                 steps={workflow.steps}
                 onNodeClick={handleMermaidClick}
@@ -289,9 +313,9 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
         <h3 className="text-lg font-semibold mb-4">Steps ({workflow.steps.length})</h3>
         <div className="space-y-4">
           {workflow.steps.map((step, stepIdx) => (
-            <StepCard 
-              key={step.stepId} 
-              step={step} 
+            <StepCard
+              key={step.stepId}
+              step={step}
               stepIndex={stepIdx}
               workflowId={workflow.workflowId}
               allSteps={workflow.steps}

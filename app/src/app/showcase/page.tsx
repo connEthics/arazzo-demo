@@ -10,6 +10,22 @@ import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction,
 import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList, SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from '@/components/arazzo';
 import { Badge, Card, CodeBlock, PropertyList } from '@/components/primitives';
 import ComplianceMatrix from '@/components/ComplianceMatrix';
+import UnifiedDocumentationViewShowcase from '@/components/UnifiedDocumentationViewShowcase';
+import WorkflowManagerShowcase from '@/components/WorkflowManagerShowcase';
+import RightPanelModeToggleShowcase from '@/components/RightPanelModeToggleShowcase';
+import OpenAPILoaderShowcase from '@/components/OpenAPILoaderShowcase';
+import ViewModeSelectorShowcase from '@/components/ViewModeSelectorShowcase';
+import SourceManagerShowcase from '@/components/SourceManagerShowcase';
+import DisplayTogglesShowcase from '@/components/DisplayTogglesShowcase';
+import ExpressionAutocompleteShowcase from '@/components/ExpressionAutocompleteShowcase';
+import WorkflowSelectorShowcase from '@/components/WorkflowSelectorShowcase';
+import BuilderHeaderShowcase from '@/components/BuilderHeaderShowcase';
+import CanvasToolbarShowcase from '@/components/CanvasToolbarShowcase';
+import StepInspectorShowcase from '@/components/StepInspectorShowcase';
+import ResizableInspectorPanelShowcase from '@/components/ResizableInspectorPanelShowcase';
+import ActionFormEditorShowcase from '@/components/ActionFormEditorShowcase';
+import ExpressionInputShowcase from '@/components/ExpressionInputShowcase';
+import EditableDetailViewShowcase from '@/components/EditableDetailViewShowcase';
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
@@ -158,7 +174,7 @@ const sampleNodes = [
     id: 'input-1',
     type: 'input',
     position: { x: 250, y: 0 },
-    data: { 
+    data: {
       label: 'Workflow Inputs',
       properties: ['petType', 'maxPrice'],
       required: ['petType'],
@@ -172,7 +188,7 @@ const sampleNodes = [
     id: 'step-1',
     type: 'step',
     position: { x: 250, y: 100 },
-    data: { 
+    data: {
       label: 'find-available-pets',
       stepId: 'find-available-pets',
       operationId: 'findPetsByStatus',
@@ -183,7 +199,7 @@ const sampleNodes = [
     id: 'step-2',
     type: 'step',
     position: { x: 250, y: 200 },
-    data: { 
+    data: {
       label: 'select-pet',
       stepId: 'select-pet',
       operationId: 'getPetById',
@@ -194,7 +210,7 @@ const sampleNodes = [
     id: 'step-3',
     type: 'step',
     position: { x: 250, y: 300 },
-    data: { 
+    data: {
       label: 'place-order',
       stepId: 'place-order',
       operationId: 'placeOrder',
@@ -205,7 +221,7 @@ const sampleNodes = [
     id: 'output-1',
     type: 'output',
     position: { x: 250, y: 400 },
-    data: { 
+    data: {
       label: 'Workflow Outputs',
       properties: ['orderId', 'status'],
       expressions: {
@@ -234,7 +250,7 @@ interface ComponentShowcaseProps {
 
 function ComponentShowcase({ title, description, children, code, isDark }: ComponentShowcaseProps) {
   const [showCode, setShowCode] = useState(false);
-  
+
   return (
     <div className={`rounded-xl border overflow-hidden ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
       {/* Header */}
@@ -247,23 +263,22 @@ function ComponentShowcase({ title, description, children, code, isDark }: Compo
           {code && (
             <button
               onClick={() => setShowCode(!showCode)}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                showCode 
-                  ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
-                  : (isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-              }`}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showCode
+                ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
+                : (isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+                }`}
             >
               {showCode ? 'Hide Code' : 'Show Code'}
             </button>
           )}
         </div>
       </div>
-      
+
       {/* Preview */}
       <div className={`p-4 ${isDark ? 'bg-slate-900/50' : 'bg-gray-50/50'}`}>
         {children}
       </div>
-      
+
       {/* Code */}
       {showCode && code && (
         <div className={`border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
@@ -321,7 +336,7 @@ function ButtonShowcase({ isDark }: { isDark: boolean }) {
           Warning
         </button>
       </div>
-      
+
       {/* Secondary buttons */}
       <div className="flex flex-wrap gap-2">
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
@@ -334,7 +349,7 @@ function ButtonShowcase({ isDark }: { isDark: boolean }) {
           Ghost
         </button>
       </div>
-      
+
       {/* Icon buttons */}
       <div className="flex flex-wrap gap-2">
         <button className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
@@ -369,32 +384,30 @@ function InputShowcase({ isDark }: { isDark: boolean }) {
         <input
           type="text"
           placeholder="Enter value..."
-          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-            isDark 
-              ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500' 
-              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-          }`}
+          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark
+            ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500'
+            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+            }`}
         />
       </div>
-      
+
       {/* Select */}
       <div>
         <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
           Select
         </label>
         <select
-          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-            isDark 
-              ? 'bg-slate-800 border-slate-600 text-white' 
-              : 'bg-white border-gray-300 text-gray-900'
-          }`}
+          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark
+            ? 'bg-slate-800 border-slate-600 text-white'
+            : 'bg-white border-gray-300 text-gray-900'
+            }`}
         >
           <option>Option 1</option>
           <option>Option 2</option>
           <option>Option 3</option>
         </select>
       </div>
-      
+
       {/* Checkbox */}
       <div className="flex items-center gap-2">
         <input
@@ -421,7 +434,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
           A basic card component with title and description.
         </p>
       </div>
-      
+
       {/* Card with badge */}
       <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
         <div className="flex items-center gap-2 mb-2">
@@ -432,7 +445,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
           Card with a status badge indicator.
         </p>
       </div>
-      
+
       {/* Card with border accent */}
       <div className={`p-4 rounded-lg border-l-4 border-l-indigo-500 ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
         <h4 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Accent Border</h4>
@@ -440,7 +453,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
           Card with a colored left border accent.
         </p>
       </div>
-      
+
       {/* Interactive card */}
       <div className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-lg ${isDark ? 'border-slate-700 bg-slate-800 hover:border-indigo-500' : 'border-gray-200 bg-white hover:border-indigo-300'}`}>
         <h4 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Interactive Card</h4>
@@ -459,15 +472,29 @@ export default function ShowcasePage() {
   const [detailData, setDetailData] = useState<DetailData | null>(null);
 
   const sections = [
+    { id: 'group-arazzo', label: 'Group: Arazzo Components', isHeader: true },
     { id: 'compliance', label: 'Compliance Matrix' },
+    { id: 'arazzo', label: 'Arazzo Elements' },
     { id: 'spec-examples', label: 'Spec Examples' },
+    { id: 'mermaid', label: 'Mermaid Diagrams' },
+
+    { id: 'group-builder-overview', label: 'Group: Page Builder Overview', isHeader: true },
+    { id: 'builder-list', label: 'Component List' },
+
+    { id: 'group-builder-details', label: 'Group: Page Builder Highlights', isHeader: true },
+    { id: 'unified-doc', label: 'Unified Doc View' },
+    { id: 'workflow-manager', label: 'Workflow Manager' },
+    { id: 'action-form-editor', label: 'Action Form Editor' },
+    { id: 'step-inspector', label: 'Step Inspector' },
+    { id: 'expression-autocomplete', label: 'Expression Autocomplete' },
+    { id: 'editable-detail-view', label: 'Editable Detail View' },
+
+    { id: 'group-utilities', label: 'Group: Utilities & Primitives', isHeader: true },
     { id: 'primitives', label: 'Primitives' },
-    { id: 'arazzo', label: 'Arazzo Components' },
     { id: 'badges', label: 'Badges' },
     { id: 'buttons', label: 'Buttons' },
     { id: 'inputs', label: 'Inputs' },
     { id: 'cards', label: 'Cards' },
-    { id: 'mermaid', label: 'Mermaid Diagrams' },
     { id: 'flow', label: 'React Flow' },
     { id: 'drawer', label: 'Detail Drawer' },
     { id: 'documentation', label: 'Documentation' },
@@ -495,32 +522,32 @@ export default function ShowcasePage() {
                 </svg>
               )}
             </button>
-            
-            <Link 
-              href="/playground"
+
+            <Link
+              href="/builder"
               className={`hidden sm:flex items-center gap-2 text-sm ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Playground
+              Back to Builder
             </Link>
             <div className={`hidden sm:block w-px h-6 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             <h1 className="text-lg sm:text-xl font-bold">Component Showcase</h1>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Mobile: back link */}
-            <Link 
-              href="/playground"
+            <Link
+              href="/builder"
               className={`sm:hidden p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
-              aria-label="Back to Playground"
+              aria-label="Back to Builder"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
-            
+
             <button
               onClick={() => setIsDark(!isDark)}
               className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
@@ -543,12 +570,12 @@ export default function ShowcasePage() {
       <div className="flex-1 flex relative">
         {/* Mobile overlay */}
         {isMobileMenuOpen && (
-          <div 
+          <div
             className="lg:hidden fixed inset-0 bg-black/50 z-30"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
-        
+
         {/* Sidebar navigation */}
         <nav className={`
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -574,22 +601,30 @@ export default function ShowcasePage() {
                 </svg>
               </button>
             </div>
-            
+
             {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeSection === section.id
+              section.isHeader ? (
+                <div
+                  key={section.id}
+                  className={`px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`}
+                >
+                  {section.label}
+                </div>
+              ) : (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(section.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
                     ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
                     : (isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
-                }`}
-              >
-                {section.label}
-              </button>
+                    }`}
+                >
+                  {section.label}
+                </button>
+              )
             ))}
           </div>
         </nav>
@@ -597,10 +632,78 @@ export default function ShowcasePage() {
         {/* Content area */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
-            
+
             {/* Compliance Matrix */}
             {activeSection === 'compliance' && (
               <ComplianceMatrix isDark={isDark} />
+            )}
+
+            {/* Unified Documentation View */}
+            {activeSection === 'unified-doc' && (
+              <UnifiedDocumentationViewShowcase isDark={isDark} />
+            )}
+
+            {/* Workflow Manager */}
+            {activeSection === 'workflow-manager' && (
+              <WorkflowManagerShowcase isDark={isDark} />
+            )}
+
+            {/* Page Builder Component List */}
+            {activeSection === 'builder-list' && (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Page Builder Component Gallery</h2>
+                  <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                    A comprehensive list of all specialized components that form the Page Builder interface.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8">
+                  <BuilderHeaderShowcase isDark={isDark} />
+                  <CanvasToolbarShowcase isDark={isDark} />
+                  <WorkflowSelectorShowcase isDark={isDark} />
+                  <SourceManagerShowcase isDark={isDark} />
+                  <OpenAPILoaderShowcase isDark={isDark} />
+                  <ViewModeSelectorShowcase isDark={isDark} />
+                  <RightPanelModeToggleShowcase isDark={isDark} />
+                  <DisplayTogglesShowcase isDark={isDark} />
+                  <ResizableInspectorPanelShowcase isDark={isDark} />
+                  <ExpressionInputShowcase isDark={isDark} />
+                </div>
+              </div>
+            )}
+
+            {/* Remaining Builder Components (Highlights) */}
+            {activeSection === 'builder-header' && (
+              <BuilderHeaderShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'canvas-toolbar' && (
+              <CanvasToolbarShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'resizable-panel' && (
+              <ResizableInspectorPanelShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'expression-input' && (
+              <ExpressionInputShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'action-form-editor' && (
+              <ActionFormEditorShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'step-inspector' && (
+              <StepInspectorShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'expression-autocomplete' && (
+              <ExpressionAutocompleteShowcase isDark={isDark} />
+            )}
+
+            {activeSection === 'editable-detail-view' && (
+              <EditableDetailViewShowcase isDark={isDark} />
             )}
 
             {/* Spec Examples */}
@@ -619,11 +722,11 @@ export default function ShowcasePage() {
                   description="Example of a basic step with parameters, success criteria, and outputs."
                   isDark={isDark}
                 >
-                  <StepCard 
-                    step={sampleStep} 
-                    stepIndex={0} 
+                  <StepCard
+                    step={sampleStep}
+                    stepIndex={0}
                     workflowId="loginUser"
-                    isDark={isDark} 
+                    isDark={isDark}
                   />
                 </ComponentShowcase>
               </div>
@@ -633,13 +736,13 @@ export default function ShowcasePage() {
             {activeSection === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Arazzo Playground Components</h2>
+                  <h2 className="text-2xl font-bold mb-2">Arazzo Builder Components</h2>
                   <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                    This showcase displays the UI components used in the Arazzo Playground application. 
+                    This showcase displays the UI components used in the Arazzo Builder application.
                     Browse through different sections to see components in action.
                   </p>
                 </div>
-                
+
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
                     <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mb-3">
@@ -652,7 +755,7 @@ export default function ShowcasePage() {
                       Consistent colors, spacing, and typography.
                     </p>
                   </div>
-                  
+
                   <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
                     <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3">
                       <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -664,7 +767,7 @@ export default function ShowcasePage() {
                       Buttons, inputs, cards, and more.
                     </p>
                   </div>
-                  
+
                   <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
                     <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mb-3">
                       <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -707,7 +810,7 @@ export default function ShowcasePage() {
                         <Badge variant="workflow" isDark={isDark}>Workflow</Badge>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>HTTP Methods</h4>
                       <div className="flex flex-wrap gap-2">
@@ -718,7 +821,7 @@ export default function ShowcasePage() {
                         <Badge variant="method-delete" isDark={isDark}>DELETE</Badge>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Status</h4>
                       <div className="flex flex-wrap gap-2">
@@ -728,7 +831,7 @@ export default function ShowcasePage() {
                         <Badge variant="info" isDark={isDark}>Info</Badge>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Types</h4>
                       <div className="flex flex-wrap gap-2">
@@ -739,7 +842,7 @@ export default function ShowcasePage() {
                         <Badge variant="type-array" isDark={isDark}>array</Badge>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Sizes</h4>
                       <div className="flex flex-wrap items-center gap-2">
@@ -763,9 +866,9 @@ export default function ShowcasePage() {
                         This is a basic card with just a title and content.
                       </p>
                     </Card>
-                    
-                    <Card 
-                      title="Card with Badge" 
+
+                    <Card
+                      title="Card with Badge"
                       isDark={isDark}
                       badge={<Badge variant="success" isDark={isDark} size="xs">3 items</Badge>}
                     >
@@ -773,9 +876,9 @@ export default function ShowcasePage() {
                         Card with a badge indicator in the header.
                       </p>
                     </Card>
-                    
-                    <Card 
-                      title="Collapsible Card" 
+
+                    <Card
+                      title="Collapsible Card"
                       isDark={isDark}
                       collapsible={true}
                       icon={
@@ -808,7 +911,7 @@ export default function ShowcasePage() {
                       isDark={isDark}
                       title="Request Body"
                     />
-                    
+
                     <CodeBlock
                       code="$steps.find-pet.outputs.petId"
                       language="expression"
@@ -833,7 +936,7 @@ export default function ShowcasePage() {
                       ]}
                       isDark={isDark}
                     />
-                    
+
                     <h5 className={`text-xs uppercase font-semibold mt-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Compact Variant</h5>
                     <PropertyList
                       items={[
@@ -855,7 +958,7 @@ export default function ShowcasePage() {
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Arazzo Components</h2>
                   <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                    Specialized components for displaying Arazzo 1.0.1 specification objects: reusable references, 
+                    Specialized components for displaying Arazzo 1.0.1 specification objects: reusable references,
                     criteria, actions, dependencies, and payload replacements.
                   </p>
                 </div>
@@ -869,26 +972,26 @@ export default function ShowcasePage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Parameter Reference</h4>
-                      <ReusableRef 
-                        reusable={{ reference: '$components.parameters.storeId', value: '42' }} 
-                        isDark={isDark} 
+                      <ReusableRef
+                        reusable={{ reference: '$components.parameters.storeId', value: '42' }}
+                        isDark={isDark}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Success Action Reference</h4>
-                      <ReusableRef 
-                        reusable={{ reference: '$components.successActions.gotoCheckout' }} 
+                      <ReusableRef
+                        reusable={{ reference: '$components.successActions.gotoCheckout' }}
                         isDark={isDark}
                         showValue={false}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Clickable Reference</h4>
-                      <ReusableRef 
-                        reusable={{ reference: '$components.inputs.searchParams', value: { type: 'available' } }} 
-                        isDark={isDark} 
+                      <ReusableRef
+                        reusable={{ reference: '$components.inputs.searchParams', value: { type: 'available' } }}
+                        isDark={isDark}
                         onClick={(ref) => alert(`Clicked: ${ref}`)}
                       />
                     </div>
@@ -904,41 +1007,41 @@ export default function ShowcasePage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Simple Criterion</h4>
-                      <CriterionBadge 
-                        criterion={{ condition: '$statusCode == 200' }} 
-                        isDark={isDark} 
+                      <CriterionBadge
+                        criterion={{ condition: '$statusCode == 200' }}
+                        isDark={isDark}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Regex Criterion</h4>
-                      <CriterionBadge 
-                        criterion={{ condition: '^2[0-9]{2}$', type: 'regex' }} 
+                      <CriterionBadge
+                        criterion={{ condition: '^2[0-9]{2}$', type: 'regex' }}
                         isDark={isDark}
                         showDetails
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>JSONPath with Context</h4>
-                      <CriterionBadge 
-                        criterion={{ 
-                          condition: '$.pets[?(@.status=="available")]', 
+                      <CriterionBadge
+                        criterion={{
+                          condition: '$.pets[?(@.status=="available")]',
                           type: { type: 'jsonpath', version: 'draft-goessner-dispatch-jsonpath-00' },
                           context: '$response.body'
-                        }} 
+                        }}
                         isDark={isDark}
                         showDetails
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>XPath Criterion</h4>
-                      <CriterionBadge 
-                        criterion={{ 
-                          condition: '//pet[status="available"]', 
+                      <CriterionBadge
+                        criterion={{
+                          condition: '//pet[status="available"]',
                           type: { type: 'xpath', version: 'xpath-30' }
-                        }} 
+                        }}
                         isDark={isDark}
                         showDetails
                       />
@@ -962,13 +1065,13 @@ export default function ShowcasePage() {
                       isDark={isDark}
                       onStepClick={(id) => alert(`Go to step: ${id}`)}
                     />
-                    
+
                     <ActionList
                       actions={[
-                        { 
-                          name: 'retryOnError', 
-                          type: 'retry', 
-                          retryAfter: 5, 
+                        {
+                          name: 'retryOnError',
+                          type: 'retry',
+                          retryAfter: 5,
                           retryLimit: 3,
                           criteria: [{ condition: '$statusCode >= 500' }]
                         },
@@ -978,7 +1081,7 @@ export default function ShowcasePage() {
                       isDark={isDark}
                     />
                   </div>
-                  
+
                   <div className="mt-4">
                     <h4 className={`text-xs uppercase font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>With Reusable Reference</h4>
                     <ActionList
@@ -1005,7 +1108,7 @@ export default function ShowcasePage() {
                       isDark={isDark}
                       onWorkflowClick={(id) => alert(`Navigate to workflow: ${id}`)}
                     />
-                    
+
                     <DependsOnList
                       dependencies={['$sourceDescriptions.external-api.workflows.auth']}
                       isDark={isDark}
@@ -1064,7 +1167,7 @@ export default function ShowcasePage() {
                       }}
                       isDark={isDark}
                     />
-                    
+
                     <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Collapsed by default</h4>
                     <SchemaViewer
                       name="Order"
@@ -1099,7 +1202,7 @@ export default function ShowcasePage() {
                       isDark={isDark}
                       showDescription={true}
                     />
-                    
+
                     <h4 className={`text-xs uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Compact mode</h4>
                     <SourceDescriptionsList
                       sources={[
@@ -1129,7 +1232,7 @@ export default function ShowcasePage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Centered (for documentation)</h4>
                       <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
@@ -1142,7 +1245,7 @@ export default function ShowcasePage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Small size (no icon)</h4>
                       <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
@@ -1175,7 +1278,7 @@ export default function ShowcasePage() {
                         variant="cards"
                       />
                     </div>
-                    
+
                     <div>
                       <h4 className={`text-xs uppercase font-semibold mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>TOC variant with steps (for Documentation)</h4>
                       <WorkflowList
@@ -1258,7 +1361,7 @@ export default function ShowcasePage() {
                     <MermaidDiagram chart={sampleFlowchart} isDark={isDark} />
                   </div>
                 </ComponentShowcase>
-                
+
                 <ComponentShowcase
                   title="Sequence Diagram"
                   description="Mermaid sequence diagram for API interactions"
@@ -1280,8 +1383,8 @@ export default function ShowcasePage() {
                 isDark={isDark}
               >
                 <div className="h-[500px] rounded-lg overflow-hidden border" style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
-                  <ArazzoFlow 
-                    nodes={sampleNodes} 
+                  <ArazzoFlow
+                    nodes={sampleNodes}
                     edges={sampleEdges}
                     workflowId="demo-workflow"
                     isDark={isDark}
@@ -1326,7 +1429,7 @@ export default function ShowcasePage() {
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Drawer preview container */}
                 <div className={`relative h-[500px] rounded-lg border overflow-hidden ${isDark ? 'border-slate-700 bg-slate-900' : 'border-gray-200 bg-gray-50'}`}>
                   <div className="absolute inset-0 flex">
@@ -1356,10 +1459,10 @@ export default function ShowcasePage() {
                     isDark={isDark}
                   >
                     <div className={`h-96 overflow-y-auto p-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-                      <StepContent 
-                        step={sampleStep} 
-                        sourceForStep={sampleSource} 
-                        isDark={isDark} 
+                      <StepContent
+                        step={sampleStep}
+                        sourceForStep={sampleSource}
+                        isDark={isDark}
                       />
                     </div>
                   </ComponentShowcase>
@@ -1370,9 +1473,9 @@ export default function ShowcasePage() {
                     isDark={isDark}
                   >
                     <div className={`p-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-                      <SourceContent 
-                        source={sampleSource} 
-                        isDark={isDark} 
+                      <SourceContent
+                        source={sampleSource}
+                        isDark={isDark}
                       />
                     </div>
                   </ComponentShowcase>
@@ -1384,10 +1487,10 @@ export default function ShowcasePage() {
                       isDark={isDark}
                     >
                       <div className={`p-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-                        <InputContent 
-                          input={{ name: 'petType', schema: { type: 'string', description: 'Type of pet to search for' } }} 
+                        <InputContent
+                          input={{ name: 'petType', schema: { type: 'string', description: 'Type of pet to search for' } }}
                           workflowInputs={sampleWorkflowInputs}
-                          isDark={isDark} 
+                          isDark={isDark}
                         />
                       </div>
                     </ComponentShowcase>
@@ -1398,10 +1501,10 @@ export default function ShowcasePage() {
                       isDark={isDark}
                     >
                       <div className={`p-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-                        <OutputContent 
-                          output={{ name: 'adoptedPet', value: '$steps.select-pet.outputs.selectedPet' }} 
+                        <OutputContent
+                          output={{ name: 'adoptedPet', value: '$steps.select-pet.outputs.selectedPet' }}
                           workflowOutputs={sampleWorkflowOutputs}
-                          isDark={isDark} 
+                          isDark={isDark}
                         />
                       </div>
                     </ComponentShowcase>
@@ -1424,14 +1527,14 @@ export default function ShowcasePage() {
                   isDark={isDark}
                 >
                   <div className="space-y-4">
-                    <StepCard 
-                      step={sampleStep} 
-                      stepIndex={0} 
+                    <StepCard
+                      step={sampleStep}
+                      stepIndex={0}
                       workflowId="demo-workflow"
-                      isDark={isDark} 
+                      isDark={isDark}
                     />
-                    
-                    <StepCard 
+
+                    <StepCard
                       step={{
                         ...sampleStep,
                         stepId: 'place-order',
@@ -1448,10 +1551,10 @@ export default function ShowcasePage() {
                             complete: true
                           }
                         }
-                      }} 
-                      stepIndex={1} 
+                      }}
+                      stepIndex={1}
                       workflowId="demo-workflow"
-                      isDark={isDark} 
+                      isDark={isDark}
                     />
                   </div>
                 </ComponentShowcase>
@@ -1464,7 +1567,7 @@ export default function ShowcasePage() {
 
       {/* Footer */}
       <footer className={`flex-shrink-0 py-3 px-6 text-center text-xs border-t ${isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'}`}>
-        Arazzo Playground Component Showcase • Made with ❤️ by{' '}
+        Arazzo Builder Component Showcase • Made with ❤️ by{' '}
         <a href="https://connethics.com" className="text-indigo-500 hover:underline">connethics.com</a>
       </footer>
     </div>

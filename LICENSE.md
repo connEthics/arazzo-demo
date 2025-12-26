@@ -1,4 +1,4 @@
-# Arazzo Playground - License
+# Arazzo Builder - License
 
 **Copyright © 2024 connEthics. All rights reserved.**
 
