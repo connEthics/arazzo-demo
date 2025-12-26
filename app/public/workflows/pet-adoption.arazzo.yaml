@@ -224,6 +224,12 @@ workflows:
           - context: $response.body
             type: jsonpath
             condition: $.expiresIn > 0
+          - context: $response.body.token
+            type: regex
+            condition: ^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$
+          - context: $response.body
+            type: xpath
+            condition: //token[text()]
         
         outputs:
           authToken: $response.body.token

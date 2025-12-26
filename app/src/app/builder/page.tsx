@@ -291,6 +291,7 @@ function BuilderPageContent() {
                   onToggle={() => setShowRightPanel(!showRightPanel)}
                   detailData={detailData}
                   onDetailClose={() => setDetailData(null)}
+                  onDetailSelect={handleDetailSelect}
                 />
               </div>
             )}
@@ -307,6 +308,7 @@ function BuilderPageContent() {
                   onDetailClose={() => setDetailData(null)}
                   isMobile
                   onMobileClose={() => setMobilePanel('center')}
+                  onDetailSelect={handleDetailSelect}
                 />
               </div>
             )}

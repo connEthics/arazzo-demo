@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge } from './primitives';
+import ActionList from './arazzo/ActionList';
+import type { SuccessAction, FailureAction } from '../types/arazzo';
 
 export interface Action {
   name?: string;
@@ -20,6 +21,7 @@ interface ActionFormEditorProps {
   readOnly?: boolean;
   availableSteps?: string[];
   availableWorkflows?: string[];
+  onStepClick?: (stepId: string) => void;
 }
 
 /**
@@ -34,18 +36,13 @@ export default function ActionFormEditor({
   readOnly = false,
   availableSteps = [],
   availableWorkflows = [],
+  onStepClick,
 }: ActionFormEditorProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState<Action>({ type: 'goto' });
 
   const isSuccess = variant === 'success';
-  const colorClass = isSuccess 
-    ? isDark ? 'text-emerald-400' : 'text-emerald-600'
-    : isDark ? 'text-red-400' : 'text-red-600';
-  const bgClass = isSuccess
-    ? isDark ? 'bg-emerald-500/10' : 'bg-emerald-50'
-    : isDark ? 'bg-red-500/10' : 'bg-red-50';
 
   const handleAdd = () => {
     setFormData({ type: 'goto' });
@@ -106,49 +103,18 @@ export default function ActionFormEditor({
     }
   };
 
-  const getActionLabel = (action: Action) => {
-    switch (action.type) {
-      case 'goto':
-        return action.stepId 
-          ? `Go to step: ${action.stepId}` 
-          : action.workflowId 
-            ? `Go to workflow: ${action.workflowId}`
-            : 'Go to...';
-      case 'retry':
-        return action.retryLimit 
-          ? `Retry ${action.retryLimit}x after ${action.retryAfter || 0}s`
-          : 'Retry';
-      case 'end':
-        return 'End workflow';
-    }
-  };
-
   return (
     <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-5 h-5 rounded flex items-center justify-center ${bgClass}`}>
-            {isSuccess ? (
-              <svg className={`w-3 h-3 ${colorClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            ) : (
-              <svg className={`w-3 h-3 ${colorClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            )}
-          </div>
-          <span className={`text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            On {isSuccess ? 'Success' : 'Failure'}
-          </span>
-          {actions.length > 0 && (
-            <span className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-              {actions.length}
-            </span>
-          )}
-        </div>
-        {!readOnly && !showAddForm && (
+      <ActionList
+        actions={actions as (SuccessAction | FailureAction)[]}
+        type={variant}
+        isDark={isDark}
+        onEdit={!readOnly ? handleEdit : undefined}
+        onDelete={!readOnly ? handleDelete : undefined}
+        onStepClick={onStepClick}
+        alwaysVisible={true}
+        emptyMessage={isSuccess ? 'Continue to next step' : 'End workflow'}
+        headerActions={!readOnly && !showAddForm && (
           <button
             onClick={handleAdd}
             className={`text-xs font-medium ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
@@ -156,72 +122,7 @@ export default function ActionFormEditor({
             + Add Action
           </button>
         )}
-      </div>
-
-      {/* Actions list */}
-      {actions.length > 0 ? (
-        <div className="space-y-2">
-          {actions.map((action, idx) => (
-            <div
-              key={idx}
-              className={`group p-3 rounded-lg border transition-colors ${
-                isDark 
-                  ? 'border-slate-700 bg-slate-800 hover:border-slate-600' 
-                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={action.type === 'goto' ? 'info' : action.type === 'retry' ? 'warning' : 'step'} 
-                    isDark={isDark} 
-                    size="xs"
-                  >
-                    <span className="flex items-center gap-1">
-                      {getActionIcon(action.type)}
-                      {action.type}
-                    </span>
-                  </Badge>
-                  <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                    {getActionLabel(action)}
-                  </span>
-                </div>
-                {!readOnly && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEdit(idx)}
-                      className={`p-1 rounded ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-200 text-gray-400'}`}
-                      title="Edit"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(idx)}
-                      className={`p-1 rounded ${isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-100 text-red-500'}`}
-                      title="Delete"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-              {action.name && (
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Name: {action.name}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : !showAddForm && (
-        <p className={`text-xs italic pl-7 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-          {isSuccess ? 'Continue to next step' : 'End workflow'}
-        </p>
-      )}
+      />
 
       {/* Add/Edit Form */}
       {showAddForm && (

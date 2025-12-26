@@ -15,8 +15,13 @@ interface ActionListProps {
   onStepClick?: (stepId: string) => void;
   onWorkflowClick?: (workflowId: string) => void;
   onRefClick?: (reference: string) => void;
+  onEdit?: (index: number) => void;
+  onDelete?: (index: number) => void;
+  headerActions?: React.ReactNode;
   collapsible?: boolean;
   className?: string;
+  alwaysVisible?: boolean;
+  emptyMessage?: string;
 }
 
 /**
@@ -30,10 +35,15 @@ function ActionList({
   onStepClick, 
   onWorkflowClick,
   onRefClick,
+  onEdit,
+  onDelete,
+  headerActions,
   collapsible = false,
-  className = '' 
+  className = '',
+  alwaysVisible = false,
+  emptyMessage
 }: ActionListProps) {
-  if (!actions || actions.length === 0) {
+  if ((!actions || actions.length === 0) && !alwaysVisible) {
     return null;
   }
 
@@ -49,57 +59,87 @@ function ActionList({
     return (
       <div 
         key={index} 
-        className={`${codeBgClass} rounded p-2 border-l-2 ${borderColor}`}
+        className={`group relative ${codeBgClass} rounded p-2 border-l-2 ${borderColor}`}
       >
         {/* Action header */}
-        <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span className={`text-[11px] font-medium ${textClass}`}>{action.name}</span>
-          <Badge 
-            variant={action.type === 'goto' ? 'info' : action.type === 'retry' ? 'warning' : 'step'} 
-            isDark={isDark} 
-            size="xs"
-          >
-            {action.type}
-          </Badge>
-          
-          {/* Target for goto */}
-          {action.type === 'goto' && (
-            <>
-              {action.stepId && (
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[11px] font-medium ${textClass}`}>{action.name}</span>
+            <Badge 
+              variant={action.type === 'goto' ? 'info' : action.type === 'retry' ? 'warning' : 'step'} 
+              isDark={isDark} 
+              size="xs"
+            >
+              {action.type}
+            </Badge>
+            
+            {/* Target for goto */}
+            {action.type === 'goto' && (
+              <>
+                {action.stepId && (
+                  <button
+                    onClick={() => onStepClick?.(action.stepId!)}
+                    disabled={!onStepClick}
+                    className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                      onStepClick 
+                        ? isDark 
+                          ? 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-800/50 cursor-pointer' 
+                          : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer'
+                        : isDark
+                          ? 'bg-slate-700 text-slate-300'
+                          : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    → {action.stepId}
+                  </button>
+                )}
+                {action.workflowId && (
+                  <button
+                    onClick={() => onWorkflowClick?.(action.workflowId!)}
+                    disabled={!onWorkflowClick}
+                    className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                      onWorkflowClick 
+                        ? isDark 
+                          ? 'bg-purple-900/50 text-purple-300 hover:bg-purple-800/50 cursor-pointer' 
+                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer'
+                        : isDark
+                          ? 'bg-slate-700 text-slate-300'
+                          : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    ↗ {action.workflowId}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Edit/Delete Actions */}
+          {(onEdit || onDelete) && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onEdit && (
                 <button
-                  onClick={() => onStepClick?.(action.stepId!)}
-                  disabled={!onStepClick}
-                  className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                    onStepClick 
-                      ? isDark 
-                        ? 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-800/50 cursor-pointer' 
-                        : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer'
-                      : isDark
-                        ? 'bg-slate-700 text-slate-300'
-                        : 'bg-gray-200 text-gray-600'
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); onEdit(index); }}
+                  className={`p-1 rounded ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-200 text-gray-400'}`}
+                  title="Edit"
                 >
-                  → {action.stepId}
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
                 </button>
               )}
-              {action.workflowId && (
+              {onDelete && (
                 <button
-                  onClick={() => onWorkflowClick?.(action.workflowId!)}
-                  disabled={!onWorkflowClick}
-                  className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                    onWorkflowClick 
-                      ? isDark 
-                        ? 'bg-purple-900/50 text-purple-300 hover:bg-purple-800/50 cursor-pointer' 
-                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer'
-                      : isDark
-                        ? 'bg-slate-700 text-slate-300'
-                        : 'bg-gray-200 text-gray-600'
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); onDelete(index); }}
+                  className={`p-1 rounded ${isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-100 text-red-500'}`}
+                  title="Delete"
                 >
-                  ↗ {action.workflowId}
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
 
@@ -171,6 +211,7 @@ function ActionList({
       title={`${level === 'workflow' ? 'Default ' : ''}On ${isSuccess ? 'Success' : 'Failure'}`}
       isDark={isDark}
       collapsible={collapsible}
+      actions={headerActions}
       badge={
         <Badge variant={isSuccess ? 'success' : 'failure'} isDark={isDark} size="xs">
           {actions.length}
@@ -189,8 +230,8 @@ function ActionList({
       }
       className={className}
     >
-      <div className="space-y-1.5 max-h-48 overflow-auto">
-        {actions.map((action, idx) => {
+      <div className="space-y-1.5">
+        {actions && actions.length > 0 ? actions.map((action, idx) => {
           if (isReusableObject(action)) {
             return (
               <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 ${borderColor}`}>
@@ -199,7 +240,11 @@ function ActionList({
             );
           }
           return renderAction(action as SuccessAction | FailureAction, idx);
-        })}
+        }) : (
+          <p className={`text-xs italic pl-2 ${mutedClass}`}>
+            {emptyMessage || (isSuccess ? 'Continue to next step' : 'End workflow')}
+          </p>
+        )}
       </div>
     </Card>
   );
