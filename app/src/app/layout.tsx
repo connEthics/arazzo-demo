@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Arazzo Playground - Interactive OpenAPI Workflow Visualizer",
-    template: "%s | Arazzo Playground",
+    default: "Arazzo Builder - Interactive OpenAPI Workflow Visualizer",
+    template: "%s | Arazzo Builder",
   },
   description: "Visualize and explore Arazzo API workflows interactively. Edit YAML specifications in real-time with syntax highlighting, view flowcharts and sequence diagrams, and export to Mermaid format.",
   keywords: [
@@ -40,21 +40,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://arazzo.connethics.com",
-    siteName: "Arazzo Playground",
-    title: "Arazzo Playground - Interactive OpenAPI Workflow Visualizer",
+    siteName: "Arazzo Builder",
+    title: "Arazzo Builder - Interactive OpenAPI Workflow Visualizer",
     description: "Visualize and explore Arazzo API workflows interactively. Edit YAML specifications in real-time, view flowcharts and sequence diagrams.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Arazzo Playground - Interactive API Workflow Visualizer",
+        alt: "Arazzo Builder - Interactive API Workflow Visualizer",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Arazzo Playground - Interactive OpenAPI Workflow Visualizer",
+    title: "Arazzo Builder - Interactive OpenAPI Workflow Visualizer",
     description: "Visualize and explore Arazzo API workflows interactively. Edit YAML, view flowcharts and sequence diagrams.",
     images: ["/og-image.png"],
     creator: "@connethics",

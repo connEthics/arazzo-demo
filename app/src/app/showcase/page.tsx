@@ -524,13 +524,13 @@ export default function ShowcasePage() {
             </button>
 
             <Link
-              href="/playground"
+              href="/builder"
               className={`hidden sm:flex items-center gap-2 text-sm ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Playground
+              Back to Builder
             </Link>
             <div className={`hidden sm:block w-px h-6 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             <h1 className="text-lg sm:text-xl font-bold">Component Showcase</h1>
@@ -539,9 +539,9 @@ export default function ShowcasePage() {
           <div className="flex items-center gap-2">
             {/* Mobile: back link */}
             <Link
-              href="/playground"
+              href="/builder"
               className={`sm:hidden p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-500'}`}
-              aria-label="Back to Playground"
+              aria-label="Back to Builder"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -736,9 +736,9 @@ export default function ShowcasePage() {
             {activeSection === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Arazzo Playground Components</h2>
+                  <h2 className="text-2xl font-bold mb-2">Arazzo Builder Components</h2>
                   <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                    This showcase displays the UI components used in the Arazzo Playground application.
+                    This showcase displays the UI components used in the Arazzo Builder application.
                     Browse through different sections to see components in action.
                   </p>
                 </div>
@@ -1567,7 +1567,7 @@ export default function ShowcasePage() {
 
       {/* Footer */}
       <footer className={`flex-shrink-0 py-3 px-6 text-center text-xs border-t ${isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'}`}>
-        Arazzo Playground Component Showcase • Made with ❤️ by{' '}
+        Arazzo Builder Component Showcase • Made with ❤️ by{' '}
         <a href="https://connethics.com" className="text-indigo-500 hover:underline">connethics.com</a>
       </footer>
     </div>

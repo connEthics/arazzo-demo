@@ -103,7 +103,7 @@ function BuilderPageContent() {
 
   // Auto-open right panel when a node is selected in Builder mode
   useEffect(() => {
-    if (state.selectedNodeType && state.selectedNodeType !== 'none') {
+    if (state.selectedNodeType) {
       setShowRightPanel(true);
       // Also switch mobile panel to right
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {

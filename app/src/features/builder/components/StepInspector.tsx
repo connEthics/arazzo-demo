@@ -200,7 +200,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
               onStepUpdate={handleUpdate}
               isDark={true}
               expressionSuggestions={expressionSuggestions}
-              onStepClick={(stepId) => dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', stepId } })}
+              onStepClick={(stepId) => dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: stepId } })}
             />
           </div>
         ) : (

@@ -70,7 +70,7 @@ arazzo-demo/
 ├── app/                        # Next.js application
 │   ├── src/
 │   │   ├── app/               # App router pages
-│   │   │   ├── playground/    # Main visualizer page
+│   │   │   ├── builder/       # Main visualizer page
 │   │   │   └── showcase/      # Demo showcase
 │   │   ├── components/        # React components
 │   │   │   ├── ArazzoFlow.tsx        # React Flow + ELK.js visualization
