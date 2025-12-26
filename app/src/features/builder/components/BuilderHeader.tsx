@@ -23,23 +23,23 @@ interface BuilderHeaderProps {
   // View mode
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-  
+
   // Workflow
   selectedWorkflowIndex: number;
   onWorkflowChange: (index: number) => void;
-  
+
   // Panel toggles
   showLeftPanel: boolean;
   showRightPanel: boolean;
   onToggleLeftPanel: () => void;
   onToggleRightPanel: () => void;
-  
+
   // Mobile
   isMobileMenuOpen: boolean;
   onToggleMobileMenu: () => void;
   mobilePanel: MobilePanel;
   onMobilePanelChange: (panel: MobilePanel) => void;
-  
+
   // Diagram options
   hideOutputs: boolean;
   showStepNames: boolean;
@@ -47,16 +47,16 @@ interface BuilderHeaderProps {
   onHideOutputsChange: (value: boolean) => void;
   onShowStepNamesChange: (value: boolean) => void;
   onShowErrorFlowChange: (value: boolean) => void;
-  
+
   // Export
   onExportYaml?: () => void;
 }
 
 const VIEW_MODES = [
-  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon },
-  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon },
-  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon },
-  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon },
+  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon, color: 'bg-blue-600', shadow: 'shadow-blue-900/20' },
+  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon, color: 'bg-emerald-600', shadow: 'shadow-emerald-900/20' },
+  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon, color: 'bg-purple-600', shadow: 'shadow-purple-900/20' },
+  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon, color: 'bg-indigo-600', shadow: 'shadow-indigo-900/20' },
 ];
 
 function BuilderHeader({
@@ -81,12 +81,12 @@ function BuilderHeader({
   onExportYaml,
 }: BuilderHeaderProps) {
   const getViewModeButtonClass = (mode: ViewMode) => {
+    const config = VIEW_MODES.find(m => m.id === mode);
     const isActive = viewMode === mode;
-    return `flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-      isActive 
-        ? 'bg-indigo-600 text-white' 
-        : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
-    }`;
+    return `flex items-center gap-2 px-4 py-1.5 text-xs font-semibold transition-all rounded-lg ${isActive
+      ? `${config?.color} text-white shadow-lg ${config?.shadow}`
+      : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+      }`;
   };
 
   const getMobileIcon = () => {
@@ -95,7 +95,7 @@ function BuilderHeader({
   };
 
   return (
-    <header className="flex-shrink-0 h-12 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center px-3 lg:px-4 gap-2 lg:gap-4">
+    <header className="flex-shrink-0 h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center px-4 lg:px-6 gap-4">
       {/* Mobile Menu Button */}
       <button
         onClick={onToggleMobileMenu}
@@ -104,29 +104,32 @@ function BuilderHeader({
       >
         {isMobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
       </button>
-      
+
       {/* Title */}
-      <h1 className="font-bold text-base whitespace-nowrap">
-        <span className="hidden sm:inline">Arazzo Builder</span>
-        <span className="sm:hidden">Builder</span>
-      </h1>
-      
+      <div className="flex items-center gap-4">
+        <h1 className="font-bold text-base whitespace-nowrap text-slate-900 dark:text-white">
+          <span className="hidden sm:inline">Arazzo Builder</span>
+          <span className="sm:hidden">Builder</span>
+        </h1>
+        <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
+      </div>
+
       {/* Workflow Manager - Desktop */}
       <div className="hidden lg:block">
-        <WorkflowManager 
+        <WorkflowManager
           selectedWorkflowIndex={selectedWorkflowIndex}
           onWorkflowChange={onWorkflowChange}
         />
       </div>
-      
+
       {/* View Mode Toggle - Desktop */}
-      <div className="flex-1 hidden lg:flex justify-center">
-        <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800/50">
-          {VIEW_MODES.map((mode, index) => (
+      <div className="flex-1 hidden lg:flex justify-end pr-4">
+        <div className="flex items-center p-1 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/50 gap-1">
+          {VIEW_MODES.map((mode) => (
             <button
               key={mode.id}
               onClick={() => onViewModeChange(mode.id)}
-              className={`${getViewModeButtonClass(mode.id)} ${index > 0 ? 'border-l border-slate-200 dark:border-slate-700' : ''}`}
+              className={getViewModeButtonClass(mode.id)}
             >
               <mode.icon />
               <span>{mode.label}</span>
@@ -134,26 +137,26 @@ function BuilderHeader({
           ))}
         </div>
       </div>
-      
+
       {/* View-specific options - Desktop */}
       <div className="hidden lg:flex items-center gap-3">
         {viewMode === 'sequence' && (
           <>
             <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none text-slate-500">
-              <input 
-                type="checkbox" 
-                checked={hideOutputs} 
-                onChange={(e) => onHideOutputsChange(e.target.checked)} 
-                className="w-3 h-3 rounded border-gray-300 text-indigo-600" 
+              <input
+                type="checkbox"
+                checked={hideOutputs}
+                onChange={(e) => onHideOutputsChange(e.target.checked)}
+                className="w-3 h-3 rounded border-gray-300 text-indigo-600"
               />
               Hide outputs
             </label>
             <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none text-slate-500">
-              <input 
-                type="checkbox" 
-                checked={showStepNames} 
-                onChange={(e) => onShowStepNamesChange(e.target.checked)} 
-                className="w-3 h-3 rounded border-gray-300 text-indigo-600" 
+              <input
+                type="checkbox"
+                checked={showStepNames}
+                onChange={(e) => onShowStepNamesChange(e.target.checked)}
+                className="w-3 h-3 rounded border-gray-300 text-indigo-600"
               />
               Show steps
             </label>
@@ -161,16 +164,16 @@ function BuilderHeader({
         )}
         {(viewMode === 'flowchart' || viewMode === 'sequence') && (
           <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none text-slate-500">
-            <input 
-              type="checkbox" 
-              checked={!showErrorFlow} 
-              onChange={(e) => onShowErrorFlowChange(!e.target.checked)} 
-              className="w-3 h-3 rounded border-gray-300 text-indigo-600" 
+            <input
+              type="checkbox"
+              checked={!showErrorFlow}
+              onChange={(e) => onShowErrorFlowChange(!e.target.checked)}
+              className="w-3 h-3 rounded border-gray-300 text-indigo-600"
             />
             Hide errors
           </label>
         )}
-        
+
         {/* Export Button */}
         {onExportYaml && (
           <button
@@ -182,34 +185,32 @@ function BuilderHeader({
             <span className="hidden xl:inline">Export</span>
           </button>
         )}
-        
+
         {/* Panel Toggle Buttons */}
         <div className="flex items-center gap-1 ml-2 border-l border-slate-200 dark:border-slate-700 pl-3">
           <button
             onClick={onToggleLeftPanel}
-            className={`p-1.5 rounded-lg text-xs transition-colors ${
-              showLeftPanel 
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300' 
-                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
-            }`}
+            className={`p-1.5 rounded-lg text-xs transition-colors ${showLeftPanel
+              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
+              }`}
             title={showLeftPanel ? 'Hide left panel' : 'Show left panel'}
           >
             <LeftPanelIcon />
           </button>
           <button
             onClick={onToggleRightPanel}
-            className={`p-1.5 rounded-lg text-xs transition-colors ${
-              showRightPanel 
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300' 
-                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
-            }`}
+            className={`p-1.5 rounded-lg text-xs transition-colors ${showRightPanel
+              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
+              }`}
             title={showRightPanel ? 'Hide inspector' : 'Show inspector'}
           >
             <InspectorIcon />
           </button>
         </div>
       </div>
-      
+
       {/* Mobile Panel Switcher */}
       <div className="lg:hidden flex-1 flex justify-center">
         <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800/50">

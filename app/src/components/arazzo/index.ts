@@ -7,3 +7,7 @@ export { default as SchemaViewer } from './SchemaViewer';
 export { default as SourceDescriptionsList } from './SourceDescriptionsList';
 export { default as ArazzoSpecHeader } from './ArazzoSpecHeader';
 export { default as WorkflowList } from './WorkflowList';
+export { default as StepHeader } from './StepHeader';
+export { default as StepBody } from './StepBody';
+export { default as WorkflowHeader } from './WorkflowHeader';
+export { default as WorkflowBody } from './WorkflowBody';

@@ -7,11 +7,12 @@ import type { SuccessAction } from '@/types/arazzo';
 const initialState: BuilderState = {
   spec: {
     arazzo: '1.0.1',
-    info: { title: 'New Workflow', version: '1.0.0' },
+    info: { title: 'New Arazzo Spec', version: '1.0.0' },
     sourceDescriptions: [],
-    workflows: [{ workflowId: 'workflow-1', steps: [] }]
+    workflows: [{ workflowId: 'workflow_1', steps: [] }]
   },
   selectedStepId: null,
+  selectedComponentKey: null,
   selectedNodeType: null,
   selectedWorkflowIndex: 0,
   sources: {},
@@ -57,7 +58,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         ...state,
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? { ...wf, steps: [...wf.steps, newStep] } : wf
           )
         }
@@ -70,7 +71,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         selectedNodeType: state.selectedStepId === stepToDelete ? null : state.selectedNodeType,
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? {
               ...wf,
               steps: wf.steps
@@ -102,14 +103,14 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       const oldStepId = action.payload.stepId;
       const newStepId = action.payload.updates.stepId;
       const isRenaming = newStepId && newStepId !== oldStepId;
-      
+
       return {
         ...state,
         // Update selectedStepId if the stepId itself changed
         selectedStepId: newStepId ? newStepId : state.selectedStepId,
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? {
               ...wf,
               steps: wf.steps.map(s => {
@@ -117,11 +118,11 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                 if (s.stepId === oldStepId) {
                   return { ...s, ...action.payload.updates };
                 }
-                
+
                 // If renaming, update all references to this stepId in other steps
                 if (isRenaming) {
                   let updated = { ...s };
-                  
+
                   // Update onSuccess references
                   if (updated.onSuccess) {
                     updated.onSuccess = updated.onSuccess.map(a => {
@@ -132,7 +133,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                       return a;
                     });
                   }
-                  
+
                   // Update onFailure references
                   if (updated.onFailure) {
                     updated.onFailure = updated.onFailure.map(a => {
@@ -143,7 +144,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                       return a;
                     });
                   }
-                  
+
                   // Update parameter value references ($steps.oldStepId.xxx)
                   if (updated.parameters) {
                     updated.parameters = updated.parameters.map(p => {
@@ -155,10 +156,10 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                       return p;
                     });
                   }
-                  
+
                   return updated;
                 }
-                
+
                 return s;
               })
             } : wf
@@ -172,10 +173,10 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         ...state,
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? {
               ...wf,
-              steps: wf.steps.map(s => 
+              steps: wf.steps.map(s =>
                 s.stepId === sourceStepId ? {
                   ...s,
                   onSuccess: [
@@ -194,12 +195,12 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         ...state,
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? {
               ...wf,
               steps: wf.steps.map(s => {
                 if (s.stepId !== action.payload.sourceStepId) return s;
-                
+
                 let updated = { ...s };
                 if (updated.onSuccess) {
                   updated.onSuccess = updated.onSuccess.filter(a => {
@@ -223,7 +224,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         selectedNodeType: 'step',
         spec: {
           ...state.spec,
-          workflows: state.spec.workflows.map((wf, idx) => 
+          workflows: state.spec.workflows.map((wf, idx) =>
             idx === state.selectedWorkflowIndex ? {
               ...wf,
               steps: [
@@ -255,8 +256,8 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         }
       };
     case 'SELECT_STEP':
-      return { 
-        ...state, 
+      return {
+        ...state,
         selectedStepId: action.payload,
         selectedNodeType: action.payload ? 'step' : null
       };
@@ -264,7 +265,10 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       return {
         ...state,
         selectedNodeType: action.payload.nodeType,
-        selectedStepId: action.payload.stepId ?? null
+        selectedStepId: action.payload.nodeType === 'step' ? (action.payload.id ?? null) : null,
+        selectedComponentKey: (action.payload.nodeType === 'schema' || action.payload.nodeType === 'reusable-input')
+          ? (action.payload.id ?? null)
+          : null
       };
     case 'UPDATE_WORKFLOW':
       return {
@@ -278,6 +282,138 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
           )
         }
       };
+    case 'UPDATE_COMPONENTS':
+      return {
+        ...state,
+        spec: {
+          ...state.spec,
+          components: {
+            ...(state.spec.components || {}),
+            ...action.payload.updates,
+            inputs: action.payload.updates.inputs
+              ? { ...(state.spec.components?.inputs || {}), ...action.payload.updates.inputs }
+              : state.spec.components?.inputs,
+            schemas: action.payload.updates.schemas
+              ? { ...(state.spec.components?.schemas || {}), ...action.payload.updates.schemas }
+              : state.spec.components?.schemas,
+          }
+        }
+      };
+    case 'DELETE_COMPONENT': {
+      const { type, name } = action.payload;
+      const newComponents = { ...(state.spec.components || {}) };
+      if (newComponents[type]) {
+        const subMap = { ...newComponents[type] };
+        delete (subMap as any)[name];
+        newComponents[type] = subMap as any;
+      }
+      return {
+        ...state,
+        spec: {
+          ...state.spec,
+          components: newComponents
+        }
+      };
+    }
+    case 'REORDER_STEP': {
+      const { workflowId, startIndex, endIndex } = action.payload;
+      return {
+        ...state,
+        spec: {
+          ...state.spec,
+          workflows: state.spec.workflows.map(wf => {
+            if (wf.workflowId !== workflowId) return wf;
+            const newSteps = [...wf.steps];
+            const [removed] = newSteps.splice(startIndex, 1);
+            newSteps.splice(endIndex, 0, removed);
+            return { ...wf, steps: newSteps };
+          })
+        }
+      };
+    }
+    case 'REORDER_INPUT': {
+      const { workflowId, componentKey, startIndex, endIndex } = action.payload;
+      if (workflowId) {
+        return {
+          ...state,
+          spec: {
+            ...state.spec,
+            workflows: state.spec.workflows.map(wf => {
+              if (wf.workflowId !== workflowId || !wf.inputs?.properties) return wf;
+              const props = Object.entries(wf.inputs.properties);
+              const [removed] = props.splice(startIndex, 1);
+              props.splice(endIndex, 0, removed);
+              return {
+                ...wf,
+                inputs: {
+                  ...wf.inputs,
+                  properties: Object.fromEntries(props)
+                }
+              };
+            })
+          }
+        };
+      } else if (componentKey && state.spec.components?.inputs?.[componentKey]) {
+        return {
+          ...state,
+          spec: {
+            ...state.spec,
+            components: {
+              ...state.spec.components,
+              inputs: {
+                ...state.spec.components.inputs,
+                [componentKey]: {
+                  ...state.spec.components.inputs[componentKey],
+                  properties: Object.fromEntries((() => {
+                    const props = Object.entries(state.spec.components!.inputs![componentKey].properties || {});
+                    const [removed] = props.splice(startIndex, 1);
+                    props.splice(endIndex, 0, removed);
+                    return props;
+                  })())
+                }
+              }
+            }
+          }
+        };
+      }
+      return state;
+    }
+    case 'REORDER_OUTPUT': {
+      const { workflowId, stepId, startIndex, endIndex } = action.payload;
+      if (workflowId) {
+        return {
+          ...state,
+          spec: {
+            ...state.spec,
+            workflows: state.spec.workflows.map(wf => {
+              if (wf.workflowId !== workflowId || !wf.outputs) return wf;
+              const entries = Object.entries(wf.outputs);
+              const [removed] = entries.splice(startIndex, 1);
+              entries.splice(endIndex, 0, removed);
+              return { ...wf, outputs: Object.fromEntries(entries) };
+            })
+          }
+        };
+      } else if (stepId) {
+        return {
+          ...state,
+          spec: {
+            ...state.spec,
+            workflows: state.spec.workflows.map(wf => ({
+              ...wf,
+              steps: wf.steps.map(s => {
+                if (s.stepId !== stepId || !s.outputs) return s;
+                const entries = Object.entries(s.outputs);
+                const [removed] = entries.splice(startIndex, 1);
+                entries.splice(endIndex, 0, removed);
+                return { ...s, outputs: Object.fromEntries(entries) };
+              })
+            }))
+          }
+        };
+      }
+      return state;
+    }
     case 'ADD_WORKFLOW':
       return {
         ...state,

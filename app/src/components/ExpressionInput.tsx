@@ -31,6 +31,8 @@ interface ExpressionInputProps {
   error?: string;
   /** Help text */
   helpText?: string;
+  /** Blur handler */
+  onBlur?: () => void;
 }
 
 const DEFAULT_SUGGESTIONS: ExpressionSuggestion[] = [
@@ -70,6 +72,7 @@ export default function ExpressionInput({
   quickSuggestions = QUICK_SUGGESTIONS_DEFAULT,
   error,
   helpText,
+  onBlur,
 }: ExpressionInputProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -81,7 +84,7 @@ export default function ExpressionInput({
   const filteredSuggestions = useMemo(() => {
     if (!filter) return suggestions;
     const lowerFilter = filter.toLowerCase();
-    return suggestions.filter(s => 
+    return suggestions.filter(s =>
       s.expression.toLowerCase().includes(lowerFilter) ||
       s.label.toLowerCase().includes(lowerFilter) ||
       s.description?.toLowerCase().includes(lowerFilter)
@@ -91,12 +94,14 @@ export default function ExpressionInput({
   // Handle input change
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    const cursorPosition = e.target.selectionStart ?? newValue.length;
     onChange(newValue);
-    
-    // Show suggestions when typing $ or after $
-    if (newValue.includes('$')) {
-      const lastDollar = newValue.lastIndexOf('$');
-      setFilter(newValue.substring(lastDollar));
+
+    // Show suggestions when typing $ or after $ (only looking back from cursor)
+    const textBeforeCursor = newValue.substring(0, cursorPosition);
+    if (textBeforeCursor.includes('$')) {
+      const lastDollar = textBeforeCursor.lastIndexOf('$');
+      setFilter(textBeforeCursor.substring(lastDollar));
       setShowDropdown(true);
       setSelectedIndex(0);
     } else {
@@ -130,11 +135,26 @@ export default function ExpressionInput({
 
   // Select a suggestion
   const selectSuggestion = useCallback((suggestion: ExpressionSuggestion) => {
-    const lastDollar = value.lastIndexOf('$');
-    const prefix = lastDollar > 0 ? value.substring(0, lastDollar) : '';
-    onChange(prefix + suggestion.expression);
+    const cursorPosition = inputRef.current?.selectionStart ?? value.length;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const textAfterCursor = value.substring(cursorPosition);
+
+    const lastDollar = textBeforeCursor.lastIndexOf('$');
+
+    if (lastDollar === -1) {
+      onChange(value + suggestion.expression);
+    } else {
+      const prefix = value.substring(0, lastDollar);
+      // We replace from the last $ up to the cursor with the suggestion, 
+      // then re-attach the rest of the string.
+      onChange(prefix + suggestion.expression + textAfterCursor);
+    }
+
     setShowDropdown(false);
-    inputRef.current?.focus();
+    // Use a small timeout to ensure focus and cursor position after React update
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   }, [value, onChange]);
 
   // Close dropdown when clicking outside
@@ -219,27 +239,30 @@ export default function ExpressionInput({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
+          onBlur={onBlur}
+          onFocus={(e) => {
             if (!disabled && value.includes('$')) {
-              const lastDollar = value.lastIndexOf('$');
-              setFilter(value.substring(lastDollar));
-              setShowDropdown(true);
+              const cursorPosition = e.target.selectionStart ?? value.length;
+              const textBeforeCursor = value.substring(0, cursorPosition);
+              const lastDollar = textBeforeCursor.lastIndexOf('$');
+              if (lastDollar !== -1) {
+                setFilter(textBeforeCursor.substring(lastDollar));
+                setShowDropdown(true);
+              }
             }
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${inputSizeClasses[variant]} ${
-            isDark 
-              ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500' 
-              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-          } ${error ? 'border-red-500 focus:ring-red-500' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+          className={`w-full rounded-lg border font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${inputSizeClasses[variant]} ${isDark
+            ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500'
+            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+            } ${error ? 'border-red-500 focus:ring-red-500' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
         />
 
         {/* Expression indicator */}
         {value.startsWith('$') && (
-          <div className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded ${
-            isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
-          }`}>
+          <div className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
+            }`}>
             expr
           </div>
         )}
@@ -263,13 +286,12 @@ export default function ExpressionInput({
               key={expr}
               type="button"
               onClick={() => { onChange(expr); inputRef.current?.focus(); }}
-              className={`px-2 py-1 text-xs font-mono rounded-md transition-colors ${
-                value === expr
-                  ? 'bg-indigo-600 text-white'
-                  : isDark
-                    ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-              }`}
+              className={`px-2 py-1 text-xs font-mono rounded-md transition-colors ${value === expr
+                ? 'bg-indigo-600 text-white'
+                : isDark
+                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                }`}
             >
               {expr}
             </button>
@@ -281,25 +303,25 @@ export default function ExpressionInput({
       {showDropdown && filteredSuggestions.length > 0 && (
         <div
           ref={dropdownRef}
-          className={`absolute z-50 top-full left-0 right-0 mt-1 rounded-lg shadow-lg max-h-64 overflow-y-auto border ${
-            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-          }`}
+          className={`absolute z-50 top-full left-0 right-0 mt-1 rounded-lg shadow-lg max-h-64 overflow-y-auto border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+            }`}
         >
           {filteredSuggestions.map((suggestion, idx) => (
             <div
               key={suggestion.expression}
-              onClick={() => selectSuggestion(suggestion)}
-              className={`px-3 py-2.5 cursor-pointer flex items-start gap-2 text-sm border-b last:border-b-0 ${
-                isDark ? 'border-slate-700' : 'border-gray-100'
-              } ${
-                idx === selectedIndex
-                  ? isDark 
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent input blur
+                selectSuggestion(suggestion);
+              }}
+              className={`px-3 py-2.5 cursor-pointer flex items-start gap-2 text-sm border-b last:border-b-0 ${isDark ? 'border-slate-700' : 'border-gray-100'
+                } ${idx === selectedIndex
+                  ? isDark
                     ? 'bg-indigo-900/30 text-indigo-300'
                     : 'bg-indigo-50 text-indigo-700'
                   : isDark
                     ? 'hover:bg-slate-700'
                     : 'hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="mt-0.5">{getTypeIcon(suggestion.type)}</span>
               <div className="flex-1 min-w-0">

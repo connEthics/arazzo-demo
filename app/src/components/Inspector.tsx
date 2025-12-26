@@ -2,12 +2,11 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import DetailDrawer, { DetailData } from './DetailDrawer';
-import StepInspector, { InspectorStep } from './StepInspector';
 import InputPanel from './InputPanel';
 import OutputPanel from './OutputPanel';
 import { ExpressionSuggestion } from './ExpressionInput';
 import { Action } from './ActionFormEditor';
-import type { Step, WorkflowInputs, SourceDescription } from '@/types/arazzo';
+import type { Step, WorkflowInputs, SourceDescription, Components } from '@/types/arazzo';
 
 interface InspectorProps {
   /** Current selection data (step, input, output) */
@@ -27,13 +26,22 @@ interface InspectorProps {
   /** All sources for expression suggestions */
   sources?: SourceDescription[];
   /** Handle step update */
-  onStepUpdate?: (stepId: string, updates: Partial<InspectorStep>) => void;
+  onStepUpdate?: (stepId: string, updates: Partial<Step>) => void;
   /** Handle workflow input update */
   onInputUpdate?: (inputs: WorkflowInputs) => void;
   /** Handle workflow output update */
   onOutputUpdate?: (outputs: Record<string, string>) => void;
+  /** Handle reordering */
+  onReorderInput?: (startIndex: number, endIndex: number) => void;
+  onReorderOutput?: (startIndex: number, endIndex: number) => void;
+  /** Handle reusable components update */
+  onComponentsUpdate?: (updates: Partial<Components>) => void;
   /** Initial mode */
   initialMode?: 'read' | 'edit';
+  /** Callback for when a step is clicked (e.g., in a goto link) */
+  onStepClick?: (stepId: string) => void;
+  /** Callback for when a reference is clicked (e.g., in a documentation link) */
+  onRefClick?: (reference: string) => void;
 }
 
 // Icons
@@ -66,9 +74,13 @@ export default function Inspector({
   onStepUpdate,
   onInputUpdate,
   onOutputUpdate,
+  onReorderInput,
+  onReorderOutput,
+  onComponentsUpdate,
   initialMode = 'read',
+  onStepClick,
+  onRefClick,
 }: InspectorProps) {
-  const [mode, setMode] = useState<'read' | 'edit'>(initialMode);
 
   // Generate expression suggestions from context
   const expressionSuggestions = useMemo((): ExpressionSuggestion[] => {
@@ -82,7 +94,6 @@ export default function Inspector({
       { expression: '$method', label: 'HTTP Method', type: 'context' },
     ];
 
-    // Add workflow inputs
     if (workflowInputs?.properties) {
       Object.keys(workflowInputs.properties).forEach(key => {
         suggestions.push({
@@ -93,7 +104,6 @@ export default function Inspector({
       });
     }
 
-    // Add step outputs
     allSteps.forEach(step => {
       if (step.outputs) {
         Object.keys(step.outputs).forEach(outputKey => {
@@ -109,88 +119,12 @@ export default function Inspector({
     return suggestions;
   }, [workflowInputs, allSteps]);
 
-  // Get available step IDs for goto dropdown
-  const availableSteps = useMemo(() => {
-    return allSteps.map(s => s.stepId);
-  }, [allSteps]);
-
-  // Convert Step to InspectorStep
-  const convertToInspectorStep = useCallback((step: Step): InspectorStep => {
-    // Convert parameters - filter out ReusableObject and map Parameter types
-    const parameters = step.parameters?.filter(p => 'name' in p && 'value' in p).map(p => {
-      const param = p as { name: string; in?: string; value: unknown };
-      return {
-        name: param.name,
-        in: param.in,
-        value: param.value as string | number | boolean,
-      };
-    });
-
-    // Convert onSuccess actions - filter out ReusableObject references
-    const onSuccess: Action[] = (step.onSuccess?.filter(a => 'type' in a) || []).map(a => {
-      const action = a as { name?: string; type: string; stepId?: string; workflowId?: string; retryAfter?: number; retryLimit?: number };
-      return {
-        name: action.name,
-        type: action.type as 'goto' | 'retry' | 'end',
-        stepId: action.stepId,
-        workflowId: action.workflowId,
-        retryAfter: action.retryAfter,
-        retryLimit: action.retryLimit,
-      };
-    });
-
-    // Convert onFailure actions
-    const onFailure: Action[] = (step.onFailure?.filter(a => 'type' in a) || []).map(a => {
-      const action = a as { name?: string; type: string; stepId?: string; workflowId?: string; retryAfter?: number; retryLimit?: number };
-      return {
-        name: action.name,
-        type: action.type as 'goto' | 'retry' | 'end',
-        stepId: action.stepId,
-        workflowId: action.workflowId,
-        retryAfter: action.retryAfter,
-        retryLimit: action.retryLimit,
-      };
-    });
-
-    // Convert successCriteria to simple format
-    const successCriteria = step.successCriteria?.map(c => ({
-      condition: c.condition,
-      type: typeof c.type === 'string' ? c.type : c.type?.type,
-    }));
-
-    return {
-      stepId: step.stepId,
-      operationId: step.operationId,
-      operationPath: step.operationPath,
-      workflowId: step.workflowId,
-      description: step.description,
-      parameters,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      requestBody: step.requestBody as any,
-      successCriteria,
-      outputs: step.outputs,
-      onSuccess,
-      onFailure,
-    };
-  }, []);
-
-  // Handle step changes from StepInspector
-  const handleStepChange = useCallback((updatedStep: InspectorStep) => {
-    if (onStepUpdate && data?.type === 'step' && data.step) {
-      onStepUpdate(data.step.stepId, updatedStep);
+  // Handle step changes from StepBody (via DetailDrawer)
+  const handleStepUpdate = useCallback((stepId: string, updates: Partial<Step>) => {
+    if (onStepUpdate) {
+      onStepUpdate(stepId, updates);
     }
-  }, [onStepUpdate, data]);
-
-  // Get current step for inspector
-  const currentInspectorStep = useMemo((): InspectorStep | null => {
-    if (data?.type === 'step' && data.step) {
-      return convertToInspectorStep(data.step);
-    }
-    return null;
-  }, [data, convertToInspectorStep]);
-
-  // Check if editing is available for this selection
-  const canEditStep = data?.type === 'step' && !!onStepUpdate;
+  }, [onStepUpdate]);
 
   // Empty state
   if (!data) {
@@ -209,7 +143,7 @@ export default function Inspector({
     );
   }
 
-  // For input/output, use unified panels with built-in mode toggle
+  // For input/output, use unified panels
   if (data.type === 'input') {
     return (
       <InputPanel
@@ -219,6 +153,7 @@ export default function Inspector({
         isDark={isDark}
         onClose={onClose}
         expressionSuggestions={expressionSuggestions}
+        onReorder={onReorderInput}
       />
     );
   }
@@ -232,71 +167,44 @@ export default function Inspector({
         isDark={isDark}
         onClose={onClose}
         expressionSuggestions={expressionSuggestions}
+        onReorder={onReorderOutput}
       />
     );
   }
 
-  // For steps, keep the existing behavior with DetailDrawer/StepInspector
+  if (data.type === 'reusable-input' && data.reusableInput) {
+    return (
+      <InputPanel
+        inputs={data.reusableInput.inputs}
+        onInputsChange={(newInputs) => {
+          if (onComponentsUpdate) {
+            onComponentsUpdate({
+              inputs: { [data.reusableInput!.name]: newInputs }
+            });
+          }
+        }}
+        initialMode={initialMode}
+        isDark={isDark}
+        onClose={onClose}
+        expressionSuggestions={expressionSuggestions}
+        onReorder={onReorderInput}
+      />
+    );
+  }
   return (
     <div className={`h-full flex flex-col ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-      {/* Mode Toggle Header - Only for steps */}
-      {canEditStep && (
-        <div className={`flex-shrink-0 px-4 py-2 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <button
-              onClick={() => setMode('read')}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                mode === 'read'
-                  ? 'bg-indigo-600 text-white'
-                  : isDark
-                    ? 'hover:bg-slate-800 text-slate-400'
-                    : 'hover:bg-gray-50 text-gray-600'
-              }`}
-            >
-              <ReadIcon />
-              <span>Documentation</span>
-            </button>
-            <button
-              onClick={() => setMode('edit')}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l ${
-                isDark ? 'border-slate-700' : 'border-slate-200'
-              } ${
-                mode === 'edit'
-                  ? 'bg-indigo-600 text-white'
-                  : isDark
-                    ? 'hover:bg-slate-800 text-slate-400'
-                    : 'hover:bg-gray-50 text-gray-600'
-              }`}
-            >
-              <EditIcon />
-              <span>Edit</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {mode === 'read' || !canEditStep ? (
-          <DetailDrawer
-            data={data}
-            isDark={isDark}
-            onClose={onClose || (() => {})}
-            workflowInputs={workflowInputs}
-            workflowOutputs={workflowOutputs}
-            workflowId={workflowId}
-          />
-        ) : (
-          <StepInspector
-            step={currentInspectorStep}
-            onStepChange={handleStepChange}
-            onClose={onClose}
-            readOnly={false}
-            isDark={isDark}
-            availableSteps={availableSteps}
-            expressionSuggestions={expressionSuggestions}
-          />
-        )}
+        <DetailDrawer
+          data={data}
+          isDark={isDark}
+          onClose={onClose || (() => { })}
+          workflowInputs={workflowInputs}
+          workflowOutputs={workflowOutputs}
+          workflowId={workflowId}
+          onStepUpdate={handleStepUpdate}
+          availableSteps={allSteps.map(s => s.stepId)}
+          expressionSuggestions={expressionSuggestions}
+        />
       </div>
     </div>
   );

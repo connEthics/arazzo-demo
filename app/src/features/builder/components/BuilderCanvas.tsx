@@ -355,8 +355,8 @@ function BuilderCanvasContent({
           targetHandle: 'flow-in',
           type: 'smoothstep',
           animated: false,
-          style: { stroke: '#6366f1', strokeWidth: 2 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
+          style: { stroke: '#f59e0b', strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
           data: { type: 'output' }
         });
       }
@@ -500,7 +500,7 @@ function BuilderCanvasContent({
       dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'output' } });
     } else {
       const stepId = node.data?.stepId as string;
-      dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', stepId } });
+      dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: stepId } });
     }
     onNodeClickProp?.(); // Switch to inspector on mobile
   }, [dispatch, onNodeClickProp]);

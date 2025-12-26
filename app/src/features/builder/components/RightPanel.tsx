@@ -7,7 +7,7 @@ import Inspector from '@/components/Inspector';
 import ResizableInspectorPanel from '@/components/ResizableInspectorPanel';
 import type { DetailData } from '@/components/DetailDrawer';
 import type { InspectorStep } from '@/components/StepInspector';
-import type { WorkflowInputs } from '@/types/arazzo';
+import type { Step, WorkflowInputs, Components } from '@/types/arazzo';
 
 export type ViewMode = 'builder' | 'documentation' | 'flowchart' | 'sequence';
 
@@ -16,11 +16,11 @@ interface RightPanelProps {
   selectedWorkflowIndex: number;
   isOpen: boolean;
   onToggle: () => void;
-  
+
   // For diagram modes
   detailData: DetailData | null;
   onDetailClose: () => void;
-  
+
   // Mobile
   isMobile?: boolean;
   onMobileClose?: () => void;
@@ -37,7 +37,7 @@ function RightPanel({
   onMobileClose,
 }: RightPanelProps) {
   const { state, dispatch } = useBuilder();
-  
+
   const workflow = state.spec.workflows[selectedWorkflowIndex];
   const workflowId = workflow?.workflowId;
   const currentWorkflowSteps = workflow?.steps || [];
@@ -54,41 +54,13 @@ function RightPanel({
     return state.spec.sourceDescriptions[0];
   }, [state.spec]);
 
-  // Handle step updates from Inspector edit mode
-  const handleStepUpdate = useCallback((stepId: string, updates: Partial<InspectorStep>) => {
-    // Convert InspectorStep parameters to Arazzo parameters with proper typing
-    const parameters = updates.parameters?.map(p => ({
-      name: p.name,
-      in: p.in as 'path' | 'query' | 'header' | 'cookie' | undefined,
-      value: p.value,
-    }));
-
-    // Convert criteria with proper type
-    const successCriteria = updates.successCriteria?.map(c => ({
-      condition: c.condition,
-      type: c.type as 'simple' | 'regex' | 'jsonpath' | 'xpath' | undefined,
-    }));
-
+  // Handle step updates from Inspector
+  const handleStepUpdate = useCallback((stepId: string, updates: Partial<Step>) => {
     dispatch({
       type: 'UPDATE_STEP',
       payload: {
         stepId,
-        updates: {
-          stepId: updates.stepId,
-          operationId: updates.operationId,
-          operationPath: updates.operationPath,
-          workflowId: updates.workflowId,
-          description: updates.description,
-          parameters,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          requestBody: updates.requestBody as any,
-          successCriteria,
-          outputs: updates.outputs,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onSuccess: updates.onSuccess as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onFailure: updates.onFailure as any,
-        },
+        updates,
       },
     });
   }, [dispatch]);
@@ -117,24 +89,74 @@ function RightPanel({
     });
   }, [dispatch, workflowId]);
 
+  const handleReorderInput = useCallback((startIndex: number, endIndex: number) => {
+    if (!workflowId) return;
+    dispatch({
+      type: 'REORDER_INPUT',
+      payload: { workflowId, startIndex, endIndex },
+    });
+  }, [dispatch, workflowId]);
+
+  const handleReorderOutput = useCallback((startIndex: number, endIndex: number) => {
+    if (!workflowId) return;
+    dispatch({
+      type: 'REORDER_OUTPUT',
+      payload: { workflowId, startIndex, endIndex },
+    });
+  }, [dispatch, workflowId]);
+
+  const handleComponentsUpdate = useCallback((updates: Partial<Components>) => {
+    dispatch({
+      type: 'UPDATE_COMPONENTS',
+      payload: { updates }
+    });
+  }, [dispatch]);
+
   // Convert selected node to DetailData for drawer
+  // This memo ensures we always have the freshest data from the global state,
+  // prioritizing the context selection (from Left Panel/Canvas) and then 
+  // falling back to external selections (from Flowchart/Sequence).
   const selectedDetailData = useMemo((): DetailData | null => {
-    if (viewMode !== 'builder') return detailData;
-    
+    // 1. Try context selection first (used by Left Panel and Builder Canvas)
     if (state.selectedNodeType === 'step' && state.selectedStepId) {
       const step = workflow?.steps.find(s => s.stepId === state.selectedStepId);
       if (step) {
         return { type: 'step', step, sourceForStep: getSourceForStep(step) };
       }
     }
-    if (state.selectedNodeType === 'input' && currentWorkflowInputs) {
+    if (state.selectedNodeType === 'input') {
       return { type: 'input' };
     }
     if (state.selectedNodeType === 'output') {
       return { type: 'output' };
     }
+    if (state.selectedNodeType === 'schema' && state.selectedComponentKey) {
+      const schema = state.spec.components?.schemas?.[state.selectedComponentKey];
+      if (schema) {
+        return { type: 'schema', schema: { name: state.selectedComponentKey, schema } };
+      }
+    }
+    if (state.selectedNodeType === 'reusable-input' && state.selectedComponentKey) {
+      const inputs = state.spec.components?.inputs?.[state.selectedComponentKey];
+      if (inputs) {
+        return { type: 'reusable-input', reusableInput: { name: state.selectedComponentKey, inputs } };
+      }
+    }
+
+    // 2. If no context selection, try selection from props (used by Flowchart/Sequence)
+    if (detailData) {
+      if (detailData.type === 'step' && detailData.step) {
+        const stepId = detailData.step.stepId;
+        const step = workflow?.steps.find(s => s.stepId === stepId);
+        if (step) {
+          return { ...detailData, step, sourceForStep: getSourceForStep(step) };
+        }
+      }
+      return detailData;
+    }
+
     return null;
-  }, [state.selectedNodeType, state.selectedStepId, workflow, currentWorkflowInputs, getSourceForStep, viewMode, detailData]);
+  }, [state.selectedNodeType, state.selectedStepId, workflow, getSourceForStep, detailData]);
 
   const handleClose = useCallback(() => {
     if (viewMode === 'builder') {
@@ -151,7 +173,7 @@ function RightPanel({
 
   const inspectorContent = (
     <Inspector
-      data={viewMode === 'builder' ? selectedDetailData : detailData}
+      data={selectedDetailData}
       isDark={false}
       onClose={handleClose}
       workflowInputs={currentWorkflowInputs}
@@ -162,6 +184,9 @@ function RightPanel({
       onStepUpdate={handleStepUpdate}
       onInputUpdate={handleInputUpdate}
       onOutputUpdate={handleOutputUpdate}
+      onReorderInput={handleReorderInput}
+      onReorderOutput={handleReorderOutput}
+      onComponentsUpdate={handleComponentsUpdate}
       initialMode="read"
     />
   );

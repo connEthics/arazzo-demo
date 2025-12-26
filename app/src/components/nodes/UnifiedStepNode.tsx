@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import type { Step } from '@/types/arazzo';
 import { Badge } from '@/components/primitives';
+import { StepHeader, StepBody } from '@/components/arazzo';
 import { extractHttpMethod, getMethodBadgeVariant, type HttpMethod } from '@/lib/arazzo-utils';
 
 type LayoutDirection = 'horizontal' | 'vertical';
@@ -15,40 +16,40 @@ interface UnifiedStepNodeData {
   stepId?: string;
   operationId?: string;
   description?: string;
-  
+
   // Parameters (inputs) for display
   parameters?: Array<{ name: string; in?: string }>;
-  
+
   // Outputs for display
   outputs?: Record<string, string>;
-  
+
   // Computed flags (for view mode)
   hasOnSuccess?: boolean;
   hasOnFailure?: boolean;
   hasSkip?: boolean;
-  
+
   // Validation flags
   hasInvalidLinks?: boolean;
   invalidLinkCount?: number;
-  
+
   // Method can be provided or extracted
   method?: string | null;
-  
+
   // Source info (for edit mode)
   sourceName?: string;
-  
+
   // Layout
   direction?: LayoutDirection;
-  
+
   // Mode
   mode?: NodeMode;
-  
+
   // Expanded mode to show inputs/outputs
   expanded?: boolean;
-  
+
   // Selection state (for edit mode)
   isSelected?: boolean;
-  
+
   // Allow extra properties
   [key: string]: unknown;
 }
@@ -64,16 +65,16 @@ interface UnifiedStepNodeProps extends NodeProps {
  * In 'edit' mode: Compact display with selection ring, source info
  */
 function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
-  const { 
+  const {
     step,
     stepId: propStepId,
     operationId: propOperationId,
     description: propDescription,
     parameters: propParameters,
     outputs: propOutputs,
-    hasOnSuccess, 
-    hasOnFailure, 
-    hasSkip, 
+    hasOnSuccess,
+    hasOnFailure,
+    hasSkip,
     hasInvalidLinks,
     invalidLinkCount,
     method: propMethod,
@@ -83,32 +84,32 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
     expanded = true,
     isSelected
   } = data || {};
-  
+
   // Resolve step data - either from step object or direct props
   const stepId = step?.stepId || propStepId || 'Unknown';
   const operationId = step?.operationId || propOperationId;
   const description = step?.description || propDescription;
   const outputs = step?.outputs || propOutputs;
-  
+
   // Extract parameters - use provided array or extract from step
-  const parameters: Array<{ name: string; in?: string }> = propParameters || 
+  const parameters: Array<{ name: string; in?: string }> = propParameters ||
     (step?.parameters
       ?.filter(p => typeof p === 'object' && 'name' in p && !('reference' in p))
       .map(p => {
         const param = p as { name: string; in?: string };
         return { name: param.name, in: param.in };
       }) || []);
-  
+
   // Resolve method
   const method = propMethod || (operationId ? extractHttpMethod(operationId) : null);
-  
+
   // Dynamic handle positions based on layout direction
   const targetPosition = direction === 'horizontal' ? Position.Left : Position.Top;
   const sourcePosition = direction === 'horizontal' ? Position.Right : Position.Bottom;
-  
+
   // Selection state (from React Flow or from data)
   const isActive = selected || isSelected;
-  
+
   // Guard against undefined step in view mode
   if (mode === 'view' && !step && !propStepId) {
     return (
@@ -125,57 +126,39 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
     const hasInputs = parameters && parameters.length > 0;
     const hasOutputs = outputs && Object.keys(outputs).length > 0;
     const outputKeys = outputs ? Object.keys(outputs) : [];
-    
+
     return (
       <div className={`
         min-w-[200px] max-w-[260px] bg-white dark:bg-slate-800 rounded-lg border-2 shadow-sm transition-all
-        ${isActive 
-          ? 'border-indigo-500 shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' 
+        ${isActive
+          ? 'border-indigo-500 shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20'
           : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300'}
       `}>
         {/* Main flow handle - top */}
-        <Handle 
-          type="target" 
-          position={Position.Top} 
+        <Handle
+          type="target"
+          position={Position.Top}
           id="flow-in"
-          className="!bg-indigo-400 !w-3 !h-3" 
+          className="!bg-indigo-400 !w-3 !h-3"
         />
-        
+
         {/* Header */}
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1">
-              <Badge variant="step" size="sm" className="uppercase text-[10px]">
-                Step
-              </Badge>
-              {hasInvalidLinks && (
-                <span 
-                  className="inline-flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full" 
-                  title={`${invalidLinkCount || '?'} invalid link(s)`}
-                >
-                  !
-                </span>
-              )}
-            </div>
-            {method && (
-              <Badge 
-                variant={getMethodBadgeVariant(method as HttpMethod)} 
-                size="sm"
-                className="text-[10px]"
-              >
-                {method}
-              </Badge>
-            )}
-          </div>
-          
-          <div className="font-bold text-sm mt-1 truncate" title={stepId}>{stepId}</div>
-          {operationId && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate" title={operationId}>
-              {operationId}
-            </div>
+        <StepHeader
+          step={step || { stepId, operationId, description } as any}
+          variant="node"
+          isDark={selected}
+          className="border-b"
+        >
+          {hasInvalidLinks && (
+            <span
+              className="inline-flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full ml-1"
+              title={`${invalidLinkCount || '?'} invalid link(s)`}
+            >
+              !
+            </span>
           )}
-        </div>
-        
+        </StepHeader>
+
         {/* Inputs Section */}
         {expanded && hasInputs && (
           <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 bg-emerald-50/50 dark:bg-emerald-900/10">
@@ -209,7 +192,7 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
             </div>
           </div>
         )}
-        
+
         {/* Outputs Section */}
         {expanded && hasOutputs && (
           <div className="px-3 py-2 bg-amber-50/50 dark:bg-amber-900/10">
@@ -240,7 +223,7 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
             </div>
           </div>
         )}
-        
+
         {/* Source name footer */}
         {sourceName && (
           <div className="px-3 py-1 border-t border-slate-100 dark:border-slate-700">
@@ -251,11 +234,11 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
         )}
 
         {/* Main flow handle - bottom */}
-        <Handle 
-          type="source" 
+        <Handle
+          type="source"
           position={Position.Bottom}
-          id="flow-out" 
-          className="!bg-indigo-400 !w-3 !h-3" 
+          id="flow-out"
+          className="!bg-indigo-400 !w-3 !h-3"
         />
       </div>
     );
@@ -281,83 +264,21 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
         position={targetPosition}
         className="!w-2.5 !h-2.5 !bg-indigo-500 !border-2 !border-white"
       />
-      
+
       {/* Header */}
-      <div className="bg-indigo-50 border-b border-indigo-100 px-3 py-2 flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] font-semibold uppercase bg-indigo-500 text-white px-1.5 py-0.5 rounded">
-          Step
-        </span>
-        <span className="text-gray-800 font-medium text-sm">{stepId}</span>
-        {method && (
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${methodStyles[method] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-            {method}
-          </span>
-        )}
-      </div>
-      
+      <StepHeader
+        step={step || { stepId, operationId, description } as any}
+        variant="node"
+        isDark={isActive}
+      />
+
       {/* Body */}
-      <div className="p-3 space-y-2">
-        {/* Description */}
-        {description && (
-          <p className="text-gray-600 text-xs line-clamp-2">{description}</p>
-        )}
-        
-        {/* Operation */}
-        {operationId && (
-          <div className="text-[10px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded border border-gray-100">
-            {operationId}
-          </div>
-        )}
-        
-        {/* Skip indicator */}
-        {hasSkip && (
-          <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded">
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            </svg>
-            Conditional skip
-          </div>
-        )}
-        
-        {/* Outputs */}
-        {outputs && Object.keys(outputs).length > 0 && (
-          <div className="border-t border-gray-100 pt-2">
-            <div className="text-[10px] text-gray-400 uppercase mb-1">Outputs</div>
-            <div className="flex flex-wrap gap-1">
-              {Object.keys(outputs).slice(0, 3).map((output) => (
-                <span 
-                  key={output}
-                  className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100"
-                >
-                  {output}
-                </span>
-              ))}
-              {Object.keys(outputs).length > 3 && (
-                <span className="text-[10px] text-gray-400">
-                  +{Object.keys(outputs).length - 3}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Conditional actions */}
-        {(hasOnSuccess || hasOnFailure) && (
-          <div className="flex gap-1.5 pt-1">
-            {hasOnSuccess && (
-              <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
-                ✓ onSuccess
-              </span>
-            )}
-            {hasOnFailure && (
-              <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100">
-                ✗ onFailure
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      
+      <StepBody
+        step={step || { stepId, operationId, description, outputs, onSuccess: hasOnSuccess, onFailure: hasOnFailure } as any}
+        variant="compact"
+        isDark={isActive}
+      />
+
       {/* Handle bottom/right */}
       <Handle
         type="source"

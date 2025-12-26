@@ -24,16 +24,6 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ReactNode; descript
     ),
   },
   {
-    id: 'builder',
-    label: 'Builder',
-    description: 'Visual drag & drop editor',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-      </svg>
-    ),
-  },
-  {
     id: 'flowchart',
     label: 'Flowchart',
     description: 'Mermaid flowchart diagram',
@@ -50,6 +40,16 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ReactNode; descript
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'builder',
+    label: 'Builder',
+    description: 'Visual drag & drop editor',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
       </svg>
     ),
   },
@@ -84,12 +84,14 @@ export default function ViewModeSelector({
                 ? viewMode.id === 'builder'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : viewMode.id === 'documentation'
-                    ? isDark
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-emerald-600 text-white shadow-sm'
-                    : isDark
-                      ? 'bg-slate-600 text-white shadow-sm'
-                      : 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : viewMode.id === 'flowchart'
+                      ? 'bg-sky-600 text-white shadow-sm'
+                      : viewMode.id === 'sequence'
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : isDark
+                          ? 'bg-slate-600 text-white shadow-sm'
+                          : 'bg-white text-slate-900 shadow-sm'
                 : isDark
                   ? 'text-slate-400 hover:text-slate-300'
                   : 'text-slate-500 hover:text-slate-700'

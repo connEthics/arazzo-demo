@@ -88,7 +88,10 @@ function CodeBlock({
         {/* Expand/Collapse button */}
         {needsTruncation && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
             className={`w-full py-1.5 text-[10px] font-medium transition-colors flex items-center justify-center gap-1 border-t ${
               isDark
                 ? 'bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-300 border-slate-800'

@@ -13,7 +13,7 @@ interface MermaidDiagramProps {
   workflowInputs?: WorkflowInputs;
   workflowOutputs?: Record<string, string>;
   selectedStepId?: string | null;
-  selectedType?: 'step' | 'input' | 'output' | null;
+  selectedType?: 'step' | 'input' | 'output' | 'schema' | 'reusable-input' | null;
   onDetailSelect?: (data: DetailData | null) => void;
   // Legacy prop for backward compatibility
   onStepSelect?: (step: Step | null) => void;
@@ -21,10 +21,10 @@ interface MermaidDiagramProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
-export default function MermaidDiagram({ 
-  chart, 
-  isDark = false, 
-  steps = [], 
+export default function MermaidDiagram({
+  chart,
+  isDark = false,
+  steps = [],
   sources = [],
   workflowInputs,
   workflowOutputs = {},
@@ -84,7 +84,7 @@ export default function MermaidDiagram({
   // Apply highlight to selected element (step, input, or output)
   useEffect(() => {
     if (!containerRef.current || !svgContent) return;
-    
+
     const svg = containerRef.current.querySelector('svg');
     if (!svg) return;
 
@@ -95,8 +95,9 @@ export default function MermaidDiagram({
 
     // Determine highlight class based on selection type
     const getHighlightClass = () => {
-      if (selectedType === 'input') return 'selected-input-highlight';
+      if (selectedType === 'input' || selectedType === 'reusable-input') return 'selected-input-highlight';
       if (selectedType === 'output') return 'selected-output-highlight';
+      if (selectedType === 'schema') return 'selected-step-highlight'; // Use step highlight for schemas for now
       return 'selected-step-highlight';
     };
     const highlightClass = getHighlightClass();
@@ -147,15 +148,15 @@ export default function MermaidDiagram({
     // Find and highlight the selected step - be very specific
     const sanitizedId = selectedStepId.replace(/[^a-zA-Z0-9_]/g, '_');
     let found = false;
-    
+
     // For flowcharts: find nodes by their ID which contains the step ID
     svg.querySelectorAll('.node').forEach(node => {
       const nodeId = node.id || '';
       // Match only if the node ID specifically contains our step ID
       // Mermaid generates IDs like "flowchart-stepId-123"
-      if (nodeId.includes(`-${sanitizedId}-`) || 
-          nodeId.includes(`-${sanitizedId}`) ||
-          nodeId.endsWith(sanitizedId)) {
+      if (nodeId.includes(`-${sanitizedId}-`) ||
+        nodeId.includes(`-${sanitizedId}`) ||
+        nodeId.endsWith(sanitizedId)) {
         node.classList.add(highlightClass);
         found = true;
       }
@@ -203,32 +204,32 @@ export default function MermaidDiagram({
   // Apply consistent colors to sequence diagram notes based on content
   useEffect(() => {
     if (!containerRef.current || !svgContent) return;
-    
+
     const svg = containerRef.current.querySelector('svg');
     if (!svg) return;
 
     // Find all note groups - Mermaid uses various selectors
     // Look for g elements that contain both a rect and text with note content
     const allGroups = svg.querySelectorAll('g');
-    
+
     allGroups.forEach(group => {
       const rect = group.querySelector('rect');
       const textContent = group.textContent || '';
-      
+
       // Skip if no rect or this is an actor/other element
       if (!rect) return;
-      
+
       // Check if this group contains note-like content (emojis we use)
       const isInputNote = textContent.includes('🚀');
       const isOutputNote = textContent.includes('✅');
       const isStepOutputNote = textContent.includes('📦');
       const isStepNote = textContent.includes('🔹') || textContent.includes('📌');
-      
+
       // Only process if it matches one of our note types
       if (!isInputNote && !isOutputNote && !isStepOutputNote && !isStepNote) return;
-      
+
       const groupEl = group as unknown as HTMLElement;
-      
+
       if (isInputNote) {
         // Input note - Green, CLICKABLE with visual indicator
         rect.setAttribute('fill', '#d1fae5');
@@ -238,7 +239,7 @@ export default function MermaidDiagram({
         rect.setAttribute('ry', '8');
         rect.style.cursor = 'pointer';
         rect.style.filter = 'drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3))';
-        
+
         groupEl.style.cursor = 'pointer';
         groupEl.onmouseenter = () => {
           rect.setAttribute('stroke-width', '3');
@@ -257,7 +258,7 @@ export default function MermaidDiagram({
         rect.setAttribute('ry', '8');
         rect.style.cursor = 'pointer';
         rect.style.filter = 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3))';
-        
+
         groupEl.style.cursor = 'pointer';
         groupEl.onmouseenter = () => {
           rect.setAttribute('stroke-width', '3');
@@ -285,7 +286,7 @@ export default function MermaidDiagram({
         rect.setAttribute('ry', '8');
         rect.style.cursor = 'pointer';
         rect.style.filter = 'drop-shadow(0 2px 6px rgba(99, 102, 241, 0.3))';
-        
+
         groupEl.style.cursor = 'pointer';
         groupEl.onmouseenter = () => {
           rect.setAttribute('stroke-width', '3');
@@ -309,7 +310,7 @@ export default function MermaidDiagram({
   // Handle click on SVG elements
   const handleClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as Element;
-    
+
     // Helper to find source for a step
     const getSourceForStep = (step: Step) => {
       if (step.operationId?.includes('.')) {
@@ -318,19 +319,19 @@ export default function MermaidDiagram({
       }
       return sources[0];
     };
-    
+
     // Find the closest group element
     const noteGroup = target.closest('g');
     if (!noteGroup) {
       // Click on background - close panel
-      if ((target as HTMLElement).tagName === 'svg' || 
-          (target as HTMLElement).classList?.contains('mermaid-container')) {
+      if ((target as HTMLElement).tagName === 'svg' ||
+        (target as HTMLElement).classList?.contains('mermaid-container')) {
         onDetailSelect?.(null);
         onStepSelect?.(null);
       }
       return;
     }
-    
+
     // Get text content from this group
     const textElements = noteGroup.querySelectorAll('text, tspan');
     let groupText = '';
@@ -338,55 +339,55 @@ export default function MermaidDiagram({
       groupText += ' ' + (el.textContent || '');
     });
     groupText = groupText.trim();
-    
+
     const groupId = noteGroup.id || '';
-    
+
     // Also check parent node element for flowchart
     const nodeElement = target.closest('.node, [id*="flowchart"]');
     const nodeId = nodeElement?.id || '';
     const nodeText = nodeElement?.textContent || '';
-    
+
     // Check for INPUT node click (flowchart) - check FIRST before other checks
     // Mermaid generates IDs like "flowchart-INPUT-0" for node INPUT
-    const isInputNode = groupText.includes('📥') || 
-                        nodeText.includes('📥') ||
-                        groupText.toLowerCase().includes('inputs:') ||
-                        nodeText.toLowerCase().includes('inputs:') ||
-                        nodeId.toLowerCase().includes('input') ||
-                        groupId.toLowerCase().includes('input');
+    const isInputNode = groupText.includes('📥') ||
+      nodeText.includes('📥') ||
+      groupText.toLowerCase().includes('inputs:') ||
+      nodeText.toLowerCase().includes('inputs:') ||
+      nodeId.toLowerCase().includes('input') ||
+      groupId.toLowerCase().includes('input');
     if (isInputNode) {
       e.stopPropagation();
-      onDetailSelect?.({ 
-        type: 'input', 
-        input: { 
-          name: 'Workflow Inputs', 
-          schema: workflowInputs?.properties || {} 
-        } 
+      onDetailSelect?.({
+        type: 'input',
+        input: {
+          name: 'Workflow Inputs',
+          schema: workflowInputs?.properties || {}
+        }
       });
       return;
     }
 
     // Check for OUTPUT node click (flowchart)
     // Mermaid generates IDs like "flowchart-OUTPUT-0" for node OUTPUT
-    const isOutputNode = groupText.includes('📤') || 
-                         nodeText.includes('📤') ||
-                         groupText.toLowerCase().includes('outputs:') ||
-                         nodeText.toLowerCase().includes('outputs:') ||
-                         nodeId.toLowerCase().includes('output') ||
-                         groupId.toLowerCase().includes('output');
+    const isOutputNode = groupText.includes('📤') ||
+      nodeText.includes('📤') ||
+      groupText.toLowerCase().includes('outputs:') ||
+      nodeText.toLowerCase().includes('outputs:') ||
+      nodeId.toLowerCase().includes('output') ||
+      groupId.toLowerCase().includes('output');
     if (isOutputNode) {
       e.stopPropagation();
-      onDetailSelect?.({ 
-        type: 'output', 
-        output: { 
-          name: 'Workflow Outputs', 
-          value: '', 
-          allOutputs: workflowOutputs 
-        } 
+      onDetailSelect?.({
+        type: 'output',
+        output: {
+          name: 'Workflow Outputs',
+          value: '',
+          allOutputs: workflowOutputs
+        }
       });
       return;
     }
-    
+
     // Check if this is an actor (sequence diagram participant)
     const actorBox = target.closest('.actor-box, .actor');
     if (actorBox || noteGroup.classList.contains('actor')) {
@@ -401,9 +402,9 @@ export default function MermaidDiagram({
       // Also check for Client actor
       if (groupText.includes('Client') || groupText.includes('Workflow')) {
         e.stopPropagation();
-        onDetailSelect?.({ 
-          type: 'source', 
-          source: { name: 'Client', url: '', type: 'arazzo', description: 'The workflow client initiating the API calls' } 
+        onDetailSelect?.({
+          type: 'source',
+          source: { name: 'Client', url: '', type: 'arazzo', description: 'The workflow client initiating the API calls' }
         });
         return;
       }
@@ -413,12 +414,12 @@ export default function MermaidDiagram({
     const workflowStartMatch = groupText.match(/🚀/i);
     if (workflowStartMatch) {
       e.stopPropagation();
-      onDetailSelect?.({ 
-        type: 'input', 
-        input: { 
-          name: 'Workflow Inputs', 
-          schema: workflowInputs?.properties || {} 
-        } 
+      onDetailSelect?.({
+        type: 'input',
+        input: {
+          name: 'Workflow Inputs',
+          schema: workflowInputs?.properties || {}
+        }
       });
       return;
     }
@@ -442,13 +443,13 @@ export default function MermaidDiagram({
     const workflowCompleteMatch = groupText.match(/✅\s*Complete/i);
     if (workflowCompleteMatch) {
       e.stopPropagation();
-      onDetailSelect?.({ 
-        type: 'output', 
-        output: { 
-          name: 'Workflow Outputs', 
-          value: '', 
-          allOutputs: workflowOutputs 
-        } 
+      onDetailSelect?.({
+        type: 'output',
+        output: {
+          name: 'Workflow Outputs',
+          value: '',
+          allOutputs: workflowOutputs
+        }
       });
       return;
     }
@@ -461,9 +462,9 @@ export default function MermaidDiagram({
       for (const step of steps) {
         if (step.outputs && step.outputs[outputName]) {
           e.stopPropagation();
-          onDetailSelect?.({ 
-            type: 'output', 
-            output: { name: outputName, value: step.outputs[outputName], stepId: step.stepId } 
+          onDetailSelect?.({
+            type: 'output',
+            output: { name: outputName, value: step.outputs[outputName], stepId: step.stepId }
           });
           return;
         }
@@ -471,9 +472,9 @@ export default function MermaidDiagram({
       // Check workflow outputs
       if (workflowOutputs[outputName]) {
         e.stopPropagation();
-        onDetailSelect?.({ 
-          type: 'output', 
-          output: { name: outputName, value: workflowOutputs[outputName] } 
+        onDetailSelect?.({
+          type: 'output',
+          output: { name: outputName, value: workflowOutputs[outputName] }
         });
         return;
       }
@@ -484,17 +485,17 @@ export default function MermaidDiagram({
     if (inputMatch) {
       const inputName = inputMatch[1];
       e.stopPropagation();
-      onDetailSelect?.({ 
-        type: 'input', 
-        input: { name: inputName, schema: {} } 
+      onDetailSelect?.({
+        type: 'input',
+        input: { name: inputName, schema: {} }
       });
       return;
     }
-    
+
     // Find the step that matches this specific group's text
     for (const step of steps) {
       const stepIdRegex = new RegExp(`(^|[^a-zA-Z0-9_-])${step.stepId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-zA-Z0-9_-])`);
-      
+
       if (stepIdRegex.test(groupText) || groupId.includes(step.stepId)) {
         e.stopPropagation();
         // Find the source for this step
@@ -505,13 +506,13 @@ export default function MermaidDiagram({
         return;
       }
     }
-    
+
     // For flowchart nodes, also check parent groups
     const flowchartNodeElement = target.closest('.node, .cluster, [id*="flowchart"]');
     if (flowchartNodeElement) {
       const flowNodeId = flowchartNodeElement.id || '';
       const flowNodeText = flowchartNodeElement.textContent || '';
-      
+
       for (const step of steps) {
         const sanitizedId = step.stepId.replace(/[^a-zA-Z0-9_]/g, '_');
         if (flowNodeId.includes(sanitizedId) || flowNodeText.includes(step.stepId)) {
@@ -523,7 +524,7 @@ export default function MermaidDiagram({
           return;
         }
       }
-      
+
       // If no steps provided but we have onNodeClick, try to extract step ID from node
       if (onNodeClick && steps.length === 0) {
         // Try to find step ID pattern in node text or ID
@@ -552,13 +553,13 @@ export default function MermaidDiagram({
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       onClick={handleClick}
       className={`mermaid-container w-full h-full overflow-auto p-6 pt-8 cursor-pointer`}
       style={{ minHeight: '100%' }}
     >
-      <div 
+      <div
         className="inline-block min-w-max"
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />

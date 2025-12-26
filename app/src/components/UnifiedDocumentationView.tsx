@@ -2,12 +2,14 @@
 
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { ArazzoSpec, Step, SourceDescription, Workflow } from '@/types/arazzo';
+import type { ArazzoSpec, Step, SourceDescription, Workflow, WorkflowInputs, Components } from '@/types/arazzo';
 import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
 import StepCard from './StepCard';
-import { MarkdownText, Badge } from './primitives';
-import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from './arazzo';
+import { MarkdownText, Badge, EditableField, EditableListItem } from './primitives';
+import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList, WorkflowHeader, WorkflowBody } from './arazzo';
 import { InputContent, OutputContent } from './DetailViews';
+import type { ExpressionSuggestion } from './ExpressionInput';
+import type { OutputItem } from './primitives/EditableListItem';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 
@@ -20,57 +22,94 @@ interface UnifiedDocumentationViewProps {
   onWorkflowSelect?: (workflowId: string) => void;
   onViewFlowchart?: (workflowId: string) => void;
   onViewSequence?: (workflowId: string) => void;
+  /** Enable edit mode for steps */
+  editable?: boolean;
+  /** Callback to update a step (required for editable mode) */
+  onStepUpdate?: (workflowId: string, stepId: string, updates: Partial<Step>) => void;
+  /** Callback to update a workflow (required for editable mode) */
+  onWorkflowUpdate?: (workflowId: string, updates: Partial<Workflow>) => void;
+  /** Callback to update reusable components */
+  onComponentsUpdate?: (updates: Partial<Components>) => void;
+  /** Callback to delete reusable components */
+  onComponentDelete?: (type: 'inputs' | 'schemas' | 'parameters', name: string) => void;
+  onReorderStep?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  /** Expression suggestions for autocomplete in edit mode */
+  expressionSuggestions?: ExpressionSuggestion[];
 }
 
 /**
  * Unified Documentation View with Table of Contents
  * Combines spec-level info and all workflow details in a single scrollable view
  */
-export default function UnifiedDocumentationView({ 
-  spec, 
-  isDark = false, 
-  initialStepId, 
+export default function UnifiedDocumentationView({
+  spec,
+  isDark = false,
+  initialStepId,
   initialWorkflowId,
   expandAll,
   onWorkflowSelect,
   onViewFlowchart,
-  onViewSequence 
+  onViewSequence,
+  editable = false,
+  onStepUpdate,
+  onWorkflowUpdate,
+  onComponentsUpdate,
+  onComponentDelete,
+  onReorderStep,
+  onReorderInput,
+  onReorderOutput,
+  expressionSuggestions = [],
 }: UnifiedDocumentationViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState<string>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedWorkflows, setExpandedWorkflows] = useState<Set<string>>(new Set());
+  const [editingComponents, setEditingComponents] = useState<Set<string>>(new Set());
+
+  const toggleComponentEdit = (id: string) => {
+    setEditingComponents(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Generate TOC entries with steps
   const tocEntries = useMemo(() => {
-    const entries: Array<{ 
-      id: string; 
-      label: string; 
+    const entries: Array<{
+      id: string;
+      label: string;
       type: 'section' | 'workflow' | 'step';
       workflowId?: string;
       stepId?: string;
     }> = [
-      { id: 'overview', label: 'Overview', type: 'section' },
-    ];
-    
+        { id: 'overview', label: 'Overview', type: 'section' },
+      ];
+
     if (spec.sourceDescriptions && spec.sourceDescriptions.length > 0) {
       entries.push({ id: 'sources', label: 'API Sources', type: 'section' });
     }
-    
+
     if (spec.components) {
       entries.push({ id: 'components', label: 'Components', type: 'section' });
     }
-    
+
     // Add each workflow with its steps
     spec.workflows.forEach((wf) => {
       const workflowId = wf.workflowId;
-      entries.push({ 
-        id: `workflow-${workflowId}`, 
-        label: wf.summary || workflowId, 
+      entries.push({
+        id: `workflow-${workflowId}`,
+        label: wf.summary || workflowId,
         type: 'workflow',
         workflowId
       });
-      
+
       // Add steps for this workflow (will be shown/hidden based on expansion)
       if (wf.steps && wf.steps.length > 0) {
         wf.steps.forEach((step, idx) => {
@@ -84,22 +123,22 @@ export default function UnifiedDocumentationView({
         });
       }
     });
-    
+
     return entries;
   }, [spec]);
 
   // Filter TOC entries based on search
   const filteredTocEntries = useMemo(() => {
     if (!searchQuery.trim()) return tocEntries;
-    
+
     const query = searchQuery.toLowerCase();
     const matchingWorkflows = new Set<string>();
-    
+
     // First pass: find matching entries and their parent workflows
     const matches = tocEntries.filter((entry) => {
       const labelMatch = entry.label.toLowerCase().includes(query);
       const idMatch = entry.id.toLowerCase().includes(query);
-      
+
       if (labelMatch || idMatch) {
         if (entry.type === 'step' && entry.workflowId) {
           matchingWorkflows.add(entry.workflowId);
@@ -108,7 +147,7 @@ export default function UnifiedDocumentationView({
       }
       return false;
     });
-    
+
     // Second pass: include parent workflows of matching steps
     return tocEntries.filter((entry) => {
       if (matches.includes(entry)) return true;
@@ -187,16 +226,15 @@ export default function UnifiedDocumentationView({
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-3 py-1.5 pl-8 text-xs rounded border ${
-                isDark 
-                  ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500 focus:border-indigo-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
-              } focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors`}
+              className={`w-full px-3 py-1.5 pl-8 text-xs rounded border ${isDark
+                ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500 focus:border-indigo-500'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                } focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors`}
             />
-            <svg 
-              className={`absolute left-2.5 top-2 w-3.5 h-3.5 ${mutedClass}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`absolute left-2.5 top-2 w-3.5 h-3.5 ${mutedClass}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -204,9 +242,8 @@ export default function UnifiedDocumentationView({
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className={`absolute right-2 top-1.5 p-0.5 rounded ${
-                  isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-200'
-                } transition-colors`}
+                className={`absolute right-2 top-1.5 p-0.5 rounded ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-200'
+                  } transition-colors`}
               >
                 <svg className={`w-3 h-3 ${mutedClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -221,11 +258,11 @@ export default function UnifiedDocumentationView({
             if (entry.type === 'step' && entry.workflowId && !expandedWorkflows.has(entry.workflowId) && !searchQuery.trim()) {
               return null;
             }
-            
+
             const isWorkflow = entry.type === 'workflow';
             const isExpanded = isWorkflow && entry.workflowId && expandedWorkflows.has(entry.workflowId);
             const hasSteps = isWorkflow && entry.workflowId && spec.workflows.find(w => w.workflowId === entry.workflowId)?.steps?.length;
-            
+
             return (
               <div key={entry.id}>
                 <button
@@ -239,20 +276,18 @@ export default function UnifiedDocumentationView({
                       scrollToSection(entry.id);
                     }
                   }}
-                  className={`w-full flex items-center gap-1.5 text-left px-3 py-1.5 rounded text-sm transition-colors ${
-                    activeSection === entry.id
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
-                      : `${mutedClass} hover:bg-slate-100 dark:hover:bg-slate-800`
-                  } ${
-                    entry.type === 'step' ? 'pl-10 text-xs' : 
-                    entry.type === 'workflow' ? 'pl-4' : ''
-                  }`}
+                  className={`w-full flex items-center gap-1.5 text-left px-3 py-1.5 rounded text-sm transition-colors ${activeSection === entry.id
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : `${mutedClass} hover:bg-slate-100 dark:hover:bg-slate-800`
+                    } ${entry.type === 'step' ? 'pl-10 text-xs' :
+                      entry.type === 'workflow' ? 'pl-4' : ''
+                    }`}
                 >
                   {isWorkflow && hasSteps && (
-                    <svg 
+                    <svg
                       className={`w-3 h-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -295,66 +330,286 @@ export default function UnifiedDocumentationView({
           {spec.sourceDescriptions && spec.sourceDescriptions.length > 0 && (
             <section id="sources" className="mb-10 print:mb-6">
               <h2 className="text-2xl font-bold mb-4 print:text-xl">API Sources</h2>
-              <SourceDescriptionsList 
-                sources={spec.sourceDescriptions} 
-                isDark={isDark} 
+              <SourceDescriptionsList
+                sources={spec.sourceDescriptions}
+                isDark={isDark}
                 showDescription={true}
               />
             </section>
           )}
 
-          {/* Components */}
-          {spec.components && (
-            <section id="components" className="mb-10 print:mb-6">
-              <h2 className="text-2xl font-bold mb-4 print:text-xl">Reusable Components</h2>
-              <div className="space-y-4">
-                {spec.components.schemas && Object.keys(spec.components.schemas).length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
+          {/* Components Section */}
+          <section id="components" className="mb-10 print:mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold print:text-xl">Reusable Components</h2>
+            </div>
+
+            <div className="space-y-8">
+              {/* Reusable Inputs */}
+              {(spec.components?.inputs || editable) && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                      <span className={`text-sm font-semibold ${textClass}`}>Reusable Inputs</span>
+                      {spec.components?.inputs && (
+                        <Badge variant="info" isDark={isDark} size="xs">{Object.keys(spec.components.inputs).length}</Badge>
+                      )}
+                    </div>
+                    {editable && (
+                      <button
+                        onClick={() => {
+                          const name = `input_${Object.keys(spec.components?.inputs || {}).length + 1}`;
+                          onComponentsUpdate?.({
+                            inputs: {
+                              ...(spec.components?.inputs || {}),
+                              [name]: { type: 'object', properties: {} }
+                            }
+                          });
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Input
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(spec.components?.inputs || {}).map(([name, inputs]) => {
+                      const isEditing = editingComponents.has(`input:${name}`);
+                      return (
+                        <div key={name} className={`rounded-xl border ${borderClass} overflow-hidden bg-white dark:bg-slate-900 shadow-sm`}>
+                          <div className={`px-4 py-2 border-b ${borderClass} bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between`}>
+                            {editable && isEditing ? (
+                              <EditableField
+                                value={name}
+                                onChange={(newName) => {
+                                  if (newName === name) return;
+                                  if (onComponentDelete) {
+                                    onComponentDelete('inputs', name);
+                                    onComponentsUpdate?.({ inputs: { [newName]: inputs } });
+                                    // Update editing state for new name
+                                    setEditingComponents(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(`input:${name}`);
+                                      next.add(`input:${newName}`);
+                                      return next;
+                                    });
+                                  } else {
+                                    const newInputs = { ...spec.components?.inputs };
+                                    delete newInputs[name];
+                                    newInputs[newName] = inputs;
+                                    onComponentsUpdate?.({ inputs: newInputs });
+                                  }
+                                }}
+                                isDark={isDark}
+                                className="font-bold text-sm"
+                                activationMode="click"
+                              />
+                            ) : (
+                              <span className={`font-bold text-sm ${textClass}`}>{name}</span>
+                            )}
+                            <div className="flex items-center gap-2">
+                              {editable && (
+                                <button
+                                  onClick={() => toggleComponentEdit(`input:${name}`)}
+                                  className={`p-1 rounded transition-colors ${isEditing 
+                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
+                                    : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                  title={isEditing ? "Done Editing" : "Edit Input"}
+                                >
+                                  {isEditing ? (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                  )}
+                                </button>
+                              )}
+                              {editable && isEditing && (
+                                <button
+                                  onClick={() => {
+                                    if (onComponentDelete) {
+                                      onComponentDelete('inputs', name);
+                                    } else {
+                                      const newInputs = { ...spec.components?.inputs };
+                                      delete newInputs[name];
+                                      onComponentsUpdate?.({ inputs: newInputs });
+                                    }
+                                  }}
+                                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <InputContent
+                              input={{ name: 'Workflow Inputs', schema: {} }}
+                              workflowInputs={inputs}
+                              title="Inputs"
+                              isDark={isDark}
+                              editable={editable && isEditing}
+                              onUpdate={(updated) => {
+                                onComponentsUpdate?.({
+                                  inputs: { ...spec.components?.inputs, [name]: updated }
+                                });
+                              }}
+                              expressionSuggestions={expressionSuggestions}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {editable && Object.keys(spec.components?.inputs || {}).length === 0 && (
+                      <div className={`col-span-full py-8 border-2 border-dashed ${borderClass} rounded-xl flex flex-col items-center justify-center ${mutedClass}`}>
+                        <p className="text-sm">No reusable inputs defined</p>
+                        <button
+                          onClick={() => {
+                            onComponentsUpdate?.({
+                              inputs: { 'input1': { type: 'object', properties: {} } }
+                            });
+                          }}
+                          className="mt-2 text-xs font-medium text-emerald-600 hover:underline"
+                        >
+                          Add your first reusable input
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Reusable Schemas */}
+              {(spec.components?.schemas || editable) && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
                       <div className="w-1 h-5 bg-violet-500 rounded-full" />
                       <span className={`text-sm font-semibold ${textClass}`}>Schemas</span>
-                      <Badge variant="info" isDark={isDark} size="xs">{Object.keys(spec.components.schemas).length}</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      {Object.entries(spec.components.schemas).map(([name, schema]) => (
-                        <SchemaViewer
-                          key={name}
-                          name={name}
-                          schema={schema}
-                          isDark={isDark}
-                          defaultCollapsed={true}
-                        />
-                      ))}
+                      {spec.components?.schemas && (
+                        <Badge variant="info" isDark={isDark} size="xs">{Object.keys(spec.components.schemas).length}</Badge>
+                      )}
                     </div>
                   </div>
-                )}
-                {spec.components.inputs && Object.keys(spec.components.inputs).length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1 h-5 bg-emerald-500 rounded-full" />
-                      <span className={`text-sm font-semibold ${textClass}`}>Inputs</span>
-                      <Badge variant="input" isDark={isDark} size="xs">{Object.keys(spec.components.inputs).length}</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      {Object.entries(spec.components.inputs).map(([name, input]) => (
-                        <SchemaViewer
-                          key={name}
-                          name={name}
-                          schema={input}
-                          isDark={isDark}
-                          defaultCollapsed={true}
-                        />
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(spec.components?.schemas || {}).map(([name, schema]) => {
+                      const isEditing = editingComponents.has(`schema:${name}`);
+                      return (
+                        <div key={name} className={`rounded-xl border ${borderClass} overflow-hidden bg-white dark:bg-slate-900 shadow-sm flex flex-col`}>
+                          <div className={`px-4 py-2 border-b ${borderClass} bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between`}>
+                            {editable && isEditing ? (
+                              <EditableField
+                                value={name}
+                                onChange={(newName) => {
+                                  if (newName === name) return;
+                                  if (onComponentDelete) {
+                                    onComponentDelete('schemas', name);
+                                    onComponentsUpdate?.({ schemas: { [newName]: schema } });
+                                    // Update editing state for new name
+                                    setEditingComponents(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(`schema:${name}`);
+                                      next.add(`schema:${newName}`);
+                                      return next;
+                                    });
+                                  } else {
+                                    const newSchemas = { ...spec.components?.schemas };
+                                    delete newSchemas[name];
+                                    newSchemas[newName] = schema;
+                                    onComponentsUpdate?.({ schemas: newSchemas });
+                                  }
+                                }}
+                                isDark={isDark}
+                                className="font-bold text-sm"
+                                activationMode="click"
+                              />
+                            ) : (
+                              <span className={`font-bold text-sm ${textClass}`}>{name}</span>
+                            )}
+                            <div className="flex items-center gap-2">
+                              {editable && (
+                                <button
+                                  onClick={() => toggleComponentEdit(`schema:${name}`)}
+                                  className={`p-1 rounded transition-colors ${isEditing 
+                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
+                                    : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                  title={isEditing ? "Done Editing" : "Edit Schema"}
+                                >
+                                  {isEditing ? (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                  )}
+                                </button>
+                              )}
+                              {editable && isEditing && (
+                                <button
+                                  onClick={() => {
+                                    if (onComponentDelete) {
+                                      onComponentDelete('schemas', name);
+                                    } else {
+                                      const newSchemas = { ...spec.components?.schemas };
+                                      delete newSchemas[name];
+                                      onComponentsUpdate?.({ schemas: newSchemas });
+                                    }
+                                  }}
+                                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="p-4 flex-1">
+                            <SchemaViewer
+                              name={name}
+                              schema={schema}
+                              isDark={isDark}
+                              defaultCollapsed={true}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {editable && Object.keys(spec.components?.schemas || {}).length === 0 && (
+                      <div className={`col-span-full py-8 border-2 border-dashed ${borderClass} rounded-xl flex flex-col items-center justify-center ${mutedClass}`}>
+                        <p className="text-sm">No reusable schemas defined</p>
+                        <button
+                          onClick={() => {
+                            onComponentsUpdate?.({
+                              schemas: { 'User': { type: 'object', properties: {} } }
+                            });
+                          }}
+                          className="mt-2 text-xs font-medium text-violet-600 hover:underline"
+                        >
+                          Add your first reusable schema
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </section>
-          )}
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Workflows - Individual sections for each */}
           {spec.workflows.map((workflow, workflowIdx) => (
-            <WorkflowSection 
+            <WorkflowSection
               key={workflow.workflowId}
               workflow={workflow}
               spec={spec}
@@ -368,6 +623,12 @@ export default function UnifiedDocumentationView({
               codeBgClass={codeBgClass}
               onStepClick={scrollToStep}
               expandAll={expandAll}
+              editable={editable}
+              onStepUpdate={onStepUpdate ? (stepId, updates) => onStepUpdate(workflow.workflowId, stepId, updates) : undefined}
+              onWorkflowUpdate={onWorkflowUpdate ? (updates) => onWorkflowUpdate(workflow.workflowId, updates) : undefined}
+              onReorderInput={onReorderInput}
+              onReorderOutput={onReorderOutput}
+              expressionSuggestions={expressionSuggestions}
             />
           ))}
 
@@ -445,9 +706,38 @@ interface WorkflowSectionProps {
   onViewFlowchart?: (workflowId: string) => void;
   onViewSequence?: (workflowId: string) => void;
   expandAll?: boolean;
+  /** Enable edit mode */
+  editable?: boolean;
+  /** Callback to update a step */
+  onStepUpdate?: (stepId: string, updates: Partial<Step>) => void;
+  /** Callback to update the workflow */
+  onWorkflowUpdate?: (updates: Partial<Workflow>) => void;
+  onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
+  /** Expression suggestions for autocomplete */
+  expressionSuggestions?: ExpressionSuggestion[];
 }
 
-function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mutedClass, borderClass, codeBgClass, onStepClick, onViewFlowchart, onViewSequence, expandAll }: WorkflowSectionProps) {
+function WorkflowSection({
+  workflow,
+  spec,
+  workflowIndex,
+  isDark,
+  textClass,
+  mutedClass,
+  borderClass,
+  codeBgClass,
+  onStepClick,
+  onViewFlowchart,
+  onViewSequence,
+  expandAll,
+  editable = false,
+  onStepUpdate,
+  onWorkflowUpdate,
+  onReorderInput,
+  onReorderOutput,
+  expressionSuggestions = []
+}: WorkflowSectionProps) {
   // Generate Mermaid diagrams without errors
   const flowchartCode = useMemo(() => {
     try {
@@ -470,52 +760,31 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
     onStepClick(workflow.workflowId, stepId);
   }, [workflow.workflowId, onStepClick]);
 
+  // Can edit workflow?
+  const canEditWorkflow = editable && !!onWorkflowUpdate;
+
   return (
     <section id={`workflow-${workflow.workflowId}`} className={`mb-16 print:mb-10 ${workflowIndex > 0 ? 'page-break' : ''}`}>
-      {/* Workflow Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`text-xs font-semibold uppercase px-2 py-1 rounded bg-indigo-100 text-indigo-700`}>
-            Workflow {workflowIndex + 1}
-          </span>
-          <h2 className="text-2xl font-bold print:text-xl">{workflow.summary || workflow.workflowId}</h2>
-        </div>
-        <code className={`text-sm ${mutedClass} font-mono`}>{workflow.workflowId}</code>
-        {workflow.description && (
-          <p className={`mt-3 ${mutedClass}`}>{workflow.description}</p>
-        )}
-      </div>
+      {/* Workflow Header - Unified */}
+      <WorkflowHeader
+        workflow={workflow}
+        index={workflowIndex}
+        isDark={isDark}
+        editable={editable}
+        onUpdate={onWorkflowUpdate}
+        variant="header"
+      />
 
-      {/* Two-column layout for inputs/outputs */}
-      <div className="grid lg:grid-cols-2 gap-4 mb-6">
-        {/* Workflow Inputs */}
-        {workflow.inputs && workflow.inputs.properties && Object.keys(workflow.inputs.properties).length > 0 && (
-          <div className="avoid-break">
-            <InputContent 
-              input={{ name: 'Workflow Inputs', schema: {} }} 
-              workflowInputs={workflow.inputs}
-              isDark={isDark}
-              textClass={textClass}
-              mutedClass={mutedClass}
-              codeBgClass={codeBgClass}
-            />
-          </div>
-        )}
-
-        {/* Workflow Outputs */}
-        {workflow.outputs && Object.keys(workflow.outputs).length > 0 && (
-          <div className="avoid-break">
-            <OutputContent 
-              output={{ name: 'Workflow Outputs', value: '', allOutputs: workflow.outputs }}
-              workflowOutputs={workflow.outputs}
-              isDark={isDark}
-              textClass={textClass}
-              mutedClass={mutedClass}
-              codeBgClass={codeBgClass}
-            />
-          </div>
-        )}
-      </div>
+      {/* Workflow Body - Unified (Inputs/Outputs) */}
+      <WorkflowBody
+        workflow={workflow}
+        isDark={isDark}
+        editable={editable}
+        onUpdate={onWorkflowUpdate}
+        onReorderInput={(start, end) => onReorderInput?.(workflow.workflowId, start, end)}
+        onReorderOutput={(start, end) => onReorderOutput?.(workflow.workflowId, start, end)}
+        expressionSuggestions={expressionSuggestions}
+      />
 
       {/* Diagrams - Full width, stacked vertically */}
       <div className="space-y-6 mb-8">
@@ -527,11 +796,10 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               {onViewFlowchart && (
                 <button
                   onClick={() => onViewFlowchart(workflow.workflowId)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                    isDark 
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                    }`}
                   title="Open flowchart view"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -542,8 +810,8 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               )}
             </div>
             <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram 
-                chart={flowchartCode} 
+              <MermaidDiagram
+                chart={flowchartCode}
                 isDark={isDark}
                 steps={workflow.steps}
                 onNodeClick={handleMermaidClick}
@@ -560,11 +828,10 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               {onViewSequence && (
                 <button
                   onClick={() => onViewSequence(workflow.workflowId)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                    isDark 
-                      ? 'bg-violet-600 hover:bg-violet-500 text-white' 
-                      : 'bg-violet-600 hover:bg-violet-500 text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
+                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
+                    : 'bg-violet-600 hover:bg-violet-500 text-white'
+                    }`}
                   title="Open sequence view"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,8 +842,8 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               )}
             </div>
             <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram 
-                chart={flowchartCode} 
+              <MermaidDiagram
+                chart={flowchartCode}
                 isDark={isDark}
                 steps={workflow.steps}
                 onNodeClick={handleMermaidClick}
@@ -593,11 +860,10 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               {onViewSequence && (
                 <button
                   onClick={() => onViewSequence(workflow.workflowId)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                    isDark 
-                      ? 'bg-violet-600 hover:bg-violet-500 text-white' 
-                      : 'bg-violet-600 hover:bg-violet-500 text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
+                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
+                    : 'bg-violet-600 hover:bg-violet-500 text-white'
+                    }`}
                   title="Open sequence view"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -608,8 +874,8 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               )}
             </div>
             <div className="overflow-x-auto" style={{ minHeight: '300px' }}>
-              <MermaidDiagram 
-                chart={sequenceCode} 
+              <MermaidDiagram
+                chart={sequenceCode}
                 isDark={isDark}
                 steps={workflow.steps}
                 onNodeClick={handleMermaidClick}
@@ -624,9 +890,9 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
         <h3 className="text-lg font-semibold mb-4">Steps ({workflow.steps.length})</h3>
         <div className="space-y-4">
           {workflow.steps.map((step, stepIdx) => (
-            <StepCard 
-              key={step.stepId} 
-              step={step} 
+            <StepCard
+              key={step.stepId}
+              step={step}
               stepIndex={stepIdx}
               workflowId={workflow.workflowId}
               allSteps={workflow.steps}
@@ -638,6 +904,9 @@ function WorkflowSection({ workflow, spec, workflowIndex, isDark, textClass, mut
               codeBgClass={codeBgClass}
               onNavigate={onStepClick}
               forceExpanded={expandAll}
+              editable={editable}
+              onStepUpdate={onStepUpdate}
+              expressionSuggestions={expressionSuggestions}
             />
           ))}
         </div>
