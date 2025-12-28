@@ -14,8 +14,8 @@ const LightningIcon = () => (
   </svg>
 );
 
-const CodeIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+const CodeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
   </svg>
 );
@@ -332,6 +332,107 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* VS Code Extension Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gradient-to-br from-[#007ACC]/10 to-[#007ACC]/5 rounded-3xl border border-[#007ACC]/20 p-8 md:p-12 overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#007ACC]/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#007ACC]/20 text-[#007ACC] text-sm font-medium mb-6 border border-[#007ACC]/30">
+                  <CodeIcon className="w-4 h-4" />
+                  <span>New Extension</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                  Edit Arazzo files directly in{" "}
+                  <span className="text-[#007ACC]">VS Code</span>
+                </h2>
+                <p className="text-slate-400 text-lg mb-8 max-w-xl">
+                  Get the full power of the Arazzo Playground right inside your favorite editor. 
+                  Visualize workflows, edit with real-time preview, and export diagrams without leaving VS Code.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+                  <a
+                    href="https://marketplace.visualstudio.com/items?itemName=connethics.arazzo-vscode"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-[#007ACC] hover:bg-[#0063a5] px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg shadow-[#007ACC]/30 hover:shadow-[#007ACC]/50"
+                  >
+                    <CodeIcon className="w-5 h-5" />
+                    Install Extension
+                  </a>
+                  <a
+                    href="https://github.com/connEthics/arazzo-vscode"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-xl font-semibold text-white transition-colors border border-slate-700"
+                  >
+                    View Source
+                  </a>
+                </div>
+              </div>
+              
+              <div className="flex-1 w-full max-w-md md:max-w-none">
+                <div className="relative rounded-xl bg-[#1e1e1e] border border-[#333] shadow-2xl shadow-black/50 p-2 transform md:rotate-2 transition-transform hover:rotate-0 duration-500">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-[#333] mb-2">
+                    <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                    <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                    <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+                    <div className="ml-4 text-xs text-gray-500 font-mono">pet-adoption.arazzo.yaml</div>
+                  </div>
+                  <div className="space-y-2 font-mono text-sm p-2">
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">1</span>
+                      <span className="text-[#569cd6]">arazzo</span>: <span className="text-[#ce9178]">1.0.1</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">2</span>
+                      <span className="text-[#569cd6]">info</span>:
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">3</span>
+                      <span className="text-[#569cd6] pl-4">title</span>: <span className="text-[#ce9178]">Pet Adoption</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">4</span>
+                      <span className="text-[#569cd6] pl-4">version</span>: <span className="text-[#ce9178]">1.0.0</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">5</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">6</span>
+                      <span className="text-[#569cd6]">workflows</span>:
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">7</span>
+                      <span className="text-[#d4d4d4] pl-4">- </span><span className="text-[#569cd6]">workflowId</span>: <span className="text-[#ce9178]">adopt-pet</span>
+                    </div>
+                    <div className="flex gap-4 bg-[#264f78]/50 -mx-4 px-4 border-l-2 border-[#007ACC]">
+                      <span className="text-gray-600 select-none">8</span>
+                      <span className="text-[#569cd6] pl-6">summary</span>: <span className="text-[#ce9178]">Complete adoption</span>
+                    </div>
+                  </div>
+                  
+                  {/* Floating Preview Badge */}
+                  <div className="absolute -bottom-6 -right-6 bg-[#252526] border border-[#333] rounded-lg p-3 shadow-xl flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-500/20 rounded-md flex items-center justify-center text-indigo-400">
+                      <FlowIcon />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">Live Preview</div>
+                      <div className="text-sm font-semibold text-white">Interactive Diagram</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* What is Arazzo Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
@@ -455,6 +556,14 @@ workflows:
               >
                 Showcase
               </Link>
+              <a
+                href="https://marketplace.visualstudio.com/items?itemName=connethics.arazzo-vscode"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                VS Code Extension
+              </a>
               <a
                 href="https://github.com/connEthics/arazzo-demo"
                 target="_blank"
