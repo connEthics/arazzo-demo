@@ -51,6 +51,18 @@ const ShieldCheckIcon = () => (
   </svg>
 );
 
+const SparklesIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  </svg>
+);
+
+const DownloadIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+  </svg>
+);
+
 const features = [
   {
     icon: <FlowIcon />,
@@ -424,6 +436,114 @@ export default function LandingPage() {
                     <div>
                       <div className="text-xs text-gray-400">Live Preview</div>
                       <div className="text-sm font-semibold text-white">Interactive Diagram</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Skills Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gradient-to-br from-purple-600/10 to-indigo-600/5 rounded-3xl border border-purple-500/20 p-8 md:p-12 overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm font-medium mb-6 border border-purple-400/30">
+                  <SparklesIcon className="w-4 h-4" />
+                  <span>AI-Powered Development</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                  Build Arazzo specs with{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
+                    AI Assistants
+                  </span>
+                </h2>
+                <p className="text-slate-400 text-lg mb-8 max-w-xl">
+                  Download our skill file to enable AI coding assistants like Cursor, Cline, GitHub Copilot, and Claude Code
+                  to help you create and modify Arazzo specifications directly in your favorite IDE.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+                  <a
+                    href="/arazzo.skill.md"
+                    download="arazzo.skill.md"
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
+                  >
+                    <DownloadIcon className="w-5 h-5" />
+                    Download arazzo.skill.md
+                  </a>
+                  <a
+                    href="https://github.com/connEthics/arazzo-demo/blob/main/arazzo.skill.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-xl font-semibold text-white transition-colors border border-slate-700"
+                  >
+                    View on GitHub
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full max-w-md md:max-w-none">
+                <div className="relative rounded-xl bg-[#1e1e1e] border border-[#333] shadow-2xl shadow-black/50 p-2 transform md:-rotate-2 transition-transform hover:rotate-0 duration-500">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-[#333] mb-2">
+                    <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                    <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                    <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+                    <div className="ml-4 text-xs text-gray-500 font-mono">arazzo.skill.md</div>
+                  </div>
+                  <div className="space-y-2 font-mono text-sm p-2">
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">1</span>
+                      <span className="text-[#6a9955]"># Arazzo Specification Skill File</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">2</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">3</span>
+                      <span className="text-[#6a9955]">&gt; For AI Coding Assistants: Create and modify</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">4</span>
+                      <span className="text-[#6a9955]">&gt; Arazzo specifications for API workflows.</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">5</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">6</span>
+                      <span className="text-[#569cd6]">## Core Structure</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <span className="text-gray-600 select-none">7</span>
+                    </div>
+                    <div className="flex gap-4 bg-purple-500/10 -mx-4 px-4 border-l-2 border-purple-500">
+                      <span className="text-gray-600 select-none">8</span>
+                      <span className="text-[#ce9178]">```yaml</span>
+                    </div>
+                    <div className="flex gap-4 bg-purple-500/10 -mx-4 px-4 border-l-2 border-purple-500">
+                      <span className="text-gray-600 select-none">9</span>
+                      <span className="text-[#569cd6]">arazzo</span>: <span className="text-[#ce9178]">&quot;1.0.1&quot;</span>
+                    </div>
+                    <div className="flex gap-4 bg-purple-500/10 -mx-4 px-4 border-l-2 border-purple-500">
+                      <span className="text-gray-600 select-none">10</span>
+                      <span className="text-[#569cd6]">workflows</span>:
+                    </div>
+                  </div>
+
+                  {/* Floating Badge */}
+                  <div className="absolute -bottom-6 -right-6 bg-[#252526] border border-purple-500/30 rounded-lg p-3 shadow-xl flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-md flex items-center justify-center text-purple-400">
+                      <SparklesIcon />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">Works with</div>
+                      <div className="text-sm font-semibold text-white">All AI Assistants</div>
                     </div>
                   </div>
                 </div>
