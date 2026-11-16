@@ -102,8 +102,10 @@ workflowToGraph(doc, workflowId, {
   resolveOperation?: (step, source) => ({ method?, path? }) | undefined,
   includeWorkflowActions?: boolean,   // défaut true (arêtes marquées action.origin = 'workflow')
   includeImplicitFailures?: boolean,  // défaut false
-}): { workflowId, nodes, edges, groups }
+}): { workflowId, workflowIndex, summary?, nodes, edges, groups }
 ```
+
+`workflowIndex` est la position du workflow dans `workflows` : elle permet de rattacher un diagnostic (`['workflows', workflowIndex, 'steps', step.index, …]`) au nœud correspondant.
 
 - **Nœuds** : `input`, `step-http`, `step-async-send`, `step-async-receive`, `step-workflow`, `join` (`dependsOn` à ≥ 2 dépendances), `output` (terminal de succès quand le workflow a des `outputs`), `end-success`, `end-failure`, `workflow-ref` (cible d'un `goto workflowId`, d'une étape workflow ou d'un `dependsOn` inter-workflow).
 - **Arêtes** : `sequence`, `success-goto`, `failure-goto`, `retry` (boucle avec `retryLimit`, défaut 1, et `retryAfter` ; plus une arête `via: true` vers l'étape ou le workflow exécuté avant de rejouer), `end` (`outcome` succès/échec), `depends-on`, `workflow-call`. Chaque arête porte `criteria`, `conditional` et l'action d'origine (nom, `origin: 'step' | 'workflow'`, `component` si elle vient de `$components`).

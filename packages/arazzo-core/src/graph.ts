@@ -132,6 +132,11 @@ export interface GraphGroup {
 
 export interface WorkflowGraph {
   workflowId: string;
+  /**
+   * Position of the workflow in `workflows` (document order). Lets consumers map
+   * diagnostics paths (`['workflows', workflowIndex, 'steps', step.index, …]`) onto nodes.
+   */
+  workflowIndex: number;
   summary?: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -435,7 +440,7 @@ export function workflowToGraph(doc: unknown, workflowId: string, opts: GraphOpt
   const unknown = nodes.filter((n) => n.group === UNKNOWN_LANE).map((n) => n.id);
   if (unknown.length) groups.push({ id: UNKNOWN_LANE, kind: 'unknown', label: 'Unknown source', nodeIds: unknown });
 
-  const graph: WorkflowGraph = { workflowId, nodes, edges, groups };
+  const graph: WorkflowGraph = { workflowId, workflowIndex: asArray(asObj(doc).workflows).indexOf(wf), nodes, edges, groups };
   if (typeof wf.summary === 'string') graph.summary = wf.summary;
   return graph;
 }

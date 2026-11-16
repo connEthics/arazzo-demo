@@ -67,6 +67,14 @@ describe('workflowToGraph — pet-adoption (1.0.1, HTTP)', () => {
     expect(edge(g2, 'end', 'step:authenticate', 'end-failure')).toBeDefined();
     expect(edge(g2, 'sequence', 'step:listPets', 'output')).toBeDefined();
   });
+
+  it('exposes the workflow position in `workflows` (diagnostic paths → nodes)', () => {
+    expect(g.workflowIndex).toBe(0);
+    expect(workflowToGraph(doc, 'quick-pet-search').workflowIndex).toBe(1);
+    // Raw array position, even when a malformed entry precedes the workflow.
+    const odd = { ...(doc as object), workflows: [null, ...((doc as { workflows: unknown[] }).workflows)] };
+    expect(workflowToGraph(odd, 'quick-pet-search').workflowIndex).toBe(2);
+  });
 });
 
 describe('workflowToGraph — order-to-cash (1.1, async)', () => {
