@@ -124,7 +124,7 @@ graphToMermaid(graph, { direction: 'TB' | 'LR' | 'BT' | 'RL', lanes?: boolean, h
 
 ## Règles
 
-98 règles sur 106 de la table § c sont implémentées (voir `RULES`). Les 8 autres demandent de charger les documents sources (OpenAPI, AsyncAPI, Arazzo distants) et sont hors du périmètre d'un validateur local au document :
+97 des 105 règles de la table § c sont implémentées (voir `RULES`, qui ajoute le code `arazzo-source-type-enum` et émet `arazzo-version-unknown` sous le code `arazzo-version`). Les 8 autres demandent de charger les documents sources (OpenAPI, AsyncAPI, Arazzo distants) et sont hors du périmètre d'un validateur local au document :
 
 - `arazzo-step-operation-resolved` ;
 - `arazzo-step-prefer-operation-id` ;
