@@ -48,6 +48,15 @@ interface Instance {
 
 let instance: Instance | null = null;
 
+function terminate(i: Instance | null): void {
+  if (i?.mode !== 'worker') return;
+  try {
+    i.elk.terminateWorker?.();
+  } catch {
+    /* already gone */
+  }
+}
+
 function configKey(c: ElkConfig): string {
   return [c.mode ?? 'auto', c.workerUrl ? String(c.workerUrl) : '', c.createWorker ? 'factory' : '', c.engine ? 'engine' : ''].join('|');
 }
@@ -126,7 +135,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 async function getInstance(c: ElkConfig): Promise<Instance> {
   const key = configKey(c);
   if (instance && instance.key === key) return instance;
-  instance?.elk.terminateWorker?.();
+  terminate(instance);
   if (c.engine) instance = { key, elk: c.engine, mode: 'main-thread' };
   else if (c.mode === 'main-thread' || typeof Worker === 'undefined') instance = { key, elk: await mainThreadElk(), mode: 'main-thread' };
   else {
@@ -158,7 +167,7 @@ export function elkMode(): ElkMode | null {
 
 /** Forget the current engine (tests, config change). */
 export function resetElk(): void {
-  instance?.elk.terminateWorker?.();
+  terminate(instance);
   instance = null;
 }
 
@@ -170,7 +179,7 @@ export async function runElk(graph: ElkNode, c: ElkConfig = {}): Promise<{ resul
     return { result, mode: i.mode };
   } catch (err) {
     if (i.mode === 'worker' && err instanceof Error && /^elk-(timeout|worker-error)$/.test(err.message)) {
-      i.elk.terminateWorker?.();
+      terminate(i);
       instance = { key: i.key, elk: await mainThreadElk(), mode: 'main-thread' };
       return { result: await instance.elk.layout(graph), mode: 'main-thread' };
     }

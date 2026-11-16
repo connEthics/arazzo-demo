@@ -1,0 +1,1339 @@
+/*
+ * @connethics/arazzo-flow — component stylesheet. Pure CSS, no Tailwind, every class prefixed `af-`.
+ * Variables: --af-* (component) → --ce-* (ConnEthics tokens, theme-connethics.css)
+ *            or --af-* → --vscode-* (theme-vscode.css, data-af-theme="vscode").
+ * No hard-coded colour here: only --ce-* / --af-* variables and color-mix().
+ */
+
+.af-root {
+  /* Canevas et cartes */
+  --af-canvas-bg: var(--ce-graph-canvas);
+  --af-canvas-dot: var(--ce-graph-grid);
+  --af-node-bg: var(--ce-graph-node-bg);
+  --af-node-border: var(--ce-graph-node-border);
+  --af-node-fg: var(--ce-text-default);
+  --af-node-muted: var(--ce-text-muted);
+  --af-focus: var(--ce-focus-ring);
+  --af-selection: var(--ce-bg-selected);
+  --af-selection-border: var(--ce-graph-node-selected);
+  /* Sémantique (trait/icône = fg ≥ 3:1, texte = text ≥ 4,5:1, fond = bg) */
+  --af-edge-seq: var(--ce-graph-sequence-fg);
+  --af-edge-seq-text: var(--ce-graph-sequence-text);
+  --af-success: var(--ce-graph-success-fg);
+  --af-success-text: var(--ce-graph-success-text);
+  --af-success-bg: var(--ce-graph-success-bg);
+  --af-failure: var(--ce-graph-failure-fg);
+  --af-failure-text: var(--ce-graph-failure-text);
+  --af-failure-bg: var(--ce-graph-failure-bg);
+  --af-retry: var(--ce-graph-retry-fg);
+  --af-retry-text: var(--ce-graph-retry-text);
+  --af-retry-bg: var(--ce-graph-retry-bg);
+  --af-http: var(--ce-graph-step-http-fg);
+  --af-http-text: var(--ce-graph-step-http-text);
+  --af-http-bg: var(--ce-graph-step-http-bg);
+  --af-async-send: var(--ce-graph-async-send-fg);
+  --af-async-send-text: var(--ce-graph-async-send-text);
+  --af-async-send-bg: var(--ce-graph-async-send-bg);
+  --af-async-receive: var(--ce-graph-async-receive-fg);
+  --af-async-receive-text: var(--ce-graph-async-receive-text);
+  --af-async-receive-bg: var(--ce-graph-async-receive-bg);
+  --af-workflow: var(--ce-graph-workflow-call-fg);
+  --af-workflow-text: var(--ce-graph-workflow-call-text);
+  --af-workflow-bg: var(--ce-graph-workflow-call-bg);
+  --af-input: var(--ce-graph-input-fg);
+  --af-input-text: var(--ce-graph-input-text);
+  --af-input-bg: var(--ce-graph-input-bg);
+  --af-output: var(--ce-graph-output-fg);
+  --af-output-text: var(--ce-graph-output-text);
+  --af-output-bg: var(--ce-graph-output-bg);
+  --af-depends: var(--ce-graph-depends-on-fg);
+  --af-depends-text: var(--ce-graph-depends-on-text);
+  --af-depends-bg: var(--ce-graph-depends-on-bg);
+  --af-end: var(--ce-graph-end-fg);
+  --af-end-text: var(--ce-graph-end-text);
+  --af-end-bg: var(--ce-graph-end-bg);
+  /* Méthodes HTTP */
+  --af-method-get-bg: var(--ce-method-get-bg);
+  --af-method-get-fg: var(--ce-method-get-text);
+  --af-method-post-bg: var(--ce-method-post-bg);
+  --af-method-post-fg: var(--ce-method-post-text);
+  --af-method-put-bg: var(--ce-method-put-bg);
+  --af-method-put-fg: var(--ce-method-put-text);
+  --af-method-patch-bg: var(--ce-method-patch-bg);
+  --af-method-patch-fg: var(--ce-method-patch-text);
+  --af-method-delete-bg: var(--ce-method-delete-bg);
+  --af-method-delete-fg: var(--ce-method-delete-text);
+  --af-method-other-bg: var(--ce-bg-sunken);
+  --af-method-other-fg: var(--ce-text-muted);
+  /* Diagnostics */
+  --af-diag-error: var(--ce-status-danger-fg);
+  --af-diag-warning: var(--ce-status-warning-fg);
+  --af-diag-info: var(--ce-status-info-fg);
+  /* Couloirs : teinte 7 % sur le canevas (décoratif, jamais seul porteur d'information) */
+  --af-lane-0: color-mix(in srgb, var(--af-end) 5%, var(--af-canvas-bg));
+  --af-lane-1: color-mix(in srgb, var(--af-http) 7%, var(--af-canvas-bg));
+  --af-lane-2: color-mix(in srgb, var(--af-async-receive) 7%, var(--af-canvas-bg));
+  --af-lane-3: color-mix(in srgb, var(--af-output) 7%, var(--af-canvas-bg));
+  --af-lane-4: color-mix(in srgb, var(--af-retry) 7%, var(--af-canvas-bg));
+  --af-lane-5: color-mix(in srgb, var(--af-input) 7%, var(--af-canvas-bg));
+  --af-lane-6: color-mix(in srgb, var(--af-workflow) 7%, var(--af-canvas-bg));
+  /* Chrome */
+  --af-panel-bg: var(--ce-bg-raised);
+  --af-panel-border: var(--ce-border-default);
+  --af-panel-fg: var(--ce-text-default);
+  --af-control-hover: var(--ce-bg-hover);
+  --af-tooltip-bg: var(--ce-bg-raised);
+  --af-tooltip-fg: var(--ce-text-default);
+  --af-tooltip-border: var(--ce-border-strong);
+  --af-minimap-mask: var(--ce-graph-minimap-mask);
+  --af-font: var(--ce-font-sans);
+  --af-font-mono: var(--ce-font-mono);
+  --af-radius: var(--ce-graph-node-radius);
+  --af-shadow: var(--ce-shadow-node);
+  --af-shadow-hover: var(--ce-shadow-node-hover);
+  --af-border-w: 1px;
+  --af-edge-w: var(--ce-graph-edge-width);
+  --af-edge-boost: 0px;
+  --af-duration: var(--ce-duration-fast);
+  --af-dim-opacity: 0.35;
+  --af-pressed-bg: var(--ce-primary-subtle);
+  --af-pressed-fg: var(--ce-primary-subtle-text);
+  --af-pressed-border: color-mix(in srgb, var(--af-focus) 50%, transparent);
+  --af-placeholder: var(--ce-text-subtle);
+  --af-sunken: var(--ce-bg-sunken);
+  --af-shadow-overlay: var(--ce-shadow-overlay);
+  --af-shadow-dialog: var(--ce-shadow-dialog);
+  /* Edge stroke patterns: one per edge kind (brand tokens, revised in G1) */
+  --af-dash-failure: var(--ce-graph-dash-failure);
+  --af-dash-end-failure: var(--ce-graph-dash-end-failure);
+  --af-dash-implicit-failure: var(--ce-graph-dash-implicit-failure);
+  --af-dash-retry: var(--ce-graph-dash-retry);
+  --af-dash-depends-on: var(--ce-graph-dash-depends-on);
+  --af-dash-transfer: var(--ce-graph-dash-transfer);
+}
+
+/* Contraste élevé : VS Code HC (data-contrast posé par le composant) */
+.af-root[data-contrast='high'],
+.af-canvas[data-contrast='high'] {
+  --af-node-bg: var(--ce-graph-canvas);
+  --af-border-w: 2px;
+  --af-edge-boost: 0.5px;
+  --af-shadow: none;
+  --af-shadow-hover: none;
+  --af-shadow-overlay: none;
+  --af-shadow-dialog: none;
+  --af-selection: transparent;
+  --af-dim-opacity: 0.6;
+  --af-pressed-bg: transparent;
+  --af-lane-0: transparent;
+  --af-lane-1: transparent;
+  --af-lane-2: transparent;
+  --af-lane-3: transparent;
+  --af-lane-4: transparent;
+  --af-lane-5: transparent;
+  --af-lane-6: transparent;
+}
+
+/* HC : aucun fond teinté ; badges = texte sur fond éditeur, bordure de la couleur sémantique */
+[data-contrast='high'] .af-chip,
+[data-contrast='high'] .af-key,
+[data-contrast='high'] .af-badge,
+[data-contrast='high'] .af-io-icon,
+[data-contrast='high'] .af-tag {
+  background: transparent;
+  border-color: currentColor;
+}
+[data-contrast='high'] .af-card,
+[data-contrast='high'] .af-ref,
+[data-contrast='high'] .af-frame {
+  box-shadow: none;
+}
+[data-contrast='high'] .af-card[data-step-kind='workflow'] {
+  box-shadow:
+    0 0 0 2px var(--af-node-bg),
+    0 0 0 4px var(--af-workflow);
+}
+
+@media (forced-colors: active) {
+  .af-root {
+    --af-node-border: CanvasText;
+    --af-focus: Highlight;
+    --af-selection-border: Highlight;
+  }
+}
+
+/* ============================== Canevas ============================== */
+.af-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family: var(--af-font);
+  color: var(--af-node-fg);
+  background: var(--af-canvas-bg);
+  --xy-background-color: var(--af-canvas-bg);
+  --xy-background-pattern-dots-color: var(--af-canvas-dot);
+  --xy-attribution-background-color: color-mix(in srgb, var(--af-panel-bg) 70%, transparent);
+  --xy-minimap-background-color: var(--af-panel-bg);
+  --xy-minimap-mask-background-color: var(--af-minimap-mask);
+  --xy-minimap-node-background-color: var(--af-node-border);
+  --xy-edge-label-background-color: var(--af-canvas-bg);
+}
+.af-canvas .react-flow__attribution {
+  font-size: 10px;
+  color: var(--af-node-muted);
+}
+.af-canvas .react-flow__attribution a {
+  color: inherit;
+}
+.af-canvas .react-flow__node {
+  /* cartes en lecture seule : pas de style xyflow par défaut */
+  border: 0;
+  padding: 0;
+  background: none;
+  border-radius: var(--af-radius);
+  cursor: pointer;
+}
+.af-canvas .react-flow__node:focus {
+  outline: none;
+}
+.af-canvas .react-flow__node:focus-visible > * {
+  outline: 2px solid var(--af-focus);
+  outline-offset: 2px;
+}
+.af-canvas .react-flow__node.af-rf-frame {
+  cursor: default;
+  pointer-events: none;
+}
+.af-handle.react-flow__handle {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.af-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.af-mono {
+  font-family: var(--af-font-mono);
+  font-variant-ligatures: none;
+}
+.af-muted {
+  color: var(--af-node-muted);
+}
+
+/* ============================== Cartes ============================== */
+.af-card {
+  --accent: var(--af-http);
+  --accent-bg: var(--af-http-bg);
+  --accent-text: var(--af-http-text);
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 5px 9px 6px 12px;
+  border: var(--af-border-w) solid var(--af-node-border);
+  border-radius: var(--af-radius);
+  background: var(--af-node-bg);
+  color: var(--af-node-fg);
+  box-shadow: var(--af-shadow);
+  font-size: 12px;
+  line-height: 17px;
+  overflow: visible;
+  transition:
+    border-color var(--af-duration),
+    opacity var(--af-duration),
+    box-shadow var(--af-duration);
+}
+.af-card::before {
+  /* 4 px accent band on the left */
+  content: '';
+  position: absolute;
+  inset: -1px auto -1px -1px;
+  width: 4px;
+  border-radius: var(--af-radius) 0 0 var(--af-radius);
+  background: var(--accent);
+}
+.af-accent--http { --accent: var(--af-http); --accent-bg: var(--af-http-bg); --accent-text: var(--af-http-text); }
+.af-accent--async-send { --accent: var(--af-async-send); --accent-bg: var(--af-async-send-bg); --accent-text: var(--af-async-send-text); }
+.af-accent--async-receive { --accent: var(--af-async-receive); --accent-bg: var(--af-async-receive-bg); --accent-text: var(--af-async-receive-text); }
+.af-accent--workflow { --accent: var(--af-workflow); --accent-bg: var(--af-workflow-bg); --accent-text: var(--af-workflow-text); }
+.af-accent--input { --accent: var(--af-input); --accent-bg: var(--af-input-bg); --accent-text: var(--af-input-text); }
+.af-accent--output { --accent: var(--af-output); --accent-bg: var(--af-output-bg); --accent-text: var(--af-output-text); }
+
+/* Sous-workflow : double bordure (BPMN call activity) */
+.af-card[data-step-kind='workflow'] {
+  border-color: var(--af-workflow);
+  box-shadow:
+    0 0 0 2px var(--af-node-bg),
+    0 0 0 calc(2px + var(--af-border-w)) var(--af-workflow),
+    var(--af-shadow);
+}
+.af-card[data-step-kind='workflow']::before {
+  inset: -1px auto -1px -1px;
+}
+
+.af-card__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  min-width: 0;
+}
+.af-card__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13px;
+}
+.af-card__order {
+  flex: none;
+  color: var(--af-node-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.af-card__line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 17px;
+}
+.af-card__line--sub {
+  color: var(--af-node-muted);
+  font-size: 11.5px;
+}
+.af-card__chips {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  height: 20px;
+  overflow: hidden;
+  /* les chips qui ne tiennent pas passent à la ligne… masquée : jamais de chip coupée */
+  flex-wrap: wrap;
+}
+.af-card__chips--wrap {
+  flex-wrap: wrap;
+  height: 20px;
+}
+.af-chip,
+.af-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  max-width: 100%;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  border: 1px solid var(--af-node-border);
+  background: var(--af-node-bg);
+  color: var(--af-node-muted);
+  font-size: 10.5px;
+  line-height: 16px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.af-chip__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.af-chip--success { color: var(--af-success-text); border-color: color-mix(in srgb, var(--af-success) 45%, transparent); background: var(--af-success-bg); }
+.af-chip--retry { color: var(--af-retry-text); border-color: color-mix(in srgb, var(--af-retry) 45%, transparent); background: var(--af-retry-bg); }
+.af-chip--async-receive { color: var(--af-async-receive-text); border-color: color-mix(in srgb, var(--af-async-receive) 45%, transparent); background: var(--af-async-receive-bg); }
+.af-chip--async-send { color: var(--af-async-send-text); border-color: color-mix(in srgb, var(--af-async-send) 45%, transparent); background: var(--af-async-send-bg); }
+.af-chip--workflow { color: var(--af-workflow-text); border-color: color-mix(in srgb, var(--af-workflow) 45%, transparent); background: var(--af-workflow-bg); }
+.af-chip--workflow-defaults { color: var(--af-workflow-text); border-style: dashed; border-color: var(--af-workflow); font-weight: 600; }
+.af-key {
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.af-key--more {
+  color: var(--af-node-muted);
+  background: transparent;
+}
+.af-key--selector {
+  border-style: dashed;
+}
+.af-req {
+  color: var(--accent-text);
+  font-weight: 700;
+  margin-left: 1px;
+}
+.af-card__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px 0 0;
+  border-top: 1px dashed var(--af-node-border);
+  font-size: 10.5px;
+  line-height: 18px;
+}
+.af-card__list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.af-list-icon--success {
+  color: var(--af-success);
+  flex: none;
+}
+.af-tag {
+  flex: none;
+  margin-left: auto;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--af-method-other-bg);
+  color: var(--af-node-muted);
+  font-family: var(--af-font);
+  font-size: 9.5px;
+  line-height: 14px;
+}
+
+/* Badges (texte, jamais la couleur seule) */
+.af-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+.af-badge--get { background: var(--af-method-get-bg); color: var(--af-method-get-fg); }
+.af-badge--post { background: var(--af-method-post-bg); color: var(--af-method-post-fg); }
+.af-badge--put { background: var(--af-method-put-bg); color: var(--af-method-put-fg); }
+.af-badge--patch { background: var(--af-method-patch-bg); color: var(--af-method-patch-fg); }
+.af-badge--delete { background: var(--af-method-delete-bg); color: var(--af-method-delete-fg); }
+.af-badge--op,
+.af-badge--head,
+.af-badge--options,
+.af-badge--trace { background: var(--af-method-other-bg); color: var(--af-method-other-fg); border: 1px solid var(--af-node-border); }
+.af-badge--send { background: var(--af-async-send-bg); color: var(--af-async-send-text); border-color: var(--af-async-send); }
+.af-badge--receive { background: var(--af-async-receive-bg); color: var(--af-async-receive-text); border-color: var(--af-async-receive); }
+.af-badge--workflow { background: var(--af-workflow-bg); color: var(--af-workflow-text); border-color: var(--af-workflow); }
+.af-badge--inferred {
+  background: transparent;
+  border: 1px dashed currentColor;
+}
+
+.af-io-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* Diagnostic (⚠ ⛔), en haut à droite */
+.af-diag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  background: var(--af-node-bg);
+}
+.af-diag--error { color: var(--af-diag-error); }
+.af-diag--warning { color: var(--af-diag-warning); }
+.af-diag--info { color: var(--af-diag-info); }
+
+/* Marqueur de timeout (événement de bordure BPMN) */
+.af-timer {
+  position: absolute;
+  right: 10px;
+  bottom: -11px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: calc(var(--af-border-w) + 0.5px) solid var(--af-async-receive);
+  background: var(--af-node-bg);
+  color: var(--af-async-receive);
+  box-sizing: border-box;
+}
+
+/* États */
+.af-card[data-hovered],
+.af-ref[data-hovered] {
+  border-color: color-mix(in srgb, var(--af-focus) 55%, var(--af-node-border));
+  box-shadow: var(--af-shadow-hover);
+}
+.af-card[data-step-kind='workflow'][data-hovered] {
+  box-shadow:
+    0 0 0 2px var(--af-node-bg),
+    0 0 0 calc(2px + var(--af-border-w)) var(--af-workflow),
+    var(--af-shadow-hover);
+}
+.af-card[data-selected],
+.af-ref[data-selected] {
+  background: var(--af-selection);
+  border: 2px solid var(--af-selection-border);
+  padding: 4px 8px 5px 11px;
+}
+.af-card[data-selected]::before {
+  inset: -2px auto -2px -2px;
+}
+.af-ref[data-selected] {
+  padding: 0 9px;
+}
+[data-dimmed] {
+  opacity: var(--af-dim-opacity);
+}
+[data-contrast='high'] [data-dimmed] {
+  outline: 1px dashed var(--af-node-border);
+  outline-offset: 3px;
+}
+[data-match='match'] {
+  outline: 2px dashed var(--af-focus);
+  outline-offset: 3px;
+}
+[data-match='current'] {
+  outline: 3px solid var(--af-focus);
+  outline-offset: 3px;
+}
+
+/* Densité compacte : une seule ligne */
+.af-density--compact {
+  padding-top: 8px;
+}
+
+/* ============================== Nœuds spéciaux ============================== */
+.af-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  font-size: 11px;
+  font-weight: 600;
+}
+.af-end__circle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: calc(3px + var(--af-edge-boost)) solid var(--af-success);
+  color: var(--af-success);
+  background: var(--af-node-bg);
+}
+.af-end--failure .af-end__circle {
+  border-color: var(--af-failure);
+  color: var(--af-failure);
+}
+.af-end__label {
+  color: var(--af-success-text);
+}
+.af-end--failure .af-end__label {
+  color: var(--af-failure-text);
+}
+.af-end[data-selected] .af-end__circle {
+  outline: 2px solid var(--af-selection-border);
+  outline-offset: 2px;
+}
+
+.af-junction {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.af-junction__diamond {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  box-sizing: border-box;
+  transform: rotate(45deg);
+  border: calc(2px + var(--af-edge-boost)) solid var(--af-depends);
+  background: var(--af-canvas-bg);
+  color: var(--af-depends);
+  border-radius: 2px;
+}
+.af-junction__diamond svg {
+  transform: rotate(-45deg);
+}
+.af-junction[data-selected] .af-junction__diamond {
+  outline: 2px solid var(--af-selection-border);
+  outline-offset: 3px;
+}
+
+.af-ref {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 18px;
+  border: calc(1.5px + var(--af-edge-boost)) dashed var(--af-workflow);
+  background: var(--af-node-bg);
+  color: var(--af-workflow-text);
+  font-size: 12px;
+}
+.af-ref--collapsed {
+  border-style: double;
+  border-width: 4px;
+  border-radius: var(--af-radius);
+}
+.af-ref__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.af-ref__meta {
+  flex: none;
+  color: var(--af-node-muted);
+  font-size: 10.5px;
+}
+
+/* ============================== Cadres : couloirs, groupes, sous-workflows ============================== */
+.af-frame {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--af-node-border) 80%, transparent);
+  background: var(--af-lane-1);
+}
+.af-frame--lane {
+  border-radius: 0;
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: var(--af-node-border);
+}
+.af-frame--workflow {
+  border: 3px double var(--af-workflow);
+  background: color-mix(in srgb, var(--af-workflow) 6%, var(--af-canvas-bg));
+}
+[data-contrast='high'] .af-frame--workflow {
+  background: transparent;
+}
+.af-lane-tint--0 { background: var(--af-lane-0); }
+.af-lane-tint--1 { background: var(--af-lane-1); }
+.af-lane-tint--2 { background: var(--af-lane-2); }
+.af-lane-tint--3 { background: var(--af-lane-3); }
+.af-lane-tint--4 { background: var(--af-lane-4); }
+.af-lane-tint--5 { background: var(--af-lane-5); }
+.af-lane-tint--6 { background: var(--af-lane-6); }
+.af-lane-tint--7 { background: var(--af-lane-1); }
+.af-frame__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--af-node-muted);
+  pointer-events: auto;
+}
+.af-frame--lane .af-frame__head {
+  height: 34px;
+  border-bottom: 1px solid var(--af-node-border);
+  background: color-mix(in srgb, var(--af-canvas-bg) 55%, transparent);
+}
+.af-frame__title {
+  font-weight: 700;
+  color: var(--af-node-fg);
+}
+.af-frame__type {
+  padding: 0 5px;
+  border: 1px solid var(--af-node-border);
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.af-frame__meta {
+  margin-left: auto;
+  font-size: 11px;
+}
+.af-frame--workflow .af-frame__head {
+  color: var(--af-workflow-text);
+}
+.af-frame__toggle {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.af-frame__toggle:hover {
+  background: var(--af-control-hover);
+}
+.af-frame__toggle:focus-visible {
+  outline: 2px solid var(--af-focus);
+}
+
+/* ============================== Arêtes ============================== */
+.af-edge {
+  --edge: var(--af-edge-seq);
+  --edge-text: var(--af-edge-seq-text);
+}
+.af-edge__line {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: calc(var(--w, 1.5px) + var(--af-edge-boost));
+  stroke-dasharray: var(--dash, none);
+  stroke-linecap: var(--cap, butt);
+}
+.af-edge__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14px;
+}
+.af-edge__outer {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: calc(5px + var(--af-edge-boost));
+}
+.af-edge--workflow-call .af-edge__line {
+  stroke: var(--af-canvas-bg);
+}
+.af-edge__marker {
+  fill: var(--edge);
+  stroke: var(--edge);
+  stroke-width: 1px;
+  stroke-linejoin: round;
+}
+.af-edge__marker--open {
+  fill: none;
+  stroke-width: calc(1.8px + var(--af-edge-boost));
+  stroke-linecap: round;
+}
+.af-edge__marker--diamond {
+  fill: var(--af-canvas-bg);
+  stroke-width: 1.5px;
+}
+.af-edge--sequence { --edge: var(--af-edge-seq); --edge-text: var(--af-edge-seq-text); --w: 1.5px; }
+.af-edge--success { --edge: var(--af-success); --edge-text: var(--af-success-text); --w: 2px; }
+.af-edge--failure { --edge: var(--af-failure); --edge-text: var(--af-failure-text); --w: 2px; --dash: var(--af-dash-failure); }
+.af-edge--retry { --edge: var(--af-retry); --edge-text: var(--af-retry-text); --w: 2px; --dash: var(--af-dash-retry); }
+.af-edge--end-success { --edge: var(--af-success); --edge-text: var(--af-success-text); --w: 1.5px; }
+.af-edge--end-failure { --edge: var(--af-failure); --edge-text: var(--af-failure-text); --w: 1.5px; --dash: var(--af-dash-end-failure); }
+.af-edge--implicit-failure { --edge: color-mix(in srgb, var(--af-failure) 55%, transparent); --edge-text: var(--af-failure-text); --w: 1px; --dash: var(--af-dash-implicit-failure); }
+.af-edge--depends-on { --edge: var(--af-depends); --edge-text: var(--af-depends-text); --w: 2px; --dash: var(--af-dash-depends-on); --cap: round; }
+.af-edge--workflow-call { --edge: var(--af-workflow); --edge-text: var(--af-workflow-text); --w: 1.6px; }
+.af-edge--transfer { --edge: var(--af-workflow); --edge-text: var(--af-workflow-text); --w: 2px; --dash: var(--af-dash-transfer); }
+.af-edge--transfer.af-edge--from-failure { --edge: var(--af-failure); --edge-text: var(--af-failure-text); }
+[data-contrast='high'] .af-edge--implicit-failure { --edge: var(--af-failure); }
+
+.af-edge[data-highlighted] .af-edge__line {
+  stroke-width: calc(var(--w, 1.5px) + 1px + var(--af-edge-boost));
+}
+.af-edge[data-dimmed] {
+  opacity: var(--af-dim-opacity);
+}
+
+/* Libellés d'arêtes : chips HTML au fond du canevas, bordure de la couleur de l'arête */
+.af-edge-label {
+  --edge: var(--af-edge-seq);
+  --edge-text: var(--af-edge-seq-text);
+  position: absolute;
+  padding: 0 7px;
+  height: 20px;
+  box-sizing: border-box;
+  border: calc(1px + var(--af-edge-boost)) solid var(--edge);
+  border-radius: 10px;
+  background: var(--af-canvas-bg);
+  color: var(--edge-text);
+  font: 500 11px/18px var(--af-font);
+  white-space: nowrap;
+  pointer-events: all;
+  cursor: default;
+}
+.af-edge-label--success,
+.af-edge-label--end-success { --edge: var(--af-success); --edge-text: var(--af-success-text); }
+.af-edge-label--failure,
+.af-edge-label--end-failure,
+.af-edge-label--implicit-failure { --edge: var(--af-failure); --edge-text: var(--af-failure-text); }
+.af-edge-label--failure,
+.af-edge-label--end-failure { border-style: dashed; }
+.af-edge-label--retry { --edge: var(--af-retry); --edge-text: var(--af-retry-text); }
+.af-edge-label--workflow-call,
+.af-edge-label--transfer { --edge: var(--af-workflow); --edge-text: var(--af-workflow-text); }
+.af-edge-label--transfer.af-edge-label--from-failure { --edge: var(--af-failure); --edge-text: var(--af-failure-text); }
+.af-edge-label--defaults { font-style: italic; }
+.af-edge-label[data-highlighted] {
+  border-width: 2px;
+  line-height: 16px;
+}
+.af-edge-label[data-dimmed] {
+  opacity: var(--af-dim-opacity);
+}
+
+/* ============================== Niveaux de détail au zoom ============================== */
+/* < 0,45 : pastille (badge + stepId agrandis, centrés) ; < 0,25 : rectangle teinté sans texte */
+.af-canvas[data-lod='pill'] .af-card__line,
+.af-canvas[data-lod='pill'] .af-card__chips,
+.af-canvas[data-lod='pill'] .af-card__list,
+.af-canvas[data-lod='pill'] .af-card__order,
+.af-canvas[data-lod='pill'] .af-timer {
+  display: none;
+}
+.af-canvas[data-lod='pill'] .af-card {
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.af-canvas[data-lod='pill'] .af-card__head {
+  flex: 1 1 auto;
+  height: auto;
+  gap: 10px;
+}
+.af-canvas[data-lod='pill'] .af-card__title {
+  font-size: 19px;
+  line-height: 26px;
+}
+.af-canvas[data-lod='pill'] .af-diag {
+  display: none;
+}
+.af-canvas[data-lod='pill'] .af-badge {
+  height: 26px;
+  font-size: 15px;
+  padding: 0 7px;
+}
+.af-canvas[data-lod='pill'] .af-badge svg,
+.af-canvas[data-lod='pill'] .af-io-icon {
+  display: none;
+}
+.af-canvas[data-lod='pill'] .af-edge-label {
+  font-size: 15px;
+  height: 26px;
+  line-height: 24px;
+  border-radius: 13px;
+  border-width: 1.5px;
+}
+.af-canvas[data-lod='min'] .af-card > *:not(.react-flow__handle),
+.af-canvas[data-lod='min'] .af-edge-label,
+.af-canvas[data-lod='min'] .af-end__label {
+  visibility: hidden;
+}
+.af-canvas[data-lod='min'] .af-card {
+  background: var(--accent-bg);
+}
+
+/* ============================== Mini-carte ============================== */
+.af-minimap.react-flow__minimap {
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--af-panel-bg);
+}
+.af-minimap .react-flow__minimap-mask {
+  fill: var(--af-minimap-mask);
+}
+.react-flow__minimap-node.af-mm { fill: var(--af-node-border); stroke: none; }
+.react-flow__minimap-node.af-mm--frame { fill: transparent; stroke: var(--af-node-border); stroke-width: 2; }
+.react-flow__minimap-node.af-mm--http { fill: var(--af-http); }
+.react-flow__minimap-node.af-mm--async-send { fill: var(--af-async-send); }
+.react-flow__minimap-node.af-mm--async-receive { fill: var(--af-async-receive); }
+.react-flow__minimap-node.af-mm--workflow,
+.react-flow__minimap-node.af-mm--workflow-ref { fill: var(--af-workflow); }
+.react-flow__minimap-node.af-mm--input { fill: var(--af-input); }
+.react-flow__minimap-node.af-mm--output { fill: var(--af-output); }
+.react-flow__minimap-node.af-mm--end { fill: var(--af-end); }
+.react-flow__minimap-node.af-mm--junction { fill: var(--af-depends); }
+
+/* ============================== Panneaux : recherche, barre d'outils, légende ============================== */
+.af-panel {
+  font-family: var(--af-font);
+  color: var(--af-panel-fg);
+}
+.af-search__box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 6px 0 10px;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  color: var(--af-node-muted);
+  box-shadow: var(--af-shadow);
+}
+.af-search__box:focus-within {
+  outline: 2px solid var(--af-focus);
+  outline-offset: 1px;
+}
+.af-search__box input {
+  width: 210px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--af-panel-fg);
+  font: 13px var(--af-font);
+}
+.af-search__box input::placeholder {
+  color: var(--af-placeholder);
+}
+.af-search__count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.af-toolbar__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  box-shadow: var(--af-shadow);
+}
+.af-toolbar__sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--af-panel-border);
+}
+.af-toolbar__zoom {
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--af-node-muted);
+  font-variant-numeric: tabular-nums;
+}
+.af-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--af-panel-fg);
+  font: 500 12px var(--af-font);
+  cursor: pointer;
+}
+.af-iconbtn--sm {
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+}
+.af-iconbtn:hover {
+  background: var(--af-control-hover);
+}
+.af-iconbtn:focus-visible {
+  outline: 2px solid var(--af-focus);
+  outline-offset: 1px;
+}
+.af-iconbtn[aria-pressed='true'] {
+  background: var(--af-pressed-bg);
+  color: var(--af-pressed-fg);
+  border-color: var(--af-pressed-border);
+}
+[data-contrast='high'] .af-iconbtn[aria-pressed='true'] {
+  background: transparent;
+  border: 1px solid var(--af-focus);
+  color: var(--af-panel-fg);
+}
+.af-iconbtn__text {
+  font-size: 11.5px;
+}
+
+.af-defaults.react-flow__panel {
+  margin-top: 58px;
+}
+.af-defaults {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 620px;
+  padding: 4px 10px;
+  border: 1px dashed var(--af-workflow);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  font-size: 12px;
+}
+.af-defaults .af-defaults__rule {
+  position: static;
+}
+.af-defaults__mark {
+  color: var(--af-workflow-text);
+  font-weight: 700;
+}
+.af-defaults__hint {
+  color: var(--af-node-muted);
+  font-size: 11px;
+}
+
+.af-legend-panel {
+  margin-bottom: 26px;
+}
+.af-legend {
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  box-shadow: var(--af-shadow);
+  font-size: 11.5px;
+}
+.af-legend__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--af-panel-fg);
+  font: 600 12px var(--af-font);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.af-legend__toggle:focus-visible {
+  outline: 2px solid var(--af-focus);
+}
+.af-legend__body {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 14px;
+  padding: 0 10px 8px;
+}
+.af-legend__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.af-legend__list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  white-space: nowrap;
+}
+.af-legend__svg {
+  flex: none;
+  overflow: visible;
+}
+.af-legend__node {
+  --accent: var(--af-http);
+  display: inline-flex;
+  align-items: center;
+  width: 68px;
+  height: 20px;
+  padding-left: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--af-node-border);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+  background: var(--af-node-bg);
+}
+.af-legend__node .af-badge {
+  height: 14px;
+  font-size: 8.5px;
+  padding: 0 3px;
+}
+.af-legend__node--double {
+  box-shadow:
+    0 0 0 1.5px var(--af-node-bg),
+    0 0 0 2.5px var(--af-workflow);
+}
+.af-legend__glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+}
+.af-legend__glyph--junction {
+  width: 12px;
+  height: 12px;
+  margin: 0 2px;
+  transform: rotate(45deg);
+  border: 2px solid var(--af-depends);
+}
+.af-legend__glyph--end-success {
+  border-radius: 50%;
+  border: 2.5px solid var(--af-success);
+  color: var(--af-success);
+}
+.af-legend__glyph--end-failure {
+  border-radius: 50%;
+  border: 2.5px solid var(--af-failure);
+  color: var(--af-failure);
+}
+.af-legend__glyph--ref {
+  width: 30px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--af-workflow);
+  color: var(--af-workflow);
+}
+
+.af-toast {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--af-panel-border);
+  background: var(--af-panel-bg);
+  box-shadow: var(--af-shadow-overlay);
+  font-size: 12px;
+  margin-bottom: 34px;
+}
+.af-pending,
+.af-loading {
+  position: absolute;
+  left: 50%;
+  top: 56px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--af-panel-bg);
+  border: 1px solid var(--af-panel-border);
+  font-size: 11px;
+  color: var(--af-node-muted);
+  z-index: 10;
+}
+
+.af-dialog {
+  max-width: 560px;
+  padding: 0;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 12px;
+  background: var(--af-panel-bg);
+  color: var(--af-panel-fg);
+  box-shadow: var(--af-shadow-dialog);
+  font-family: var(--af-font);
+}
+.af-dialog::backdrop {
+  background: rgb(2 6 23 / 0.45);
+}
+.af-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 4px;
+}
+.af-dialog__head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.af-dialog__note {
+  margin: 0 16px 8px;
+  color: var(--af-node-muted);
+  font-size: 12px;
+}
+.af-shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.af-shortcuts th,
+.af-shortcuts td {
+  padding: 5px 16px;
+  text-align: left;
+  border-top: 1px solid var(--af-panel-border);
+  font-weight: 400;
+}
+.af-shortcuts kbd {
+  font-family: var(--af-font-mono);
+  font-size: 11.5px;
+  padding: 1px 5px;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 4px;
+  background: var(--af-sunken);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .af-card,
+  .af-edge__line {
+    transition: none;
+  }
+}
+
+/* ============================== G1 additions ============================== */
+
+/* Collapsed sub-workflow: expand button inside the reference pill */
+.af-ref .af-frame__toggle {
+  width: auto;
+  height: 22px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-color: var(--af-workflow);
+  font: 600 10.5px var(--af-font);
+  white-space: nowrap;
+}
+
+/* Large graphs (> 150 nodes): edge labels hidden below 60 % zoom */
+.af-canvas[data-large][data-zoom-low]:not([data-exporting]) .af-edge-label {
+  display: none;
+}
+.af-notice {
+  max-width: 560px;
+  padding: 6px 12px;
+  border: 1px dashed var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  color: var(--af-node-muted);
+  font-size: 12px;
+  margin-bottom: 34px;
+}
+.af-loading--error {
+  color: var(--af-diag-error);
+  border-color: var(--af-diag-error);
+}
+
+/* Export menu */
+.af-export {
+  position: relative;
+  display: inline-flex;
+}
+.af-export__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  box-shadow: var(--af-shadow-overlay);
+}
+.af-export__item {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--af-panel-fg);
+  font: 500 12px var(--af-font);
+  text-align: left;
+  cursor: pointer;
+}
+.af-export__item:hover {
+  background: var(--af-control-hover);
+}
+.af-export__item:focus-visible {
+  outline: 2px solid var(--af-focus);
+  outline-offset: -2px;
+}
+
+/* List view (text alternative, synchronised selection) */
+.af-list {
+  position: absolute;
+  top: 56px;
+  right: 10px;
+  bottom: 40px;
+  z-index: 6;
+  width: 300px;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px 0;
+  border: 1px solid var(--af-panel-border);
+  border-radius: 8px;
+  background: var(--af-panel-bg);
+  color: var(--af-panel-fg);
+  box-shadow: var(--af-shadow-overlay);
+  font-family: var(--af-font);
+  font-size: 12px;
+}
+.af-list__title {
+  margin: 0 12px 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.af-list__ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.af-list__item {
+  padding: 4px 8px 6px;
+  border-top: 1px solid var(--af-panel-border);
+}
+.af-list__item[data-selected] {
+  background: var(--af-selection);
+  box-shadow: inset 3px 0 0 var(--af-selection-border);
+}
+.af-list__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 24px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.af-list__btn:hover {
+  background: var(--af-control-hover);
+}
+.af-list__btn:focus-visible {
+  outline: 2px solid var(--af-focus);
+}
+.af-list__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.af-list__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 4px 0 8px;
+  color: var(--af-node-muted);
+  font-size: 11px;
+  line-height: 15px;
+}
+.af-list__diag {
+  color: var(--af-diag-warning);
+}

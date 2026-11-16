@@ -1,0 +1,145 @@
+/*
+ * data-af-theme="vscode": every colour of the graph follows the user's VS Code theme
+ * (decision of 16/11: semantic colours included). Fallbacks: ConnEthics tokens (--ce-*),
+ * dark palette when the webview is dark (data-af-dark). Table in README « Thèmes ».
+ *
+ * Derived shades, theme-independent:
+ *   -text = 78 % hue + 22 % editor foreground (contrast pushed towards the text colour),
+ *   -bg   = 14 % hue on the widget background.
+ */
+.af-root[data-af-theme='vscode'] {
+  --af-vs-bg: var(--vscode-editor-background, var(--ce-graph-canvas));
+  --af-vs-fg: var(--vscode-editor-foreground, var(--vscode-foreground, var(--ce-text-default)));
+  --af-vs-widget: var(--vscode-editorWidget-background, var(--ce-graph-node-bg));
+  --af-vs-border: var(--vscode-editorWidget-border, var(--vscode-widget-border, var(--vscode-panel-border, var(--ce-graph-node-border))));
+
+  /* Canvas, cards, chrome */
+  --af-canvas-bg: var(--af-vs-bg);
+  --af-canvas-dot: var(--vscode-editorIndentGuide-background1, var(--vscode-editorIndentGuide-background, var(--ce-graph-grid)));
+  --af-node-bg: var(--af-vs-widget);
+  --af-node-border: var(--af-vs-border);
+  --af-node-fg: var(--vscode-editorWidget-foreground, var(--af-vs-fg));
+  --af-node-muted: var(--vscode-descriptionForeground, var(--ce-text-muted));
+  --af-focus: var(--vscode-focusBorder, var(--ce-focus-ring));
+  --af-selection: color-mix(in srgb, var(--af-focus) 16%, var(--af-node-bg));
+  --af-selection-border: var(--vscode-focusBorder, var(--ce-graph-node-selected));
+  --af-panel-bg: var(--af-vs-widget);
+  --af-panel-border: var(--vscode-panel-border, var(--af-vs-border));
+  --af-panel-fg: var(--vscode-foreground, var(--af-vs-fg));
+  --af-control-hover: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground, var(--ce-bg-hover)));
+  --af-pressed-bg: var(--vscode-inputOption-activeBackground, var(--ce-primary-subtle));
+  --af-pressed-fg: var(--vscode-inputOption-activeForeground, var(--af-panel-fg));
+  --af-pressed-border: var(--vscode-inputOption-activeBorder, var(--af-focus));
+  --af-placeholder: var(--vscode-input-placeholderForeground, var(--ce-text-subtle));
+  --af-sunken: var(--vscode-textCodeBlock-background, var(--ce-bg-sunken));
+  --af-tooltip-bg: var(--vscode-editorHoverWidget-background, var(--af-vs-widget));
+  --af-tooltip-fg: var(--vscode-editorHoverWidget-foreground, var(--af-vs-fg));
+  --af-tooltip-border: var(--vscode-editorHoverWidget-border, var(--af-vs-border));
+  --af-minimap-mask: color-mix(in srgb, var(--af-vs-bg) 62%, transparent);
+  --af-font: var(--vscode-font-family, var(--ce-font-sans));
+  --af-font-mono: var(--vscode-editor-font-family, var(--ce-font-mono));
+  --af-shadow: 0 1px 3px var(--vscode-widget-shadow, rgb(0 0 0 / 0.16));
+  --af-shadow-hover: 0 2px 8px var(--vscode-widget-shadow, rgb(0 0 0 / 0.24));
+  --af-shadow-overlay: 0 4px 16px var(--vscode-widget-shadow, rgb(0 0 0 / 0.3));
+  --af-shadow-dialog: 0 8px 32px var(--vscode-widget-shadow, rgb(0 0 0 / 0.36));
+
+  /* Semantic hues */
+  --af-edge-seq: var(--vscode-descriptionForeground, var(--ce-graph-sequence-fg));
+  --af-success: var(--vscode-testing-iconPassed, var(--vscode-charts-green, var(--ce-graph-success-fg)));
+  --af-failure: var(--vscode-testing-iconFailed, var(--vscode-errorForeground, var(--ce-graph-failure-fg)));
+  --af-retry: var(--vscode-charts-orange, var(--ce-graph-retry-fg));
+  --af-http: var(--vscode-textLink-foreground, var(--vscode-charts-blue, var(--ce-graph-step-http-fg)));
+  --af-async-send: var(--vscode-charts-purple, var(--ce-graph-async-send-fg));
+  --af-async-receive: var(--vscode-terminal-ansiCyan, var(--vscode-charts-purple, var(--ce-graph-async-receive-fg)));
+  --af-workflow: var(--vscode-terminal-ansiMagenta, var(--vscode-charts-purple, var(--ce-graph-workflow-call-fg)));
+  --af-input: var(--vscode-charts-blue, var(--ce-graph-input-fg));
+  --af-output: var(--vscode-charts-yellow, var(--ce-graph-output-fg));
+  --af-depends: var(--vscode-terminal-ansiBlue, var(--vscode-charts-blue, var(--ce-graph-depends-on-fg)));
+  --af-end: var(--vscode-foreground, var(--ce-graph-end-fg));
+
+  --af-edge-seq-text: var(--vscode-descriptionForeground, var(--ce-graph-sequence-text));
+  --af-success-text: color-mix(in srgb, var(--af-success) 78%, var(--af-vs-fg));
+  --af-failure-text: color-mix(in srgb, var(--af-failure) 78%, var(--af-vs-fg));
+  --af-retry-text: color-mix(in srgb, var(--af-retry) 78%, var(--af-vs-fg));
+  --af-http-text: color-mix(in srgb, var(--af-http) 78%, var(--af-vs-fg));
+  --af-async-send-text: color-mix(in srgb, var(--af-async-send) 78%, var(--af-vs-fg));
+  --af-async-receive-text: color-mix(in srgb, var(--af-async-receive) 78%, var(--af-vs-fg));
+  --af-workflow-text: color-mix(in srgb, var(--af-workflow) 78%, var(--af-vs-fg));
+  --af-input-text: color-mix(in srgb, var(--af-input) 78%, var(--af-vs-fg));
+  --af-output-text: color-mix(in srgb, var(--af-output) 78%, var(--af-vs-fg));
+  --af-depends-text: color-mix(in srgb, var(--af-depends) 78%, var(--af-vs-fg));
+  --af-end-text: var(--af-vs-fg);
+
+  --af-success-bg: color-mix(in srgb, var(--af-success) 14%, var(--af-node-bg));
+  --af-failure-bg: color-mix(in srgb, var(--af-failure) 14%, var(--af-node-bg));
+  --af-retry-bg: color-mix(in srgb, var(--af-retry) 14%, var(--af-node-bg));
+  --af-http-bg: color-mix(in srgb, var(--af-http) 14%, var(--af-node-bg));
+  --af-async-send-bg: color-mix(in srgb, var(--af-async-send) 14%, var(--af-node-bg));
+  --af-async-receive-bg: color-mix(in srgb, var(--af-async-receive) 14%, var(--af-node-bg));
+  --af-workflow-bg: color-mix(in srgb, var(--af-workflow) 14%, var(--af-node-bg));
+  --af-input-bg: color-mix(in srgb, var(--af-input) 14%, var(--af-node-bg));
+  --af-output-bg: color-mix(in srgb, var(--af-output) 14%, var(--af-node-bg));
+  --af-depends-bg: color-mix(in srgb, var(--af-depends) 14%, var(--af-node-bg));
+  --af-end-bg: color-mix(in srgb, var(--af-end) 10%, var(--af-node-bg));
+
+  /* HTTP methods */
+  --af-m-get: var(--vscode-charts-blue, var(--ce-method-get-text));
+  --af-m-post: var(--vscode-charts-green, var(--ce-method-post-text));
+  --af-m-put: var(--vscode-charts-orange, var(--ce-method-put-text));
+  --af-m-patch: var(--vscode-terminal-ansiCyan, var(--ce-method-patch-text));
+  --af-m-delete: var(--vscode-charts-red, var(--ce-method-delete-text));
+  --af-method-get-bg: color-mix(in srgb, var(--af-m-get) 18%, var(--af-node-bg));
+  --af-method-get-fg: color-mix(in srgb, var(--af-m-get) 72%, var(--af-vs-fg));
+  --af-method-post-bg: color-mix(in srgb, var(--af-m-post) 18%, var(--af-node-bg));
+  --af-method-post-fg: color-mix(in srgb, var(--af-m-post) 72%, var(--af-vs-fg));
+  --af-method-put-bg: color-mix(in srgb, var(--af-m-put) 18%, var(--af-node-bg));
+  --af-method-put-fg: color-mix(in srgb, var(--af-m-put) 72%, var(--af-vs-fg));
+  --af-method-patch-bg: color-mix(in srgb, var(--af-m-patch) 18%, var(--af-node-bg));
+  --af-method-patch-fg: color-mix(in srgb, var(--af-m-patch) 72%, var(--af-vs-fg));
+  --af-method-delete-bg: color-mix(in srgb, var(--af-m-delete) 18%, var(--af-node-bg));
+  --af-method-delete-fg: color-mix(in srgb, var(--af-m-delete) 72%, var(--af-vs-fg));
+  --af-method-other-bg: var(--af-sunken);
+  --af-method-other-fg: var(--af-node-muted);
+
+  /* Diagnostics: same colours as the editor squiggles */
+  --af-diag-error: var(--vscode-editorError-foreground, var(--ce-status-danger-fg));
+  --af-diag-warning: var(--vscode-editorWarning-foreground, var(--ce-status-warning-fg));
+  --af-diag-info: var(--vscode-editorInfo-foreground, var(--ce-status-info-fg));
+}
+
+/* High contrast (body.vscode-high-contrast[-light] → data-contrast="high"):
+   theme borders, active border for focus/selection, pure theme hues for text (no mixing). */
+.af-root[data-af-theme='vscode'][data-contrast='high'] {
+  --af-node-bg: var(--af-vs-bg);
+  --af-panel-bg: var(--af-vs-bg);
+  --af-selection: transparent;
+  --af-shadow: none;
+  --af-shadow-hover: none;
+  --af-shadow-overlay: none;
+  --af-shadow-dialog: none;
+  --af-pressed-bg: transparent;
+  --af-node-border: var(--vscode-contrastBorder, var(--af-vs-border));
+  --af-panel-border: var(--vscode-contrastBorder, var(--af-vs-border));
+  --af-focus: var(--vscode-contrastActiveBorder, var(--vscode-focusBorder, var(--ce-focus-ring)));
+  --af-selection-border: var(--vscode-contrastActiveBorder, var(--vscode-focusBorder, var(--ce-graph-node-selected)));
+  --af-pressed-border: var(--vscode-contrastActiveBorder, var(--af-focus));
+  --af-edge-seq: var(--af-vs-fg);
+  --af-edge-seq-text: var(--af-vs-fg);
+  --af-success-text: var(--af-success);
+  --af-failure-text: var(--af-failure);
+  --af-retry-text: var(--af-retry);
+  --af-http-text: var(--af-http);
+  --af-async-send-text: var(--af-async-send);
+  --af-async-receive-text: var(--af-async-receive);
+  --af-workflow-text: var(--af-workflow);
+  --af-input-text: var(--af-input);
+  --af-output-text: var(--af-output);
+  --af-depends-text: var(--af-depends);
+  --af-method-get-fg: var(--af-m-get);
+  --af-method-post-fg: var(--af-m-post);
+  --af-method-put-fg: var(--af-m-put);
+  --af-method-patch-fg: var(--af-m-patch);
+  --af-method-delete-fg: var(--af-m-delete);
+  --af-node-muted: var(--af-vs-fg);
+  --af-minimap-mask: color-mix(in srgb, var(--af-vs-bg) 75%, transparent);
+}
