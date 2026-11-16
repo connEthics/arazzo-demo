@@ -1,0 +1,275 @@
+# Modèle GitHub Actions pour les exemples Arazzo 1.1 de ConnEthics (adapté de la recherche R4).
+# À copier en .github/workflows/arazzo-e2e.yml à la racine du dépôt arazzo-demo.
+#
+# Chaîne : lint → mock (Prism) → runner (Respect) → rapport JUnit, puis deux jobs asynchrones :
+#   - receive Kafka, open source : Kafka + faux back-office + arazzo-cli (JUnit natif) ;
+#   - send Kafka, commercial (Specmatic, licence d'essai) : job optionnel.
+# Versions épinglées : Redocly CLI 2.79.0, Prism 5.16.0, Kafka 3.9.1, arazzo-cli v0.9.0, Specmatic 1.29.2.
+
+name: arazzo-e2e
+
+on:
+  pull_request:
+    paths: ['app/public/workflows/**']
+  push:
+    branches: [main]
+    paths: ['app/public/workflows/**']
+
+permissions:
+  contents: read
+  checks: write          # requis par l'action de publication du rapport JUnit
+
+env:
+  WF_DIR: app/public/workflows
+  REDOCLY_CLI_VERSION: 2.79.0
+  PRISM_VERSION: 5.16.0
+
+jobs:
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint Arazzo + schéma officiel 1.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Redocly lint (schéma 1.0 ou 1.1 selon le champ `arazzo`)
+        run: |
+          npx -y @redocly/cli@${REDOCLY_CLI_VERSION} lint \
+            ${WF_DIR}/*.arazzo.yaml ${WF_DIR}/*/*.arazzo.yaml
+      - name: JSON Schema officiel 1.1 (Draft 2020-12)
+        run: |
+          pip install jsonschema==4.26.0 pyyaml
+          curl -sSf -o arazzo-1.1.schema.json https://spec.openapis.org/arazzo/1.1/schema/2026-04-15
+          python - <<'PY'
+          import glob, json, sys, yaml
+          from jsonschema import Draft202012Validator
+          v = Draft202012Validator(json.load(open("arazzo-1.1.schema.json")))
+          bad = 0
+          for f in sorted(glob.glob("app/public/workflows/**/*.arazzo.yaml", recursive=True)):
+              errs = list(v.iter_errors(yaml.safe_load(open(f))))
+              bad += len(errs)
+              print(("OK " if not errs else "KO ") + f)
+              for e in errs[:10]:
+                  print("   ", "/".join(map(str, e.absolute_path)), e.message[:160])
+          sys.exit(1 if bad else 0)
+          PY
+
+  # ---------------------------------------------------------------------------
+  http-workflows:
+    name: HTTP — ${{ matrix.name }} (Prism + Respect)
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: mcp-travel-booking
+            dir: mcp-travel-booking
+            source: travel
+            args: ''
+            inputs: '$(cat inputs.json)'
+            expect: pass
+          - name: mcp-travel-booking (budget dépassé)
+            dir: mcp-travel-booking
+            source: travel
+            args: '-w book_trip'
+            inputs: '$(jq -c ".maxTotalAmount = 300" inputs.json)'
+            expect: fail
+          - name: e2e-session-renewal
+            dir: e2e-session-renewal
+            source: billing
+            args: ''
+            inputs: '$(cat inputs.json)'
+            expect: pass
+          - name: e2e-session-renewal (session expirée)
+            dir: e2e-session-renewal
+            source: billing
+            args: '-w listUnpaidInvoices'
+            inputs: '$(jq -c ''.sessionToken = ""'' inputs.json)'
+            expect: fail
+          - name: mcp-support-refund (lecture seule)
+            dir: mcp-support-refund
+            source: support
+            args: '-w check_refund_eligibility'
+            inputs: '$(cat inputs.json)'
+            expect: pass
+          - name: e2e-onboarding-entreprise-fr (partie HTTP)
+            dir: e2e-onboarding-entreprise-fr
+            source: onboarding
+            args: '-w verifierEtCreerCompte'
+            inputs: '$(cat inputs.json)'
+            expect: pass
+    defaults:
+      run:
+        working-directory: ${{ env.WF_DIR }}/${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # 1. Mock : Prism sert les `examples` de l'OpenAPI (réponses déterministes)
+      - name: Démarrer le mock Prism
+        run: |
+          npx -y @stoplight/prism-cli@${PRISM_VERSION} mock -h 127.0.0.1 -p 4010 openapi.yaml > prism.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -s -o /dev/null http://127.0.0.1:4010/ && exit 0
+            sleep 1
+          done
+          echo "Prism n'a pas démarré"; cat prism.log; exit 1
+
+      # 2. Runner : Respect ; un cas négatif doit échouer (code retour ≠ 0)
+      - name: Exécuter (Respect)
+        run: |
+          mkdir -p reports
+          set +e
+          npx -y @redocly/cli@${REDOCLY_CLI_VERSION} respect *.arazzo.yaml ${{ matrix.args }} \
+            --server ${{ matrix.source }}=http://127.0.0.1:4010 \
+            --input "${{ matrix.inputs }}" \
+            --json-output reports/respect.json
+          code=$?
+          set -e
+          if [ "${{ matrix.expect }}" = "pass" ]; then exit $code; fi
+          if [ $code -eq 0 ]; then echo "Cas négatif : un échec était attendu"; exit 1; fi
+          echo "Échec attendu observé (code $code)"
+
+      # 3. Rapport JUnit : Respect n'en produit pas, conversion depuis le JSON
+      - name: Convertir en JUnit
+        if: always() && matrix.expect == 'pass'
+        run: |
+          test -f reports/respect.json || exit 0
+          node ../ci/respect-to-junit.mjs reports/respect.json > reports/junit.xml
+
+      - name: Publier le rapport JUnit
+        if: always() && matrix.expect == 'pass'
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: ${{ env.WF_DIR }}/${{ matrix.dir }}/reports/junit.xml
+          check_name: Arazzo E2E — ${{ matrix.name }}
+          require_tests: true
+
+      - name: Archiver les rapports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arazzo-http-${{ strategy.job-index }}
+          path: |
+            ${{ env.WF_DIR }}/${{ matrix.dir }}/reports/
+            ${{ env.WF_DIR }}/${{ matrix.dir }}/prism.log
+
+  # ---------------------------------------------------------------------------
+  async-receive:
+    name: Async receive — e2e-order-to-cash (Kafka + arazzo-cli)
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EX: app/public/workflows/e2e-order-to-cash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Construire arazzo-cli v0.9.0
+        run: |
+          # Binaires publiés sur les releases GitHub de strefethen/arazzo-cli ; à défaut, build.
+          # Le tag v0.9.0 n'a pas pu être vérifié (API GitHub inaccessible pendant R4/E1) : le build
+          # testé partait du HEAD du 15/11/2026, qui annonce la version 0.9.0.
+          git clone --depth 1 --branch v0.9.0 https://github.com/strefethen/arazzo-cli /tmp/arazzo-cli
+          cargo build --release -p arazzo-cli --locked --manifest-path /tmp/arazzo-cli/Cargo.toml
+          echo "/tmp/arazzo-cli/target/release" >> "$GITHUB_PATH"
+
+      - name: Kafka (KRaft mono-nœud) + topic
+        run: |
+          docker run -d --name kafka --network host apache/kafka:3.9.1
+          for i in $(seq 1 30); do
+            docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 \
+            --create --if-not-exists --topic order.confirmed
+
+      # arazzo-cli résout les `url` relatives contre `$self` (§5.6.1) et n'a pas d'option --server :
+      # on exécute une copie de travail sans `$self`, serveur pointé vers Prism.
+      - name: Copie de travail + mock Prism
+        run: |
+          mkdir -p work reports
+          cp ${EX}/e2e-order-to-cash.arazzo.yaml ${EX}/openapi.yaml ${EX}/asyncapi.yaml work/
+          sed -i '/^\$self:/d' work/e2e-order-to-cash.arazzo.yaml
+          sed -i 's#https://api.example.test/commerce#http://127.0.0.1:4010#' work/openapi.yaml
+          npx -y @stoplight/prism-cli@${PRISM_VERSION} mock -h 127.0.0.1 -p 4010 ${EX}/openapi.yaml > prism.log 2>&1 &
+          sleep 8
+
+      - name: Exécuter (faux back-office + arazzo-cli, JUnit natif)
+        run: |
+          ${EX}/tools/fake-backoffice.sh kafka 30 &
+          sleep 2
+          arazzo-cli test work/e2e-order-to-cash.arazzo.yaml --parallel \
+            -i customerId=cus_8812 --input-json "lines=$(jq -c .lines ${EX}/inputs.json)" \
+            --format junit > reports/junit.xml
+
+      - name: Publier le rapport JUnit
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: reports/junit.xml
+          check_name: Arazzo E2E — order-to-cash (receive Kafka)
+          require_tests: true
+
+  # ---------------------------------------------------------------------------
+  async-send:
+    name: Async send — mcp-support-refund (Kafka + Specmatic, optionnel)
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Specmatic Arazzo est commercial : licence d'essai embarquée (jusqu'au 01/01/2028).
+    # Job optionnel tant que la question de la licence n'est pas tranchée.
+    continue-on-error: true
+    env:
+      EX: app/public/workflows/mcp-support-refund
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+
+      - name: Kafka + topic refund.issued
+        run: |
+          docker run -d --name kafka --network host apache/kafka:3.9.1
+          for i in $(seq 1 30); do
+            docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 \
+            --create --if-not-exists --topic refund.issued
+
+      - name: Mock Prism + copie de travail Specmatic
+        run: |
+          npx -y @stoplight/prism-cli@${PRISM_VERSION} mock -h 127.0.0.1 -p 4010 ${EX}/openapi.yaml > prism.log 2>&1 &
+          pip install pyyaml
+          python ${EX}/specmatic/prepare-workcopy.py work
+          sleep 5
+
+      - name: Exécuter (Specmatic Arazzo)
+        working-directory: work
+        run: |
+          docker run --rm --network host -v "$PWD:/usr/src/app" specmatic/enterprise:1.29.2 \
+            test mcp-support-refund.arazzo.yaml --sourceNameToBaseUrl support=http://127.0.0.1:4010
+
+      - name: Vérifier l'événement refund.issued
+        run: |
+          docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 \
+            --topic refund.issued --from-beginning --timeout-ms 8000 | grep -q '"refundId"'
+
+      - name: Archiver les rapports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arazzo-async-send-reports
+          path: work/build/reports/specmatic/

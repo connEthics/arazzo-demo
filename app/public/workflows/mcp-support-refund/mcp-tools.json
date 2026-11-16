@@ -5,7 +5,7 @@
     "arazzoDocument": "./mcp-support-refund.arazzo.yaml",
     "arazzoVersion": "1.1.0",
     "self": "https://arazzo.connethics.com/workflows/mcp-support-refund/mcp-support-refund.arazzo.yaml",
-    "digest": "sha256-DIGEST",
+    "digest": "sha256-b925c2240dd60ab36611aacce4372b89a8353931717460bacd76a5e416ab3b7d",
     "generator": "manual (E1) — format @connethics/arazzo-core/mcp-export@0.1.0",
     "generatedAt": "2026-11-16T00:00:00Z"
   },

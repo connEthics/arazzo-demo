@@ -5,7 +5,7 @@
     "arazzoDocument": "./mcp-travel-booking.arazzo.yaml",
     "arazzoVersion": "1.1.0",
     "self": "https://arazzo.connethics.com/workflows/mcp-travel-booking/mcp-travel-booking.arazzo.yaml",
-    "digest": "sha256-DIGEST",
+    "digest": "sha256-b6a8832d91bb8f5e49520d52fd9ee4ef4be64192e8f8cb6646d4cab69379ebc4",
     "generator": "manual (E1) — format @connethics/arazzo-core/mcp-export@0.1.0",
     "generatedAt": "2026-11-16T00:00:00Z"
   },
