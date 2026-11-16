@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: Billing API (stub de démonstration)
+  version: 1.0.0
+  summary: Factures protégées par une session à durée glissante.
+  description: |
+    Stub minimal servi par Prism pour l'exemple `e2e-session-renewal`.
+
+    - Une session expirée produit `401` avec `code: SESSION_EXPIRED`.
+    - `POST /sessions/renew` prolonge la session **côté serveur** (durée glissante) :
+      le même `sessionToken` redevient valide, l'étape peut donc être rejouée telle quelle.
+
+    Note OpenAPI 3.1 vs 3.2 : Arazzo 1.1 envoie la query string entière via
+    `in: querystring` (alignement sur OAS 3.2). Ce stub reste en OAS 3.1 et décrit donc
+    les paramètres `status`, `sort` et `limit` un par un ; en OAS 3.2, on déclarerait un
+    unique paramètre `in: querystring` avec `content: application/x-www-form-urlencoded`.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://api.example.test/billing
+    description: Serveur fictif (remplacé par `--server billing=http://127.0.0.1:4010` avec Respect)
+tags:
+  - name: sessions
+    description: Cycle de vie des sessions
+  - name: invoices
+    description: Factures client
+security:
+  - sessionBearer: []
+paths:
+  /sessions/renew:
+    post:
+      tags: [sessions]
+      operationId: renewSession
+      summary: Prolonger une session expirée à l'aide du refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionToken, refreshToken]
+              properties:
+                sessionToken: { type: string }
+                refreshToken: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Session prolongée
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, expiresAt]
+                properties:
+                  status: { type: string, enum: [renewed] }
+                  expiresAt: { type: string, format: date-time }
+              examples:
+                renewed:
+                  value: { status: renewed, expiresAt: '2026-11-16T18:30:00Z' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /invoices:
+    get:
+      tags: [invoices]
+      operationId: listInvoices
+      summary: Lister les factures (filtre et tri via la query string)
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [unpaid, paid, overdue] } }
+        - { name: sort, in: query, schema: { type: string, enum: [dueDate, -dueDate] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Page de factures
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, items]
+                properties:
+                  count: { type: integer, minimum: 0 }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceSummary' }
+              examples:
+                unpaid:
+                  value:
+                    count: 2
+                    items:
+                      - { id: inv_2026_0042, status: unpaid, dueDate: '2026-11-30', amountDue: { amount: 1250.0, currency: EUR } }
+                      - { id: inv_2026_0038, status: unpaid, dueDate: '2026-11-20', amountDue: { amount: 480.0, currency: EUR } }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /invoices/{invoiceId}:
+    get:
+      tags: [invoices]
+      operationId: getInvoice
+      summary: Détail d'une facture
+      parameters:
+        - { name: invoiceId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Facture
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invoice' }
+              examples:
+                inv42:
+                  value:
+                    id: inv_2026_0042
+                    status: unpaid
+                    dueDate: '2026-11-30'
+                    amountDue: { amount: 1250.0, currency: EUR }
+                    customer: { id: cus_8812, name: ACME Industrie SAS }
+                    paymentLink: https://pay.example.test/i/inv_2026_0042
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    sessionBearer:
+      type: http
+      scheme: bearer
+      description: Jeton de session opaque. Prism renvoie 401 si le jeton est vide.
+  responses:
+    Unauthorized:
+      description: Session absente, invalide ou expirée
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            expired:
+              value: { code: SESSION_EXPIRED, message: 'La session a expiré, renouvelez-la.' }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            notFound:
+              value: { code: NOT_FOUND, message: Facture introuvable. }
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    InvoiceSummary:
+      type: object
+      required: [id, status, dueDate, amountDue]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [unpaid, paid, overdue] }
+        dueDate: { type: string, format: date }
+        amountDue: { $ref: '#/components/schemas/Money' }
+    Invoice:
+      allOf:
+        - $ref: '#/components/schemas/InvoiceSummary'
+        - type: object
+          properties:
+            customer:
+              type: object
+              properties:
+                id: { type: string }
+                name: { type: string }
+            paymentLink: { type: string, format: uri }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, enum: [SESSION_EXPIRED, INVALID_REFRESH_TOKEN, NOT_FOUND] }
+        message: { type: string }

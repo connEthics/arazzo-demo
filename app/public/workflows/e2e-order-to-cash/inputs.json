@@ -1,0 +1,9 @@
+{
+  "customerId": "cus_8812",
+  "lines": [
+    { "sku": "BOOK-42", "quantity": 2 },
+    { "sku": "MUG-07", "quantity": 1 },
+    { "sku": "GIFT-CARD-50", "quantity": 1 }
+  ],
+  "carrier": "colissimo"
+}

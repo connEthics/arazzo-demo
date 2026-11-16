@@ -1,0 +1,57 @@
+asyncapi: 3.0.0
+info:
+  title: Order events (vue consommateur)
+  version: 1.0.0
+  description: |
+    Événements de commande, décrits **du point de vue du workflow** (consommateur) :
+    l'opération `receiveOrderConfirmed` a `action: receive`, comme l'étape Arazzo.
+    C'est la convention d'arazzo-cli. Specmatic attend l'inverse (AsyncAPI du système testé) :
+    voir le README.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+defaultContentType: application/json
+servers:
+  local:
+    host: 127.0.0.1:9092
+    protocol: kafka
+    description: Broker Kafka local (conteneur apache/kafka:3.9.1) pour les tests E2E
+channels:
+  orderConfirmed:
+    address: order.confirmed
+    description: Publié par le back-office quand une commande est validée (stock réservé).
+    messages:
+      orderConfirmed:
+        $ref: '#/components/messages/OrderConfirmed'
+operations:
+  receiveOrderConfirmed:
+    action: receive
+    summary: Attendre la confirmation d'une commande
+    channel:
+      $ref: '#/channels/orderConfirmed'
+    messages:
+      - $ref: '#/channels/orderConfirmed/messages/orderConfirmed'
+components:
+  messages:
+    OrderConfirmed:
+      name: OrderConfirmed
+      title: Commande confirmée
+      contentType: application/json
+      correlationId:
+        description: Identifiant de commande, utilisé par l'étape Arazzo pour filtrer les messages.
+        location: $message.payload#/orderId
+      payload:
+        type: object
+        required: [orderId, status, confirmedAt]
+        properties:
+          orderId: { type: string }
+          status: { type: string, enum: [confirmed, rejected] }
+          warehouseId: { type: string }
+          confirmedAt: { type: string, format: date-time }
+      examples:
+        - name: confirmed
+          payload:
+            orderId: ord_123
+            status: confirmed
+            warehouseId: wh_lyon_01
+            confirmedAt: '2026-11-16T16:00:02Z'

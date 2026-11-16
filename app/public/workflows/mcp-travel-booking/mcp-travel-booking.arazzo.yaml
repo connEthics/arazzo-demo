@@ -1,0 +1,321 @@
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/mcp-travel-booking/mcp-travel-booking.arazzo.yaml
+info:
+  title: Réservation de voyage exposée en outils MCP
+  summary: Un workflow Arazzo = un outil MCP (quote_trip en lecture seule, book_trip mutateur).
+  version: 1.0.0
+  description: |
+    Deux workflows publiés comme outils MCP par un serveur ConnEthics (voir `mcp-tools.json`) :
+
+    - `quote_trip` : recherche, prix, disponibilité. **Lecture seule**, sert aussi de
+      prévisualisation pour la confirmation humaine.
+    - `book_trip` : recherche, prix (verrouillé), disponibilité, réservation, paiement,
+      confirmation, avec compensations (`voidPayment`, `releaseBooking`).
+
+    Les garde-fous (budget, verrou de prix et de vol, retries 503, compensation) sont
+    exécutés par le moteur Arazzo, de façon déterministe : l'agent ne voit que le résultat.
+sourceDescriptions:
+  - name: travel
+    url: ./openapi.yaml
+    type: openapi
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # Outil MCP lecture seule
+  # ---------------------------------------------------------------------------
+  - workflowId: quote_trip
+    summary: Chiffrer un voyage
+    description: |
+      Recherche le vol le moins cher, calcule le prix total TTC et vérifie la disponibilité
+      des sièges. Aucune réservation, aucun paiement.
+    x-connethics-mcp:
+      expose: tool
+    inputs:
+      type: object
+      required: [origin, destination, departureDate, passengerCount]
+      properties:
+        origin:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Code IATA de l'aéroport de départ, par exemple CDG.
+        destination:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Code IATA de l'aéroport d'arrivée, par exemple LIS.
+        departureDate:
+          type: string
+          format: date
+          description: Date de départ (AAAA-MM-JJ).
+        passengerCount:
+          type: integer
+          minimum: 1
+          maximum: 9
+          description: Nombre de passagers.
+        cabin:
+          type: string
+          enum: [economy, premium_economy, business]
+          default: economy
+          description: Classe de voyage.
+    steps:
+      - stepId: searchFlights
+        description: GET /flights — offres triées par prix croissant.
+        operationId: $sourceDescriptions.travel.searchFlights
+        parameters:
+          - { name: origin, in: query, value: $inputs.origin }
+          - { name: destination, in: query, value: $inputs.destination }
+          - { name: date, in: query, value: $inputs.departureDate }
+          - { name: passengers, in: query, value: $inputs.passengerCount }
+          - { name: cabin, in: query, value: $inputs.cabin }
+          - { name: sort, in: query, value: price_asc }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/count > 0
+        onFailure:
+          - { reference: $components.failureActions.retryWhenBusy }
+        outputs:
+          offerId: $response.body#/offers/0/id
+          flightId: $response.body#/offers/0/flightId
+          flightNumber: $response.body#/offers/0/flightNumber
+          departureAt: $response.body#/offers/0/departureAt
+          arrivalAt: $response.body#/offers/0/arrivalAt
+      - stepId: priceOffer
+        description: GET /offers/{offerId}/price — prix total TTC verrouillé jusqu'à expiresAt.
+        operationId: $sourceDescriptions.travel.priceOffer
+        parameters:
+          - { name: offerId, in: path, value: $steps.searchFlights.outputs.offerId }
+          - { name: passengers, in: query, value: $inputs.passengerCount }
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          totalPrice: $response.body#/total
+          quoteExpiresAt: $response.body#/expiresAt
+      - stepId: checkSeatAvailability
+        description: GET /flights/{flightId}/seats — assez de sièges pour tous les passagers ?
+        operationId: $sourceDescriptions.travel.getSeatAvailability
+        parameters:
+          - { name: flightId, in: path, value: $steps.searchFlights.outputs.flightId }
+          - { name: cabin, in: query, value: $inputs.cabin }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/available >= $inputs.passengerCount
+        onFailure:
+          - name: notEnoughSeats
+            type: end
+        outputs:
+          seatsAvailable: $response.body#/available
+    outputs:
+      flightNumber: $steps.searchFlights.outputs.flightNumber
+      departureAt: $steps.searchFlights.outputs.departureAt
+      arrivalAt: $steps.searchFlights.outputs.arrivalAt
+      seatsAvailable: $steps.checkSeatAvailability.outputs.seatsAvailable
+      totalPrice: $steps.priceOffer.outputs.totalPrice
+      quoteExpiresAt: $steps.priceOffer.outputs.quoteExpiresAt
+
+  # ---------------------------------------------------------------------------
+  # Outil MCP mutateur (effet financier) — confirmation humaine portée par le serveur MCP
+  # ---------------------------------------------------------------------------
+  - workflowId: book_trip
+    summary: Réserver et payer un voyage
+    description: |
+      Réserve et paie un vol de bout en bout. Les entrées `paymentMethodToken`,
+      `idempotencyKey`, `passengerCount`, `confirmedTotalPrice` et `confirmedFlightNumber`
+      sont **masquées** : injectées par le serveur MCP (coffre, générateur, confirmation),
+      jamais fournies par l'agent.
+    x-connethics-mcp:
+      expose: tool
+      hiddenInputs: [paymentMethodToken, idempotencyKey, passengerCount, confirmedTotalPrice, confirmedFlightNumber]
+      confirmation:
+        previewWorkflowId: quote_trip
+      sideEffects:
+        capturePayment: financial
+    inputs:
+      type: object
+      required:
+        - origin
+        - destination
+        - departureDate
+        - passengers
+        - maxTotalAmount
+        - contactEmail
+        - paymentMethodToken
+        - idempotencyKey
+        - passengerCount
+        - confirmedTotalPrice
+        - confirmedFlightNumber
+      properties:
+        origin: { type: string, pattern: '^[A-Z]{3}$', description: Code IATA de départ. }
+        destination: { type: string, pattern: '^[A-Z]{3}$', description: Code IATA d'arrivée. }
+        departureDate: { type: string, format: date, description: Date de départ (AAAA-MM-JJ). }
+        cabin:
+          type: string
+          enum: [economy, premium_economy, business]
+          default: economy
+        passengers:
+          type: array
+          minItems: 1
+          maxItems: 9
+          items:
+            type: object
+            additionalProperties: false
+            required: [firstName, lastName, dateOfBirth]
+            properties:
+              firstName: { type: string, minLength: 1, maxLength: 60 }
+              lastName: { type: string, minLength: 1, maxLength: 60 }
+              dateOfBirth: { type: string, format: date }
+        seatPreference: { type: string, enum: [window, aisle, any], default: any }
+        maxTotalAmount: { type: number, exclusiveMinimum: 0, maximum: 5000, description: Budget maximal TTC. }
+        currency: { type: string, pattern: '^[A-Z]{3}$', default: EUR }
+        contactEmail: { type: string, format: email }
+        # --- entrées masquées (cf. binding.hiddenInputs de mcp-tools.json) ---
+        paymentMethodToken: { type: string, description: 'MASQUÉE — jeton de moyen de paiement issu du coffre.' }
+        idempotencyKey: { type: string, minLength: 8, description: 'MASQUÉE — générée par le serveur MCP.' }
+        passengerCount: { type: integer, minimum: 1, maximum: 9, description: 'MASQUÉE — count($args.passengers).' }
+        confirmedTotalPrice: { type: number, description: 'MASQUÉE — prix présenté et accepté par l''utilisateur.' }
+        confirmedFlightNumber: { type: string, description: 'MASQUÉE — vol présenté et accepté par l''utilisateur.' }
+    steps:
+      - stepId: searchFlights
+        operationId: $sourceDescriptions.travel.searchFlights
+        parameters:
+          - { name: origin, in: query, value: $inputs.origin }
+          - { name: destination, in: query, value: $inputs.destination }
+          - { name: date, in: query, value: $inputs.departureDate }
+          - { name: passengers, in: query, value: $inputs.passengerCount }
+          - { name: cabin, in: query, value: $inputs.cabin }
+          - { name: sort, in: query, value: price_asc }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/count > 0
+        onFailure:
+          - { reference: $components.failureActions.retryWhenBusy }
+        outputs:
+          offerId: $response.body#/offers/0/id
+          flightId: $response.body#/offers/0/flightId
+          flightNumber: $response.body#/offers/0/flightNumber
+          departureAt: $response.body#/offers/0/departureAt
+          arrivalAt: $response.body#/offers/0/arrivalAt
+      - stepId: priceOffer
+        description: Garde-fou budget + verrou de prix (le prix ne doit pas dépasser celui confirmé).
+        operationId: $sourceDescriptions.travel.priceOffer
+        parameters:
+          - { name: offerId, in: path, value: $steps.searchFlights.outputs.offerId }
+          - { name: passengers, in: query, value: $inputs.passengerCount }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/total/amount <= $inputs.maxTotalAmount
+          - condition: $response.body#/total/amount <= $inputs.confirmedTotalPrice
+        onFailure:
+          - name: priceAboveBudget
+            type: end
+        outputs:
+          totalPrice: $response.body#/total
+          totalAmount: $response.body#/total/amount
+          quoteExpiresAt: $response.body#/expiresAt
+      - stepId: checkSeatAvailability
+        description: Verrou de vol — le vol trouvé doit être celui que l'utilisateur a confirmé.
+        operationId: $sourceDescriptions.travel.getSeatAvailability
+        parameters:
+          - { name: flightId, in: path, value: $steps.searchFlights.outputs.flightId }
+          - { name: cabin, in: query, value: $inputs.cabin }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/available >= $inputs.passengerCount
+          - condition: $steps.searchFlights.outputs.flightNumber == $inputs.confirmedFlightNumber
+        onFailure:
+          - name: offerChanged
+            type: end
+      - stepId: createBooking
+        description: POST /bookings — réservation provisoire (hold), idempotente.
+        operationId: $sourceDescriptions.travel.createBooking
+        parameters:
+          - { name: Idempotency-Key, in: header, value: $inputs.idempotencyKey }
+        requestBody:
+          contentType: application/json
+          payload:
+            offerId: $steps.searchFlights.outputs.offerId
+            passengers: $inputs.passengers
+            seatPreference: $inputs.seatPreference
+            contactEmail: $inputs.contactEmail
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'held'
+        onFailure:
+          - { reference: $components.failureActions.retryWhenBusy }
+        outputs:
+          bookingId: $response.body#/id
+          seats: $response.body#/seats
+      - stepId: capturePayment
+        description: POST /payments — effet financier irréversible.
+        operationId: $sourceDescriptions.travel.createPayment
+        parameters:
+          - { name: Idempotency-Key, in: header, value: $inputs.idempotencyKey }
+        requestBody:
+          contentType: application/json
+          payload:
+            bookingId: $steps.createBooking.outputs.bookingId
+            amount: $steps.priceOffer.outputs.totalAmount
+            currency: $inputs.currency
+            paymentMethodToken: $inputs.paymentMethodToken
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'captured'
+        onFailure:
+          - { reference: $components.failureActions.retryWhenBusy }
+          - name: releaseHold
+            type: goto
+            stepId: releaseBooking
+        outputs:
+          paymentId: $response.body#/id
+          paymentStatus: $response.body#/status
+      - stepId: confirmBooking
+        description: POST /bookings/{bookingId}/confirm — émission du PNR.
+        operationId: $sourceDescriptions.travel.confirmBooking
+        parameters:
+          - { name: bookingId, in: path, value: $steps.createBooking.outputs.bookingId }
+          - { name: Idempotency-Key, in: header, value: $inputs.idempotencyKey }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'confirmed'
+        onSuccess:
+          - name: done
+            type: end
+        onFailure:
+          - name: compensate
+            type: goto
+            stepId: voidPayment
+        outputs:
+          bookingReference: $response.body#/reference
+      # --- compensations : atteignables uniquement par goto ---------------------
+      - stepId: voidPayment
+        description: Compensation — annule le paiement si la confirmation échoue.
+        operationId: $sourceDescriptions.travel.voidPayment
+        parameters:
+          - { name: paymentId, in: path, value: $steps.capturePayment.outputs.paymentId }
+          - { name: Idempotency-Key, in: header, value: $inputs.idempotencyKey }
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'voided'
+      - stepId: releaseBooking
+        description: Compensation — libère la réservation provisoire.
+        operationId: $sourceDescriptions.travel.cancelBooking
+        parameters:
+          - { name: bookingId, in: path, value: $steps.createBooking.outputs.bookingId }
+        successCriteria:
+          - condition: $statusCode == 204
+    outputs:
+      bookingReference: $steps.confirmBooking.outputs.bookingReference
+      flightNumber: $steps.searchFlights.outputs.flightNumber
+      departureAt: $steps.searchFlights.outputs.departureAt
+      arrivalAt: $steps.searchFlights.outputs.arrivalAt
+      seats: $steps.createBooking.outputs.seats
+      totalPrice: $steps.priceOffer.outputs.totalPrice
+      paymentStatus: $steps.capturePayment.outputs.paymentStatus
+
+components:
+  failureActions:
+    retryWhenBusy:
+      name: retryWhenBusy
+      type: retry
+      retryAfter: 2
+      retryLimit: 2
+      criteria:
+        - condition: $statusCode == 503

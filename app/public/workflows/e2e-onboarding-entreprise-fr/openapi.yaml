@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: API d'onboarding B2B (stub de démonstration)
+  version: 1.0.0
+  summary: Recherche d'entreprise par SIREN (type registre INPI/SIRENE), KYC et création de compte.
+  description: |
+    Stub **fictif** servi par Prism. Il imite la forme d'un registre d'entreprises
+    (INPI — Registre national des entreprises, ou INSEE — SIRENE) sans en reprendre l'API réelle :
+    aucune URL ni aucun identifiant de production, aucune clé.
+
+    Toutes les données d'exemple (SIREN `123456789`, dénomination, dirigeant) sont inventées.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://api.example.test
+    description: Serveur fictif (remplacé par `--server onboarding=http://127.0.0.1:4010` avec Respect)
+security:
+  - onboardingOAuth: []
+  - {}
+tags:
+  - name: registre
+    description: Données légales d'entreprise (stub de type registre)
+  - name: kyc
+    description: Vérification d'identité et lutte anti-blanchiment (KYC/KYB)
+  - name: comptes
+    description: Comptes clients B2B
+paths:
+  /entreprises/{siren}:
+    get:
+      tags: [registre]
+      operationId: rechercherEntrepriseParSiren
+      summary: Rechercher une entreprise par son SIREN
+      parameters:
+        - name: siren
+          in: path
+          required: true
+          description: Numéro SIREN (9 chiffres).
+          schema: { type: string, pattern: '^[0-9]{9}$' }
+      responses:
+        '200':
+          description: Entreprise trouvée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Entreprise' }
+              examples:
+                exempleSas:
+                  summary: Entreprise fictive, active
+                  value:
+                    siren: '123456789'
+                    denomination: EXEMPLE SOCIÉTÉ SAS
+                    formeJuridique: SAS
+                    codeNaf: 62.02A
+                    etatAdministratif: A
+                    dateCreation: '2019-03-14'
+                    adresse:
+                      ligne1: 123 rue de la Tech
+                      codePostal: '75001'
+                      ville: Paris
+                    dirigeants:
+                      - { nom: DURAND, prenom: Alix, qualite: Président }
+        '404':
+          $ref: '#/components/responses/Probleme'
+  /kyc/verifications:
+    post:
+      tags: [kyc]
+      operationId: verifierKyc
+      summary: Lancer une vérification KYC/KYB de l'entreprise et de son représentant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [siren, denomination, representant]
+              properties:
+                siren: { type: string, pattern: '^[0-9]{9}$' }
+                denomination: { type: string }
+                representant:
+                  type: object
+                  required: [nom, prenom, dateNaissance]
+                  properties:
+                    nom: { type: string }
+                    prenom: { type: string }
+                    dateNaissance: { type: string, format: date }
+      responses:
+        '201':
+          description: Vérification terminée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationKyc' }
+              examples:
+                approuvee:
+                  value:
+                    id: kyc_7d41e0
+                    statut: approuve
+                    niveauRisque: faible
+                    verifieLe: '2026-11-16T16:30:00Z'
+        '422':
+          $ref: '#/components/responses/Probleme'
+        '503':
+          $ref: '#/components/responses/Probleme'
+  /comptes:
+    post:
+      tags: [comptes]
+      operationId: creerCompte
+      summary: Créer le compte client B2B
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [siren, denomination, emailContact, verificationKycId]
+              properties:
+                siren: { type: string, pattern: '^[0-9]{9}$' }
+                denomination: { type: string }
+                emailContact: { type: string, format: email }
+                verificationKycId: { type: string }
+                offre: { type: string, enum: [essentiel, pro, entreprise] }
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Compte' }
+              examples:
+                cree:
+                  value:
+                    id: cpt_00a91f
+                    statut: actif
+                    siren: '123456789'
+                    offre: pro
+                    creeLe: '2026-11-16T16:30:05Z'
+        '409':
+          $ref: '#/components/responses/Probleme'
+components:
+  securitySchemes:
+    onboardingOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.test/oauth/token
+          scopes: {}
+  responses:
+    Probleme:
+      description: Erreur métier (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer }
+              detail: { type: string }
+  schemas:
+    Entreprise:
+      type: object
+      required: [siren, denomination, formeJuridique, etatAdministratif]
+      properties:
+        siren: { type: string }
+        denomination: { type: string }
+        formeJuridique: { type: string }
+        codeNaf: { type: string }
+        etatAdministratif:
+          type: string
+          enum: [A, C]
+          description: A = active, C = cessée.
+        dateCreation: { type: string, format: date }
+        adresse:
+          type: object
+          properties:
+            ligne1: { type: string }
+            codePostal: { type: string }
+            ville: { type: string }
+        dirigeants:
+          type: array
+          items:
+            type: object
+            properties:
+              nom: { type: string }
+              prenom: { type: string }
+              qualite: { type: string }
+    VerificationKyc:
+      type: object
+      required: [id, statut, niveauRisque]
+      properties:
+        id: { type: string }
+        statut: { type: string, enum: [approuve, refuse, en_revue] }
+        niveauRisque: { type: string, enum: [faible, moyen, eleve] }
+        verifieLe: { type: string, format: date-time }
+    Compte:
+      type: object
+      required: [id, statut, siren, creeLe]
+      properties:
+        id: { type: string }
+        statut: { type: string, enum: [actif, suspendu] }
+        siren: { type: string }
+        offre: { type: string }
+        creeLe: { type: string, format: date-time }

@@ -1,0 +1,39 @@
+# expect: arazzo-step-depends-on-shape, arazzo-step-depends-on-resolved, arazzo-step-depends-on-self, arazzo-step-depends-on-cycle, arazzo-workflow-depends-on-cycle
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/invalid-depends-on.arazzo.yaml
+info:
+  title: Invalid dependsOn
+  version: 1.0.0
+sourceDescriptions:
+  - name: bus
+    url: ./bus.asyncapi.yaml
+    type: asyncapi
+workflows:
+  - workflowId: a
+    dependsOn: [b]
+    steps:
+      - stepId: first
+        operationId: onA
+        action: receive
+        timeout: 1000
+        successCriteria:
+          - condition: $message.header.ok == true
+        dependsOn: [second]
+        outputs:
+          x: $message.payload#/x
+      - stepId: second
+        operationId: onB
+        action: receive
+        timeout: 1000
+        successCriteria:
+          - condition: $message.header.ok == true
+        dependsOn: [first, second, $steps.first, unknownStep, $workflows.b.steps.nope]
+  - workflowId: b
+    dependsOn: [a]
+    steps:
+      - stepId: only
+        operationId: onC
+        action: receive
+        timeout: 1000
+        successCriteria:
+          - condition: $message.header.ok == true

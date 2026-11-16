@@ -1,0 +1,96 @@
+# valid
+# Arazzo 1.1: a failure action reuses a workflow (workflowId + parameters) then
+# retries the step; in: querystring; reusable components; goto backwards.
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/session-renewal.arazzo.yaml
+info:
+  title: Session renewal
+  version: 1.0.0
+sourceDescriptions:
+  - name: crm
+    url: https://api.example.com/crm/openapi.yaml
+    type: openapi
+components:
+  parameters:
+    bearer:
+      name: Authorization
+      in: header
+      value: Bearer {$inputs.accessToken}
+  failureActions:
+    renewOn401:
+      name: renewOn401
+      type: retry
+      workflowId: renewSession
+      retryLimit: 1
+      parameters:
+        - name: refreshToken
+          value: $inputs.refreshToken
+      criteria:
+        - condition: $statusCode == 401
+workflows:
+  - workflowId: listCustomers
+    inputs:
+      type: object
+      required: [accessToken, refreshToken]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        filter:
+          type: string
+    steps:
+      - stepId: search
+        operationId: searchCustomers
+        parameters:
+          - reference: $components.parameters.bearer
+          - name: search
+            in: querystring
+            value: 'status=active&q={$inputs.filter}'
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          next: $response.header.Link
+          customers: $response.body#/items
+        onFailure:
+          - reference: $components.failureActions.renewOn401
+      - stepId: nextPage
+        operationId: searchCustomers
+        parameters:
+          - reference: $components.parameters.bearer
+          - name: cursor
+            in: query
+            value: $steps.search.outputs.next
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          hasMore: $response.body#/hasMore
+        onSuccess:
+          - name: loop
+            type: goto
+            stepId: nextPage
+            criteria:
+              - condition: $response.body#/hasMore == true
+          - name: done
+            type: end
+    outputs:
+      customers: $steps.search.outputs.customers
+  - workflowId: renewSession
+    inputs:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    steps:
+      - stepId: refresh
+        operationId: refreshToken
+        requestBody:
+          contentType: application/x-www-form-urlencoded
+          payload: 'grant_type=refresh_token&refresh_token={$inputs.refreshToken}'
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          accessToken: $response.body#/access_token
+    outputs:
+      accessToken: $steps.refresh.outputs.accessToken

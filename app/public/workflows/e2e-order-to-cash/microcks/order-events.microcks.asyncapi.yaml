@@ -1,0 +1,54 @@
+asyncapi: 3.0.0
+# Variante « vue producteur » pour Microcks : Microcks simule le back-office qui PUBLIE
+# order.confirmed. Il publie sur le topic <titre sans espaces>-<version>-<opération>,
+# ici `OrderEvents-1.0.0-publishOrderConfirmed`, et non sur `address` (voir README).
+info:
+  title: Order Events
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+defaultContentType: application/json
+servers:
+  local:
+    host: 127.0.0.1:9092
+    protocol: kafka
+channels:
+  orderConfirmed:
+    address: order.confirmed
+    messages:
+      orderConfirmed:
+        $ref: '#/components/messages/OrderConfirmed'
+operations:
+  publishOrderConfirmed:
+    action: send
+    x-microcks-operation:
+      frequency: 3
+    bindings:
+      kafka: {}
+    channel:
+      $ref: '#/channels/orderConfirmed'
+    messages:
+      - $ref: '#/channels/orderConfirmed/messages/orderConfirmed'
+components:
+  messages:
+    OrderConfirmed:
+      name: OrderConfirmed
+      contentType: application/json
+      correlationId:
+        location: $message.payload#/orderId
+      payload:
+        type: object
+        required: [orderId, status, confirmedAt]
+        properties:
+          orderId: { type: string }
+          status: { type: string, enum: [confirmed, rejected] }
+          warehouseId: { type: string }
+          confirmedAt: { type: string, format: date-time }
+      examples:
+        - name: confirmed
+          payload:
+            orderId: ord_123
+            status: confirmed
+            warehouseId: wh_lyon_01
+            confirmedAt: '2026-11-16T16:00:02Z'

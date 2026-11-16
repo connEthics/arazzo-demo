@@ -1,0 +1,70 @@
+asyncapi: 3.0.0
+info:
+  title: Webhooks partenaires — onboarding (vue émetteur)
+  version: 1.0.0
+  description: |
+    Webhook `account.created` envoyé par la plateforme au partenaire apporteur d'affaires
+    (HTTP POST signé). Décrit du point de vue du workflow : `action: send`.
+    La signature HMAC (`X-Signature`) est calculée par la plateforme d'envoi, pas par le workflow.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+defaultContentType: application/json
+servers:
+  partenaire:
+    host: hooks.example.test
+    protocol: https
+    description: Récepteur de webhooks fictif du partenaire
+channels:
+  compteCree:
+    address: /webhooks/account-created
+    description: Événement `account.created`
+    messages:
+      compteCree:
+        $ref: '#/components/messages/CompteCree'
+operations:
+  envoyerCompteCree:
+    action: send
+    summary: Notifier le partenaire de la création du compte
+    channel:
+      $ref: '#/channels/compteCree'
+    messages:
+      - $ref: '#/channels/compteCree/messages/compteCree'
+    bindings:
+      http:
+        method: POST
+        bindingVersion: 0.3.0
+components:
+  messages:
+    CompteCree:
+      name: account.created
+      title: Compte créé
+      contentType: application/json
+      headers:
+        type: object
+        required: [X-Event-Type, X-Event-Id]
+        properties:
+          X-Event-Type: { type: string, const: account.created }
+          X-Event-Id: { type: string, description: 'Identifiant unique, pour le dédoublonnage côté partenaire.' }
+      payload:
+        type: object
+        required: [compteId, siren, denomination, creeLe]
+        properties:
+          compteId: { type: string }
+          siren: { type: string, pattern: '^[0-9]{9}$' }
+          denomination: { type: string }
+          offre: { type: string }
+          niveauRisque: { type: string, enum: [faible, moyen, eleve] }
+          creeLe: { type: string, format: date-time }
+      examples:
+        - name: compteCree
+          headers:
+            X-Event-Type: account.created
+            X-Event-Id: evt_cpt_00a91f
+          payload:
+            compteId: cpt_00a91f
+            siren: '123456789'
+            denomination: EXEMPLE SOCIÉTÉ SAS
+            offre: pro
+            niveauRisque: faible
+            creeLe: '2026-11-16T16:30:05Z'

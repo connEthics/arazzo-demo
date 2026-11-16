@@ -1,0 +1,49 @@
+# getUser and later reference each other's outputs: an implicit dependency cycle (§ 5.8.5.2.4).
+# expect: arazzo-step-depends-on-cycle, arazzo-expression-steps-resolved, arazzo-action-goto-step-exists, arazzo-reusable-reference-resolved, arazzo-expression-source-resolved, arazzo-expression-inputs-declared, arazzo-step-forward-output-reference, arazzo-action-goto-workflow-exists, arazzo-step-workflow-resolved
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/invalid-references.arazzo.yaml
+info:
+  title: Invalid references
+  version: 1.0.0
+sourceDescriptions:
+  - name: api
+    url: ./api.yaml
+    type: openapi
+workflows:
+  - workflowId: w
+    inputs:
+      type: object
+      properties:
+        userId:
+          type: string
+    steps:
+      - stepId: getUser
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: $inputs.usrId
+          - name: X-Trace
+            in: header
+            value: $steps.later.outputs.trace
+          - reference: $components.parameters.missing
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          name: $response.body#/name
+        onSuccess:
+          - name: jump
+            type: goto
+            stepId: nowhere
+        onFailure:
+          - name: escalate
+            type: goto
+            workflowId: escalation
+      - stepId: later
+        operationId: getTrace
+        outputs:
+          trace: $response.header.X-Trace
+          email: $steps.getUser.outputs.email
+          spec: $sourceDescriptions.apii.url
+      - stepId: sub
+        workflowId: missingWorkflow

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# E-Commerce Customer Onboarding - Arazzo 1.0.1 Advanced Example  
+# E-Commerce Customer Onboarding - Arazzo 1.1.0 Advanced Example
 # ═══════════════════════════════════════════════════════════════════════════════
 # This workflow demonstrates advanced Arazzo features for enterprise scenarios:
 #   ✅ JSON Schema definitions for all requests/responses
@@ -8,9 +8,12 @@
 #   ✅ Step skipping based on conditions
 #   ✅ Retry logic with exponential backoff
 #   ✅ Multi-system synchronization (Magento, Stripe, Salesforce)
+#   ✅ Arazzo 1.1: $self, Selector Objects (JSONPath RFC 9535), qualified operationIds
+# Migrated to Arazzo 1.1.0 on 2026-11-16 (see workflows/README.md).
 # ═══════════════════════════════════════════════════════════════════════════════
 
-arazzo: "1.0.1"
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/ecommerce-onboarding.arazzo.yaml
 
 info:
   title: E-Commerce Customer Onboarding - Advanced
@@ -31,7 +34,7 @@ sourceDescriptions:
   - name: magentoApi
     url: https://magento.example.com/rest/default/schema
     type: openapi
-    description: |
+    x-description: |
       **Adobe Commerce (Magento)** REST API for:
       - Customer management
       - Order processing
@@ -40,7 +43,7 @@ sourceDescriptions:
   - name: stripeApi
     url: https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml
     type: openapi
-    description: |
+    x-description: |
       **Stripe Payment Gateway** API for:
       - Customer billing profiles
       - Payment methods
@@ -49,7 +52,7 @@ sourceDescriptions:
   - name: salesforceApi
     url: https://developer.salesforce.com/docs/api-explorer/sobject/Contact
     type: openapi
-    description: |
+    x-description: |
       **Salesforce CRM** REST API for:
       - Contact management
       - Lead tracking
@@ -59,7 +62,9 @@ sourceDescriptions:
 # REUSABLE COMPONENTS
 # ═══════════════════════════════════════════════════════════════════════════════
 components:
-  schemas:
+  # Documentation-only schemas: Arazzo components only hold inputs, parameters,
+  # successActions and failureActions, so they live under a specification extension.
+  x-schemas:
     # ─────────────────────────────────────────────────────────────────────────
     # Customer Request Schema
     # ─────────────────────────────────────────────────────────────────────────
@@ -310,7 +315,7 @@ workflows:
           - Returns `total_count > 0` if customer found
           - Extracts existing `stripe_customer_id` from custom attributes
           - Triggers conditional branching via `onSuccess`
-        operationId: magentoApi.searchCustomers
+        operationId: $sourceDescriptions.magentoApi.searchCustomers
         parameters:
           - name: searchCriteria[filterGroups][0][filters][0][field]
             in: query
@@ -323,15 +328,21 @@ workflows:
             value: eq
           - name: Authorization
             in: header
-            value: Bearer $inputs.magentoAdminToken
+            value: Bearer {$inputs.magentoAdminToken}
         
         successCriteria:
           - condition: $statusCode == 200
         
         outputs:
-          customerExists: $response.body.total_count > 0
-          existingCustomerId: $response.body.items[0].id
-          existingStripeId: $response.body.items[0].custom_attributes[?(@.attribute_code=='stripe_customer_id')].value
+          totalCount: $response.body#/total_count
+          existingCustomerId: $response.body#/items/0/id
+          # Arazzo 1.1 Selector Object (JSONPath RFC 9535 filter)
+          existingStripeId:
+            context: $response.body
+            selector: $.items[0].custom_attributes[?@.attribute_code == 'stripe_customer_id'].value
+            type:
+              type: jsonpath
+              version: rfc9535
         
         # ⚡ Conditional branching: Skip creation if exists
         onSuccess:
@@ -339,12 +350,12 @@ workflows:
             type: goto
             stepId: syncExistingCustomer
             criteria:
-              - condition: $response.body.total_count > 0
+              - condition: $response.body#/total_count > 0
           - name: customerNotFound
             type: goto
             stepId: createMagentoCustomer
             criteria:
-              - condition: $response.body.total_count == 0
+              - condition: $response.body#/total_count == 0
 
       # ─────────────────────────────────────────────────────────────────────────
       # STEP 2a: Create NEW customer in Magento
@@ -360,7 +371,7 @@ workflows:
           - `phone` → `addresses[0].telephone`
           
           *Handles 409 Conflict* by redirecting to `checkExistingCustomer`
-        operationId: magentoApi.createCustomer
+        operationId: $sourceDescriptions.magentoApi.createCustomer
         requestBody:
           contentType: application/json
           payload:
@@ -371,26 +382,32 @@ workflows:
               addresses:
                 - telephone: $inputs.phone
                   street: 
-                    - $inputs.billingAddress.street
-                  city: $inputs.billingAddress.city
-                  postcode: $inputs.billingAddress.postcode
-                  country_id: $inputs.billingAddress.country_id
+                    - $inputs.billingAddress#/street
+                  city: $inputs.billingAddress#/city
+                  postcode: $inputs.billingAddress#/postcode
+                  country_id: $inputs.billingAddress#/country_id
                   default_billing: true
                   default_shipping: true
         parameters:
           - name: Authorization
             in: header
-            value: Bearer $inputs.magentoAdminToken
+            value: Bearer {$inputs.magentoAdminToken}
         
         successCriteria:
           - condition: $statusCode == 200
-          - condition: $response.body.id != null
+          - condition: $response.body#/id != null
         
         outputs:
-          magentoCustomerId: $response.body.id
-          magentoCreatedAt: $response.body.created_at
-          customerGroupId: $response.body.group_id
-          isNewCustomer: true
+          magentoCustomerId: $response.body#/id
+          magentoCreatedAt: $response.body#/created_at
+          customerGroupId: $response.body#/group_id
+        
+        # New customer → create the Stripe profile (the next step in the array is the
+        # "existing customer" branch, so the transition must be explicit)
+        onSuccess:
+          - name: continueWithStripe
+            type: goto
+            stepId: createStripeCustomer
         
         # ⚡ onFailure: Handle 409 Conflict (customer exists - race condition)
         onFailure:
@@ -399,7 +416,7 @@ workflows:
             stepId: checkExistingCustomer
             criteria:
               - condition: $statusCode == 409
-            outputs:
+            x-outputs:
               retryReason: "Customer was created by another process"
           - name: handleValidation400
             type: goto
@@ -423,38 +440,51 @@ workflows:
           - `salesforce_contact_id` custom attribute
           
           *Conditionally skips* Stripe creation if already synced.
-        operationId: magentoApi.getCustomer
+        operationId: $sourceDescriptions.magentoApi.getCustomer
         parameters:
           - name: customerId
             in: path
             value: $steps.checkExistingCustomer.outputs.existingCustomerId
           - name: Authorization
             in: header
-            value: Bearer $inputs.magentoAdminToken
+            value: Bearer {$inputs.magentoAdminToken}
         
         successCriteria:
           - condition: $statusCode == 200
         
         outputs:
-          magentoCustomerId: $response.body.id
-          magentoCreatedAt: $response.body.created_at
-          customerGroupId: $response.body.group_id
-          existingStripeId: $response.body.custom_attributes[?(@.attribute_code=='stripe_customer_id')].value
-          existingSalesforceId: $response.body.custom_attributes[?(@.attribute_code=='salesforce_contact_id')].value
-          isNewCustomer: false
+          magentoCustomerId: $response.body#/id
+          magentoCreatedAt: $response.body#/created_at
+          customerGroupId: $response.body#/group_id
+          # Arazzo 1.1 Selector Objects (JSONPath RFC 9535 filters)
+          existingStripeId:
+            context: $response.body
+            selector: $.custom_attributes[?@.attribute_code == 'stripe_customer_id'].value
+            type:
+              type: jsonpath
+              version: rfc9535
+          existingSalesforceId:
+            context: $response.body
+            selector: $.custom_attributes[?@.attribute_code == 'salesforce_contact_id'].value
+            type:
+              type: jsonpath
+              version: rfc9535
         
-        # ⚡ Check if Stripe sync needed
+        # ⚡ Check if Stripe sync needed (first matching action wins)
         onSuccess:
-          - name: needsStripeSync
-            type: goto
-            stepId: createStripeCustomer
-            criteria:
-              - condition: $response.body.custom_attributes[?(@.attribute_code=='stripe_customer_id')].value == null
           - name: alreadySynced
             type: goto
             stepId: verifyExternalAccounts
             criteria:
-              - condition: $response.body.custom_attributes[?(@.attribute_code=='stripe_customer_id')].value != null
+              # Arazzo 1.1 truthy semantics: a non-empty nodelist passes
+              - context: $response.body
+                type:
+                  type: jsonpath
+                  version: rfc9535
+                condition: $.custom_attributes[?@.attribute_code == 'stripe_customer_id']
+          - name: needsStripeSync
+            type: goto
+            stepId: createStripeCustomer
 
       # ─────────────────────────────────────────────────────────────────────────
       # STEP 3: Create Stripe Customer (with duplicate handling)
@@ -471,36 +501,42 @@ workflows:
           | `phone` | `phone` | E.164 format |
           
           Uses **Idempotency-Key** to prevent duplicates.
-        operationId: stripeApi.createCustomer
+        operationId: $sourceDescriptions.stripeApi.createCustomer
         requestBody:
           contentType: application/x-www-form-urlencoded
           payload:
             email: $inputs.email
-            name: $inputs.firstName $inputs.lastName
+            name: '{$inputs.firstName} {$inputs.lastName}'
             phone: $inputs.phone
             metadata[magento_customer_id]: $steps.createMagentoCustomer.outputs.magentoCustomerId
             metadata[source]: magento_sync
             metadata[created_by]: arazzo_workflow
-            address[line1]: $inputs.billingAddress.street
-            address[city]: $inputs.billingAddress.city
-            address[postal_code]: $inputs.billingAddress.postcode
-            address[country]: $inputs.billingAddress.country_id
+            address[line1]: $inputs.billingAddress#/street
+            address[city]: $inputs.billingAddress#/city
+            address[postal_code]: $inputs.billingAddress#/postcode
+            address[country]: $inputs.billingAddress#/country_id
         parameters:
           - name: Authorization
             in: header
-            value: Bearer $inputs.stripeApiKey
+            value: Bearer {$inputs.stripeApiKey}
           - name: Idempotency-Key
             in: header
-            value: magento_$steps.createMagentoCustomer.outputs.magentoCustomerId
+            value: magento_{$steps.createMagentoCustomer.outputs.magentoCustomerId}
         
         successCriteria:
           - condition: $statusCode == 200
-          - condition: $response.body.id != null
+          - condition: $response.body#/id != null
         
         outputs:
-          stripeCustomerId: $response.body.id
-          stripeCreatedAt: $response.body.created
-          stripeObject: $response.body.object
+          stripeCustomerId: $response.body#/id
+          stripeCreatedAt: $response.body#/created
+          stripeObject: $response.body#/object
+        
+        # Skip the conflict fallback (next in the array) on success
+        onSuccess:
+          - name: continueWithSalesforce
+            type: goto
+            stepId: createSalesforceContact
         
         # ⚡ onFailure: Handle Stripe errors
         onFailure:
@@ -511,7 +547,7 @@ workflows:
               - condition: $statusCode == 409
           - name: handleStripeRateLimit
             type: retry
-            retryAfter: 1000
+            retryAfter: 1          # seconds
             retryLimit: 3
             criteria:
               - condition: $statusCode == 429
@@ -533,22 +569,21 @@ workflows:
           - Idempotency key mismatch detected
           
           Returns first matching customer for linking.
-        operationId: stripeApi.searchCustomers
+        operationId: $sourceDescriptions.stripeApi.searchCustomers
         parameters:
           - name: query
             in: query
-            value: email:'$inputs.email'
+            value: email:'{$inputs.email}'
           - name: Authorization
             in: header
-            value: Bearer $inputs.stripeApiKey
+            value: Bearer {$inputs.stripeApiKey}
         
         successCriteria:
           - condition: $statusCode == 200
         
         outputs:
-          stripeCustomerId: $response.body.data[0].id
-          stripeCreatedAt: $response.body.data[0].created
-          customerFoundInStripe: $response.body.data.length > 0
+          stripeCustomerId: $response.body#/data/0/id
+          stripeCreatedAt: $response.body#/data/0/created
 
       # ─────────────────────────────────────────────────────────────────────────
       # STEP 4: Create Salesforce Contact (with upsert logic)
@@ -566,14 +601,14 @@ workflows:
           **Cross-reference IDs** stored for data integrity:
           - `Magento_Customer_ID__c`
           - `Stripe_Customer_ID__c`
-        operationId: salesforceApi.upsertContact
+        operationId: $sourceDescriptions.salesforceApi.upsertContact
         parameters:
           - name: External_ID__c
             in: path
             value: $inputs.email
           - name: Authorization
             in: header
-            value: Bearer $inputs.salesforceAccessToken
+            value: Bearer {$inputs.salesforceAccessToken}
         requestBody:
           contentType: application/json
           payload:
@@ -583,10 +618,10 @@ workflows:
             Phone: $inputs.phone
             Account:
               Name: $inputs.company
-            MailingStreet: $inputs.billingAddress.street
-            MailingCity: $inputs.billingAddress.city
-            MailingPostalCode: $inputs.billingAddress.postcode
-            MailingCountry: $inputs.billingAddress.country_id
+            MailingStreet: $inputs.billingAddress#/street
+            MailingCity: $inputs.billingAddress#/city
+            MailingPostalCode: $inputs.billingAddress#/postcode
+            MailingCountry: $inputs.billingAddress#/country_id
             Magento_Customer_ID__c: $steps.createMagentoCustomer.outputs.magentoCustomerId
             Stripe_Customer_ID__c: $steps.createStripeCustomer.outputs.stripeCustomerId
             LeadSource: E-Commerce Website
@@ -597,10 +632,9 @@ workflows:
           - condition: $statusCode == 200 || $statusCode == 201
         
         outputs:
-          salesforceContactId: $response.body.id
-          salesforceSuccess: $response.body.success
-          wasCreated: $statusCode == 201
-          wasUpdated: $statusCode == 200
+          salesforceContactId: $response.body#/id
+          salesforceSuccess: $response.body#/success
+          upsertStatusCode: $statusCode
         
         onFailure:
           - name: handleSalesforceConflict
@@ -622,14 +656,14 @@ workflows:
           - `sync_status` → Set to *completed*
           
           Enables **bidirectional sync** and audit trail.
-        operationId: magentoApi.updateCustomer
+        operationId: $sourceDescriptions.magentoApi.updateCustomer
         parameters:
           - name: customerId
             in: path
             value: $steps.createMagentoCustomer.outputs.magentoCustomerId
           - name: Authorization
             in: header
-            value: Bearer $inputs.magentoAdminToken
+            value: Bearer {$inputs.magentoAdminToken}
         requestBody:
           contentType: application/json
           payload:
@@ -649,8 +683,11 @@ workflows:
           - condition: $statusCode == 200
         
         outputs:
-          syncCompleted: true
-          finalCustomerId: $response.body.id
+          syncStatusCode: $statusCode
+          finalCustomerId: $response.body#/id
+        onSuccess:
+          - name: onboardingComplete
+            type: end
 
       # ─────────────────────────────────────────────────────────────────────────
       # STEP 6: Verify all external accounts exist (for existing customers)
@@ -661,19 +698,21 @@ workflows:
           
           Used for *existing customers* to validate integration state.
           Retrieves customer by `stripe_customer_id` stored in Magento.
-        operationId: stripeApi.retrieveCustomer
+        operationId: $sourceDescriptions.stripeApi.retrieveCustomer
         parameters:
           - name: customer
             in: path
             value: $steps.syncExistingCustomer.outputs.existingStripeId
           - name: Authorization
             in: header
-            value: Bearer $inputs.stripeApiKey
+            value: Bearer {$inputs.stripeApiKey}
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          stripeVerified: true
-          stripeCustomerId: $response.body.id
+          stripeCustomerId: $response.body#/id
+        onSuccess:
+          - name: existingCustomerVerified
+            type: end
 
       # ─────────────────────────────────────────────────────────────────────────
       # ERROR HANDLERS
@@ -686,7 +725,7 @@ workflows:
           - Invalid `email` format
           - Missing required fields (`firstname`, `lastname`)
           - Address validation failures
-        operationId: magentoApi.logError
+        operationId: $sourceDescriptions.magentoApi.logError
         requestBody:
           contentType: application/json
           payload:
@@ -697,8 +736,10 @@ workflows:
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          errorLogged: true
-          errorType: VALIDATION_ERROR
+          logStatusCode: $statusCode
+        onSuccess:
+          - name: endAfterValidationError
+            type: end
 
       - stepId: handleStripeError
         description: |
@@ -708,7 +749,7 @@ workflows:
           - Invalid API key format
           - Card declined events
           - Rate limiting (*429 responses*)
-        operationId: magentoApi.logError
+        operationId: $sourceDescriptions.magentoApi.logError
         requestBody:
           contentType: application/json
           payload:
@@ -719,8 +760,10 @@ workflows:
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          errorLogged: true
-          errorType: STRIPE_ERROR
+          logStatusCode: $statusCode
+        onSuccess:
+          - name: endAfterStripeError
+            type: end
 
       - stepId: updateExistingSalesforceContact
         description: |
@@ -729,14 +772,14 @@ workflows:
           Links Magento and Stripe IDs to pre-existing contact:
           - `Magento_Customer_ID__c` → Cross-system reference
           - `Stripe_Customer_ID__c` → Payment profile link
-        operationId: salesforceApi.updateContact
+        operationId: $sourceDescriptions.salesforceApi.updateContact
         parameters:
           - name: contactId
             in: path
-            value: $response.body.id
+            value: $steps.createSalesforceContact.outputs.salesforceContactId
           - name: Authorization
             in: header
-            value: Bearer $inputs.salesforceAccessToken
+            value: Bearer {$inputs.salesforceAccessToken}
         requestBody:
           contentType: application/json
           payload:
@@ -745,9 +788,11 @@ workflows:
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          salesforceContactId: $response.body.id
-          salesforceSuccess: true
-          wasUpdated: true
+          salesforceContactId: $response.body#/id
+        onSuccess:
+          - name: linkExternalIds
+            type: goto
+            stepId: updateMagentoWithExternalIds
 
     # ─────────────────────────────────────────────────────────────────────────
     # WORKFLOW OUTPUTS
@@ -756,6 +801,4 @@ workflows:
       magentoCustomerId: $steps.createMagentoCustomer.outputs.magentoCustomerId
       stripeCustomerId: $steps.createStripeCustomer.outputs.stripeCustomerId
       salesforceContactId: $steps.createSalesforceContact.outputs.salesforceContactId
-      isNewCustomer: $steps.createMagentoCustomer.outputs.isNewCustomer
-      syncCompleted: $steps.updateMagentoWithExternalIds.outputs.syncCompleted
-      onboardingStatus: success
+      syncStatusCode: $steps.updateMagentoWithExternalIds.outputs.syncStatusCode

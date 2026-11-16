@@ -1,0 +1,201 @@
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/mcp-support-refund/mcp-support-refund.arazzo.yaml
+info:
+  title: Agent support — remboursement avec événement refund.issued
+  summary: Workflow hybride HTTP + AsyncAPI exposé en outils MCP, avec garde-fous déterministes.
+  version: 1.0.0
+  description: |
+    Un copilote de support (humain dans la boucle : le conseiller) dispose de deux outils MCP :
+
+    - `check_refund_eligibility` (lecture seule) : commande puis éligibilité ;
+    - `issue_refund` (mutateur, effet financier) : commande, éligibilité, remboursement HTTP,
+      puis publication de `refund.issued` par une étape AsyncAPI `channelPath` + `action: send`.
+
+    Garde-fous : chaque étape a des `successCriteria` ; un critère non satisfait déclenche
+    `onFailure: end`, donc **aucun** remboursement ni événement. Le montant est plafonné par le SI
+    (`maxRefundableAmount`) et par la politique (500). Les champs libres de la commande
+    (`customerNote`) ne sont jamais recopiés dans les sorties.
+sourceDescriptions:
+  - name: support
+    url: ./openapi.yaml
+    type: openapi
+  - name: refundEvents
+    url: ./asyncapi.yaml
+    type: asyncapi
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # Outil MCP lecture seule — sert aussi de prévisualisation pour la confirmation
+  # ---------------------------------------------------------------------------
+  - workflowId: check_refund_eligibility
+    summary: Vérifier l'éligibilité au remboursement
+    description: Lit la commande et la décision d'éligibilité du SI. Aucun effet de bord.
+    x-connethics-mcp:
+      expose: tool
+    inputs:
+      type: object
+      required: [orderId]
+      properties:
+        orderId:
+          type: string
+          pattern: '^ORD-[0-9]{8}$'
+          description: Identifiant de commande.
+    steps:
+      - stepId: lookupOrder
+        operationId: $sourceDescriptions.support.getOrder
+        parameters:
+          - name: orderId
+            in: path
+            value: $inputs.orderId
+        successCriteria:
+          - condition: $statusCode == 200
+        onFailure:
+          - name: orderNotFound
+            type: end
+        outputs:
+          orderStatus: $response.body#/status
+          currency: $response.body#/currency
+          # customerNote (texte libre, non fiable) volontairement NON exposé
+      - stepId: lookupEligibility
+        operationId: $sourceDescriptions.support.getRefundEligibility
+        parameters:
+          - name: orderId
+            in: path
+            value: $inputs.orderId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          eligible: $response.body#/eligible
+          maxRefundableAmount: $response.body#/maxRefundableAmount
+    outputs:
+      orderId: $inputs.orderId
+      orderStatus: $steps.lookupOrder.outputs.orderStatus
+      currency: $steps.lookupOrder.outputs.currency
+      eligible: $steps.lookupEligibility.outputs.eligible
+      maxRefundableAmount: $steps.lookupEligibility.outputs.maxRefundableAmount
+
+  # ---------------------------------------------------------------------------
+  # Outil MCP mutateur — hybride HTTP + AsyncAPI send
+  # ---------------------------------------------------------------------------
+  - workflowId: issue_refund
+    summary: Rembourser une commande éligible et notifier le SI
+    description: |
+      Les entrées `idempotencyKey` (hachage déterministe des arguments) et `agentId`
+      (claim `sub` du conseiller) sont masquées : injectées par le serveur MCP.
+    x-connethics-mcp:
+      expose: tool
+      hiddenInputs: [idempotencyKey, agentId]
+      confirmation:
+        previewWorkflowId: check_refund_eligibility
+      sideEffects:
+        createRefund: financial
+        publishRefundIssued: event
+    inputs:
+      type: object
+      required: [orderId, amount, reasonCode, idempotencyKey, agentId]
+      properties:
+        orderId:
+          type: string
+          pattern: '^ORD-[0-9]{8}$'
+        amount:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 500
+        reasonCode:
+          type: string
+          enum: [damaged, not_received, late_delivery, goodwill]
+        idempotencyKey:
+          type: string
+          minLength: 8
+          description: 'MASQUÉE — sha256(orderId, amount, reasonCode).'
+        agentId:
+          type: string
+          description: 'MASQUÉE — identifiant du conseiller (claim sub du jeton MCP).'
+    steps:
+      - stepId: getOrder
+        description: La commande doit exister et être livrée.
+        operationId: $sourceDescriptions.support.getOrder
+        parameters:
+          - name: orderId
+            in: path
+            value: $inputs.orderId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'delivered'
+        onFailure:
+          - name: orderNotRefundable
+            type: end
+        outputs:
+          currency: $response.body#/currency
+          customerId: $response.body#/customerId
+      - stepId: checkEligibility
+        description: Garde-fous — éligibilité décidée par le SI, montant plafonné deux fois.
+        operationId: $sourceDescriptions.support.getRefundEligibility
+        parameters:
+          - name: orderId
+            in: path
+            value: $inputs.orderId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/eligible == true
+          - condition: $inputs.amount <= $response.body#/maxRefundableAmount
+          - condition: $inputs.amount <= 500
+        onFailure:
+          - name: notEligibleOrAboveLimit
+            type: end
+        outputs:
+          maxRefundableAmount: $response.body#/maxRefundableAmount
+      - stepId: createRefund
+        description: POST /refunds — vers le moyen de paiement d'origine uniquement (jamais un IBAN fourni).
+        operationId: $sourceDescriptions.support.createRefund
+        parameters:
+          - name: Idempotency-Key
+            in: header
+            value: $inputs.idempotencyKey
+        requestBody:
+          contentType: application/json
+          payload:
+            orderId: $inputs.orderId
+            amount: $inputs.amount
+            reasonCode: $inputs.reasonCode
+            requestedBy: $inputs.agentId
+            destination: original_payment_method
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'issued'
+        onFailure:
+          - name: retryWhenBusy
+            type: retry
+            retryAfter: 1
+            retryLimit: 3
+            criteria:
+              - condition: $statusCode == 503
+          - name: refundRejected
+            type: end
+        outputs:
+          refundId: $response.body#/id
+          issuedAt: $response.body#/createdAt
+      - stepId: publishRefundIssued
+        description: |
+          Publie `refund.issued` sur le broker. Étape AsyncAPI `send` : elle se termine dès
+          l'envoi (Arazzo ne modélise pas l'accusé du broker, §5.8.5.3).
+        channelPath: '{$sourceDescriptions.refundEvents.url}#/channels/refundIssued'
+        action: send
+        parameters:
+          - name: idempotencyKey
+            in: header
+            value: $inputs.idempotencyKey
+        requestBody:
+          contentType: application/json
+          payload:
+            refundId: $steps.createRefund.outputs.refundId
+            orderId: $inputs.orderId
+            amount: $inputs.amount
+            currency: $steps.getOrder.outputs.currency
+            reasonCode: $inputs.reasonCode
+            issuedAt: $steps.createRefund.outputs.issuedAt
+    outputs:
+      refundId: $steps.createRefund.outputs.refundId
+      issuedAt: $steps.createRefund.outputs.issuedAt
+      amount: $inputs.amount
+      currency: $steps.getOrder.outputs.currency

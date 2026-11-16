@@ -1,0 +1,13 @@
+{
+  "name": "arazzo-demo-workspace",
+  "private": true,
+  "description": "npm workspace for the shared ConnEthics Arazzo packages. The Next.js app in app/ is intentionally NOT a workspace member (it is installed and deployed on its own).",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "sync-shared": "node scripts/sync-shared.mjs"
+  }
+}

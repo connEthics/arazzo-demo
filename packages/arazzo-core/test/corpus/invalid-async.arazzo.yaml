@@ -1,0 +1,38 @@
+# expect: arazzo-async-action-only-asyncapi, arazzo-async-action-required, arazzo-async-correlation-receive-only, arazzo-step-timeout-positive, arazzo-async-http-expression
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/invalid-async.arazzo.yaml
+info:
+  title: Invalid async
+  version: 1.0.0
+sourceDescriptions:
+  - name: api
+    url: ./api.yaml
+    type: openapi
+  - name: bus
+    url: ./bus.asyncapi.yaml
+    type: asyncapi
+workflows:
+  - workflowId: w
+    inputs:
+      type: object
+      properties:
+        id:
+          type: string
+    steps:
+      - stepId: httpWithAction
+        operationId: $sourceDescriptions.api.createThing
+        action: send
+      - stepId: channelWithoutAction
+        channelPath: '{$sourceDescriptions.bus.url}#/channels/things'
+        timeout: 1000
+      - stepId: sendWithCorrelation
+        channelPath: '{$sourceDescriptions.bus.url}#/channels/things'
+        action: send
+        correlationId: $inputs.id
+        timeout: -1
+      - stepId: receiveHttpCheck
+        operationId: $sourceDescriptions.bus.onThing
+        action: receive
+        timeout: 5000
+        outputs:
+          code: $statusCode

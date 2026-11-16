@@ -1,0 +1,63 @@
+{
+  "name": "@connethics/arazzo-core",
+  "version": "0.1.0",
+  "description": "Arazzo 1.0.x / 1.1.x toolkit: TypeScript types, YAML parsing with source locations, two-layer validation (official JSON Schemas + semantic rules) and a renderer-agnostic workflow graph model. No UI, no Node-only APIs.",
+  "license": "MIT",
+  "author": "ConnEthics",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./schemas/arazzo-1.0.schema.json": "./schemas/arazzo-1.0.schema.json",
+    "./schemas/arazzo-1.1.schema.json": "./schemas/arazzo-1.1.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "arazzo",
+    "openapi",
+    "asyncapi",
+    "workflow",
+    "validation",
+    "linter",
+    "graph",
+    "mermaid"
+  ],
+  "scripts": {
+    "gen": "node scripts/gen-validators.mjs",
+    "build": "npm run gen && tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "npm run gen && tsc --noEmit -p tsconfig.test.json && vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "ajv": "^8.17.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

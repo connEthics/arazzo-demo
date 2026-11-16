@@ -1,0 +1,15 @@
+# valid
+arazzo: 1.1.0
+$self: urn:example:minimal
+info:
+  title: Minimal
+  version: 0.0.1
+sourceDescriptions:
+  - name: api
+    url: ./api.yaml
+    type: openapi
+workflows:
+  - workflowId: ping
+    steps:
+      - stepId: ping
+        operationId: ping

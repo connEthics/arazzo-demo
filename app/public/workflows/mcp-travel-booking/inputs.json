@@ -1,0 +1,16 @@
+{
+  "origin": "CDG",
+  "destination": "LIS",
+  "departureDate": "2026-12-18",
+  "passengerCount": 1,
+  "cabin": "economy",
+  "passengers": [{ "firstName": "Camille", "lastName": "Martin", "dateOfBirth": "1988-04-02" }],
+  "seatPreference": "window",
+  "maxTotalAmount": 400,
+  "currency": "EUR",
+  "contactEmail": "camille.martin@example.test",
+  "paymentMethodToken": "pm_tok_demo_visa",
+  "idempotencyKey": "idem-7c1e2a9b-demo",
+  "confirmedTotalPrice": 312.4,
+  "confirmedFlightNumber": "TP441"
+}

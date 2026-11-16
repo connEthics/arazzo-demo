@@ -1,0 +1,311 @@
+{
+  "$schema": "https://connethics.com/schemas/arazzo-mcp-tools/1.0/schema.json",
+  "formatVersion": "1.0.0",
+  "generatedFrom": {
+    "arazzoDocument": "./mcp-travel-booking.arazzo.yaml",
+    "arazzoVersion": "1.1.0",
+    "self": "https://arazzo.connethics.com/workflows/mcp-travel-booking/mcp-travel-booking.arazzo.yaml",
+    "digest": "sha256-DIGEST",
+    "generator": "manual (E1) — format @connethics/arazzo-core/mcp-export@0.1.0",
+    "generatedAt": "2026-11-16T00:00:00Z"
+  },
+  "mcp": {
+    "protocolVersions": ["2026-07-28", "2025-11-25", "2025-06-18"],
+    "server": {
+      "name": "connethics-travel-demo",
+      "title": "ConnEthics Travel (démo Arazzo)",
+      "version": "1.0.0"
+    },
+    "toolsList": {
+      "ttlMs": 300000,
+      "cacheScope": "private"
+    }
+  },
+  "tools": [
+    {
+      "tool": {
+        "name": "quote_trip",
+        "title": "Chiffrer un voyage",
+        "description": "Recherche un vol, calcule le prix total TTC et vérifie la disponibilité des sièges. Lecture seule : aucune réservation ni aucun paiement. Renvoie une offre chiffrée valable jusqu'à quoteExpiresAt. À appeler avant book_trip pour présenter le prix à l'utilisateur.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "origin": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "Code IATA de l'aéroport de départ, par exemple CDG." },
+            "destination": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "Code IATA de l'aéroport d'arrivée, par exemple LIS." },
+            "departureDate": { "type": "string", "format": "date", "description": "Date de départ (AAAA-MM-JJ), dans le futur." },
+            "passengerCount": { "type": "integer", "minimum": 1, "maximum": 9, "description": "Nombre de passagers." },
+            "cabin": { "type": "string", "enum": ["economy", "premium_economy", "business"], "default": "economy", "description": "Classe de voyage." }
+          },
+          "required": ["origin", "destination", "departureDate", "passengerCount"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "enum": ["quoted", "failed"] },
+            "flightNumber": { "type": "string" },
+            "departureAt": { "type": "string", "format": "date-time" },
+            "arrivalAt": { "type": "string", "format": "date-time" },
+            "seatsAvailable": { "type": "integer", "minimum": 0 },
+            "totalPrice": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "amount": { "type": "number", "minimum": 0 },
+                "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+              },
+              "required": ["amount", "currency"]
+            },
+            "quoteExpiresAt": { "type": "string", "format": "date-time" },
+            "correlationId": { "type": "string", "description": "Identifiant à communiquer au support." },
+            "error": { "$ref": "#/$defs/toolError" }
+          },
+          "required": ["status", "correlationId"],
+          "$defs": {
+            "toolError": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" },
+                "retryableByAgent": { "type": "boolean" }
+              },
+              "required": ["code", "message", "retryableByAgent"]
+            }
+          }
+        },
+        "annotations": {
+          "title": "Chiffrer un voyage",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        }
+      },
+      "binding": {
+        "workflowId": "quote_trip",
+        "hiddenInputs": {},
+        "outputs": {
+          "flightNumber": "$outputs.flightNumber",
+          "departureAt": "$outputs.departureAt",
+          "arrivalAt": "$outputs.arrivalAt",
+          "seatsAvailable": "$outputs.seatsAvailable",
+          "totalPrice": "$outputs.totalPrice",
+          "quoteExpiresAt": "$outputs.quoteExpiresAt"
+        },
+        "errors": [
+          { "code": "NO_FLIGHT_FOUND", "when": { "stepId": "searchFlights", "on": "successCriteria" }, "retryableByAgent": true, "message": "Aucun vol ne correspond. Proposez d'autres dates ou d'autres aéroports." },
+          { "code": "NOT_ENOUGH_SEATS", "when": { "stepId": "checkSeatAvailability", "on": "successCriteria" }, "retryableByAgent": true, "message": "Pas assez de sièges disponibles sur ce vol." },
+          { "code": "UPSTREAM_UNAVAILABLE", "when": { "on": "retryExhausted" }, "retryableByAgent": false, "message": "Le service de réservation est indisponible. Réessayez plus tard." }
+        ],
+        "confirmation": { "required": false },
+        "auth": {
+          "requiredScopes": ["travel:read"],
+          "upstream": {
+            "travel": { "scheme": "oauth2-client-credentials", "credentialRef": "vault://travel-demo/travel-api" }
+          }
+        },
+        "limits": { "rateLimit": { "perPrincipal": "60/hour" }, "timeoutMs": 15000 },
+        "audit": { "level": "metadata", "redact": [] },
+        "annotationsDerivation": {
+          "steps": [
+            { "stepId": "searchFlights", "source": "travel", "method": "GET", "path": "/flights" },
+            { "stepId": "priceOffer", "source": "travel", "method": "GET", "path": "/offers/{offerId}/price" },
+            { "stepId": "checkSeatAvailability", "source": "travel", "method": "GET", "path": "/flights/{flightId}/seats" }
+          ],
+          "rule": "all-safe-methods",
+          "overrides": {}
+        }
+      }
+    },
+    {
+      "tool": {
+        "name": "book_trip",
+        "title": "Réserver et payer un voyage",
+        "description": "Réserve et paie un vol de bout en bout : recherche, prix, disponibilité des sièges, réservation, paiement puis confirmation. Effet de bord financier irréversible : l'utilisateur doit confirmer le prix affiché avant l'exécution. Le paiement utilise le moyen de paiement enregistré de l'utilisateur ; ne demandez jamais de numéro de carte. Si le prix dépasse maxTotalAmount ou change après confirmation, rien n'est débité et l'outil renvoie une erreur.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "origin": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "Code IATA de l'aéroport de départ, par exemple CDG." },
+            "destination": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "Code IATA de l'aéroport d'arrivée, par exemple LIS." },
+            "departureDate": { "type": "string", "format": "date", "description": "Date de départ (AAAA-MM-JJ), dans le futur." },
+            "cabin": { "type": "string", "enum": ["economy", "premium_economy", "business"], "default": "economy", "description": "Classe de voyage." },
+            "passengers": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 9,
+              "description": "Passagers, tels qu'ils figurent sur leur pièce d'identité.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "firstName": { "type": "string", "minLength": 1, "maxLength": 60 },
+                  "lastName": { "type": "string", "minLength": 1, "maxLength": 60 },
+                  "dateOfBirth": { "type": "string", "format": "date" }
+                },
+                "required": ["firstName", "lastName", "dateOfBirth"]
+              }
+            },
+            "seatPreference": { "type": "string", "enum": ["window", "aisle", "any"], "default": "any", "description": "Préférence de siège, appliquée si possible." },
+            "maxTotalAmount": { "type": "number", "exclusiveMinimum": 0, "maximum": 5000, "description": "Budget maximal TTC pour tous les passagers. Au-delà, rien n'est réservé." },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "default": "EUR", "description": "Devise du budget (ISO 4217)." },
+            "contactEmail": { "type": "string", "format": "email", "description": "Adresse e-mail qui recevra la confirmation." }
+          },
+          "required": ["origin", "destination", "departureDate", "passengers", "maxTotalAmount", "contactEmail"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "enum": ["confirmed", "failed", "failed_compensated"] },
+            "bookingReference": { "type": "string", "pattern": "^[A-Z0-9]{6}$", "description": "Référence de réservation (PNR)." },
+            "flightNumber": { "type": "string" },
+            "departureAt": { "type": "string", "format": "date-time" },
+            "arrivalAt": { "type": "string", "format": "date-time" },
+            "seats": { "type": "array", "items": { "type": "string", "pattern": "^[0-9]{1,2}[A-K]$" } },
+            "totalPrice": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "amount": { "type": "number", "minimum": 0 },
+                "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+              },
+              "required": ["amount", "currency"]
+            },
+            "paymentStatus": { "type": "string", "enum": ["captured", "voided", "not_attempted"] },
+            "correlationId": { "type": "string", "description": "Identifiant à communiquer au support." },
+            "error": { "$ref": "#/$defs/toolError" }
+          },
+          "required": ["status", "correlationId"],
+          "$defs": {
+            "toolError": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" },
+                "retryableByAgent": { "type": "boolean" }
+              },
+              "required": ["code", "message", "retryableByAgent"]
+            }
+          }
+        },
+        "annotations": {
+          "title": "Réserver et payer un voyage",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        }
+      },
+      "binding": {
+        "workflowId": "book_trip",
+        "hiddenInputs": {
+          "paymentMethodToken": { "source": "vault", "ref": "vault://travel-demo/users/{sub}/payment-methods/default", "onMissing": "elicitation-url" },
+          "idempotencyKey": { "source": "server", "generator": "uuid-v4", "scope": "confirmation" },
+          "passengerCount": { "source": "server", "generator": { "fn": "count", "of": "$args.passengers" } },
+          "confirmedTotalPrice": { "source": "confirmation", "from": "$preview.outputs.totalPrice.amount" },
+          "confirmedFlightNumber": { "source": "confirmation", "from": "$preview.outputs.flightNumber" }
+        },
+        "outputs": {
+          "bookingReference": "$outputs.bookingReference",
+          "flightNumber": "$outputs.flightNumber",
+          "departureAt": "$outputs.departureAt",
+          "arrivalAt": "$outputs.arrivalAt",
+          "seats": "$outputs.seats",
+          "totalPrice": "$outputs.totalPrice",
+          "paymentStatus": "$outputs.paymentStatus"
+        },
+        "errors": [
+          { "code": "NO_FLIGHT_FOUND", "when": { "stepId": "searchFlights", "on": "successCriteria" }, "retryableByAgent": true, "message": "Aucun vol ne correspond. Proposez d'autres dates ou d'autres aéroports." },
+          { "code": "PRICE_ABOVE_BUDGET", "when": { "stepId": "priceOffer", "on": "successCriteria" }, "retryableByAgent": false, "message": "Le prix dépasse le budget ou a changé depuis la confirmation. Aucun débit n'a eu lieu. Demandez à l'utilisateur s'il accepte le nouveau prix." },
+          { "code": "OFFER_CHANGED", "when": { "stepId": "checkSeatAvailability", "on": "successCriteria" }, "retryableByAgent": false, "message": "Le vol confirmé n'est plus disponible ou n'a plus assez de sièges. Aucun débit n'a eu lieu." },
+          { "code": "PAYMENT_ACTION_REQUIRED", "when": { "stepId": "capturePayment", "on": "response", "condition": "$statusCode == 402" }, "retryableByAgent": false, "message": "La banque exige une authentification forte. L'utilisateur doit la réaliser hors de la conversation." },
+          { "code": "PAYMENT_DECLINED", "when": { "stepId": "capturePayment", "on": "successCriteria" }, "retryableByAgent": false, "message": "Le paiement a été refusé. La réservation provisoire a été libérée. L'utilisateur doit vérifier son moyen de paiement." },
+          { "code": "CONFIRMATION_FAILED", "when": { "stepId": "voidPayment", "on": "executed" }, "retryableByAgent": false, "message": "La confirmation a échoué. Le paiement a été annulé (status failed_compensated)." },
+          { "code": "UPSTREAM_UNAVAILABLE", "when": { "on": "retryExhausted" }, "retryableByAgent": false, "message": "Un service est indisponible après plusieurs tentatives. Réessayez plus tard." }
+        ],
+        "confirmation": {
+          "required": true,
+          "mode": "elicitation-form",
+          "previewWorkflowId": "quote_trip",
+          "previewInputs": {
+            "origin": "$args.origin",
+            "destination": "$args.destination",
+            "departureDate": "$args.departureDate",
+            "passengerCount": { "fn": "count", "of": "$args.passengers" },
+            "cabin": "$args.cabin"
+          },
+          "message": "Confirmer la réservation du vol {flightNumber} ({departureAt}) pour {totalPrice.amount} {totalPrice.currency}, débité sur votre moyen de paiement enregistré ?",
+          "requestedSchema": {
+            "type": "object",
+            "properties": {
+              "confirm": { "type": "boolean", "title": "Je confirme l'achat", "default": false }
+            },
+            "required": ["confirm"]
+          },
+          "acceptWhen": "$elicitation.content.confirm == true",
+          "requestStateTtlSeconds": 600,
+          "onDecline": { "isError": true, "code": "USER_DECLINED", "retryableByAgent": false },
+          "whenClientLacksElicitation": "reject"
+        },
+        "auth": {
+          "requiredScopes": ["travel:book", "payments:charge"],
+          "upstream": {
+            "travel": { "scheme": "oauth2-client-credentials", "credentialRef": "vault://travel-demo/travel-api" }
+          }
+        },
+        "limits": {
+          "rateLimit": { "perPrincipal": "5/hour" },
+          "maxTotalPriceCap": { "amount": 5000, "currency": "EUR" },
+          "timeoutMs": 60000,
+          "concurrencyPerPrincipal": 1
+        },
+        "audit": {
+          "level": "full-metadata",
+          "redact": ["passengers[*].dateOfBirth", "contactEmail"],
+          "retentionDays": 365,
+          "propagateTraceContext": true
+        },
+        "annotationsDerivation": {
+          "steps": [
+            { "stepId": "searchFlights", "source": "travel", "method": "GET", "path": "/flights" },
+            { "stepId": "priceOffer", "source": "travel", "method": "GET", "path": "/offers/{offerId}/price" },
+            { "stepId": "checkSeatAvailability", "source": "travel", "method": "GET", "path": "/flights/{flightId}/seats" },
+            { "stepId": "createBooking", "source": "travel", "method": "POST", "path": "/bookings", "idempotencyKey": true },
+            { "stepId": "capturePayment", "source": "travel", "method": "POST", "path": "/payments", "idempotencyKey": true, "sideEffect": "financial" },
+            { "stepId": "confirmBooking", "source": "travel", "method": "POST", "path": "/bookings/{bookingId}/confirm", "idempotencyKey": true },
+            { "stepId": "voidPayment", "source": "travel", "method": "POST", "path": "/payments/{paymentId}/void", "idempotencyKey": true, "reachableVia": "onFailure" },
+            { "stepId": "releaseBooking", "source": "travel", "method": "DELETE", "path": "/bookings/{bookingId}", "reachableVia": "onFailure" }
+          ],
+          "rule": "worst-case-over-reachable-steps",
+          "overrides": {
+            "destructiveHint": "capturePayment déclenche un débit irréversible (sideEffect: financial).",
+            "idempotentHint": "false : l'Idempotency-Key est généré par confirmation. Il protège les retries internes d'un même run, pas deux tools/call successifs avec les mêmes arguments."
+          }
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "arazzo://connethics-travel-demo/workflows/book_trip",
+      "name": "book_trip-workflow",
+      "title": "Workflow book_trip (résumé pour planification)",
+      "description": "Étapes, préconditions, garde-fous et erreurs possibles du workflow book_trip. Sans URL interne ni secret.",
+      "mimeType": "text/markdown"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "plan_and_book_trip",
+      "title": "Planifier et réserver un voyage",
+      "description": "Guide l'agent : chiffrer avec quote_trip, présenter le prix, puis réserver avec book_trip seulement après accord explicite.",
+      "arguments": [
+        { "name": "request", "description": "Demande de l'utilisateur en langage naturel.", "required": true }
+      ]
+    }
+  ]
+}

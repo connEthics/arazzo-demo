@@ -3,9 +3,15 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Demonstrates: JSON Schemas, Error Handling (200/400/409), Conditional Branching,
 # Step Skipping, Retry Logic
+# Migrated to Arazzo 1.1.0 (2026-11-16): $self, JSON Pointer expressions,
+# {…} interpolation, JSONPath criteria with 1.1 truthy semantics (RFC 9535 by default).
+# This file is the builder's default demo: it deliberately keeps string-only values
+# (no Selector Object, no Expression Type Object) until the builder renders them
+# (lot A1). See e2e-order-to-cash/ and ecommerce-onboarding for Selector Objects.
 # ═══════════════════════════════════════════════════════════════════════════════
 
-arazzo: "1.0.1"
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/pet-adoption.arazzo.yaml
 info:
   title: Pet Adoption Workflow - Advanced
   version: "2.0.0"
@@ -16,10 +22,11 @@ info:
     - Error handling (200/400/409 cases)
     - Conditional branching (onSuccess, onFailure)
     - Step skipping for "customer already exists" scenario
+    - Arazzo 1.1: JSONPath criteria with truthy semantics (non-empty nodelist passes)
 
 sourceDescriptions:
   - name: petStoreApi
-    url: ./openapi/petstore.yaml
+    url: ../openapi/petstore.yaml
     type: openapi
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -40,7 +47,9 @@ components:
           minLength: 8
           format: password
 
-  schemas:
+  # Documentation-only response schemas. Arazzo components only hold inputs, parameters,
+  # successActions and failureActions, so they live under a specification extension.
+  x-schemas:
     LoginResponse:
       type: object
       properties:
@@ -168,11 +177,11 @@ workflows:
     description: |
       Demonstrates full workflow with:
       ✅ Authentication with 401 error handling
-      ✅ Pet search with empty results handling  
+      ✅ Pet search with empty results handling
       ✅ Order placement with 409 conflict (pet already sold)
       ✅ Conditional branching based on coupon availability
       ✅ Step skip when coupon not needed
-    
+
     inputs:
       type: object
       required: [username, password]
@@ -201,14 +210,21 @@ workflows:
           type: boolean
           default: true
           description: Whether to attempt to apply a discount coupon
-    
+        requestId:
+          type: string
+          description: Correlation identifier forwarded as X-Request-ID
+        source:
+          type: string
+          default: web-app
+          description: Channel that originated the adoption (written into the order metadata)
+
     steps:
       # ═══════════════════════════════════════════════════════════════
       # STEP 1: Authentication with full error handling
       # ═══════════════════════════════════════════════════════════════
       - stepId: login
         description: Authenticate user and get access token
-        operationId: petStoreApi.loginUser
+        operationId: loginUser
         parameters:
           - name: username
             in: query
@@ -216,43 +232,40 @@ workflows:
           - name: password
             in: query
             value: $inputs.password
-        
+
         # ✅ Success criteria with multiple conditions
         successCriteria:
           - condition: $statusCode == 200
-          - condition: $response.body.token != null
+          - condition: $response.body#/token != null
+          # Arazzo 1.1 truthy semantics: a non-empty nodelist passes (JSONPath = RFC 9535 by default)
           - context: $response.body
             type: jsonpath
-            condition: $.expiresIn > 0
-          - context: $response.body.token
+            condition: $.token
+          - context: $response.body#/token
             type: regex
-            condition: ^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$
-          - context: $response.body
-            type: xpath
-            condition: //token[text()]
-        
+            condition: '^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$'
+
         outputs:
-          authToken: $response.body.token
-          userId: $response.body.user.id
-          tokenExpiry: $response.body.expiresIn
-        
+          authToken: $response.body#/token
+          userId: $response.body#/userId
+          tokenExpiry: $response.header.X-Expires-After
+          loginStatus: $statusCode
+
         # ⚡ onFailure: Handle authentication errors
         onFailure:
           - name: handleAuthError
             type: end
-            workflowId: adopt-pet-with-error-handling
             criteria:
               - condition: $statusCode == 401
-            outputs:
-              error: "Authentication failed - invalid credentials"
+            x-outputs:
+              error: Authentication failed - invalid credentials
               errorCode: AUTH_FAILED
           - name: handleValidationError
-            type: goto
-            stepId: endWithError
+            type: end
             criteria:
               - condition: $statusCode == 400
-            outputs:
-              error: $response.body.message
+            x-outputs:
+              error: $response.body#/message
               errorCode: VALIDATION_ERROR
 
       # ═══════════════════════════════════════════════════════════════
@@ -260,52 +273,54 @@ workflows:
       # ═══════════════════════════════════════════════════════════════
       - stepId: findAvailablePets
         description: Search for pets with the preferred status
-        operationId: petStoreApi.findPetsByStatus
+        operationId: findPetsByStatus
         parameters:
           - name: status
             in: query
             value: $inputs.preferredStatus
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
-        
+            value: Bearer {$steps.login.outputs.authToken}
+
         successCriteria:
           - condition: $statusCode == 200
-        
+
         outputs:
-          selectedPetId: $response.body[0].id
-          selectedPetName: $response.body[0].name
-          selectedPetPrice: $response.body[0].price
-          petsFound: $response.body.length
-        
-        # ⚡ onSuccess: Different paths based on results
+          selectedPetId: $response.body#/0/id
+          selectedPetName: $response.body#/0/name
+          selectedPetPrice: $response.body#/0/price
+          availablePets: $response.body
+
+        # ⚡ onSuccess: Different paths based on results (first matching action wins)
         onSuccess:
           - name: petsFound
             type: goto
             stepId: getPetDetails
             criteria:
-              - condition: $response.body.length > 0
+              - context: $response.body
+                type: jsonpath
+                condition: $[0]
           - name: noPetsFound
             type: goto
             stepId: handleNoPets
-            criteria:
-              - condition: $response.body.length == 0
 
       # ═══════════════════════════════════════════════════════════════
       # STEP 2b: Handle no pets available (alternative branch)
       # ═══════════════════════════════════════════════════════════════
       - stepId: handleNoPets
-        description: Handle case when no pets are available
-        operationId: petStoreApi.getRecommendations
+        description: No pet matches — suggest popular pets instead (search by tags)
+        operationId: findPetsByTags
         parameters:
+          - name: tags
+            in: query
+            value: popular
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
+            value: Bearer {$steps.login.outputs.authToken}
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          recommendation: "No pets currently available. Check back soon!"
-          alternativeCategories: $response.body.categories
+          suggestedPets: $response.body
         onSuccess:
           - name: endNoStock
             type: end
@@ -317,24 +332,24 @@ workflows:
       # ═══════════════════════════════════════════════════════════════
       - stepId: getPetDetails
         description: Get detailed information about the selected pet
-        operationId: petStoreApi.getPetById
+        operationId: getPetById
         parameters:
           - name: petId
             in: path
             value: $steps.findAvailablePets.outputs.selectedPetId
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
-        
+            value: Bearer {$steps.login.outputs.authToken}
+
         successCriteria:
           - condition: $statusCode == 200
-        
+
         outputs:
-          petPrice: $response.body.price
-          petCategory: $response.body.category.name
-          petDescription: $response.body.description
-          petPhotos: $response.body.photoUrls
-        
+          petPrice: $response.body#/price
+          petCategory: $response.body#/category/name
+          petStatus: $response.body#/status
+          petPhotos: $response.body#/photoUrls
+
         # ⚡ onFailure: Retry search if pet not found (404)
         onFailure:
           - name: petNotFound
@@ -350,45 +365,42 @@ workflows:
         description: Check if user wants coupon and if coupons available
         # ⚡ SKIP CONDITION: Skip this step if user doesn't want coupon
         x-skip: $inputs.applyCoupon == false
-        operationId: petStoreApi.getPetCoupons
+        operationId: getPetCoupons
         parameters:
           - name: petId
             in: path
             value: $steps.findAvailablePets.outputs.selectedPetId
-          - name: categoryId
-            in: query
-            value: $steps.getPetDetails.outputs.petCategory
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
-        
+            value: Bearer {$steps.login.outputs.authToken}
+
         successCriteria:
           - condition: $statusCode == 200
-        
+
         outputs:
-          hasCoupons: $response.body.coupons.length > 0
-          bestCouponCode: $response.body.coupons[0].code
-          discountPercent: $response.body.coupons[0].discountPercent
-        
-        # ⚡ Conditional branching based on coupon availability
+          bestCouponCode: $response.body#/bestCouponCode
+          discountPercent: $response.body#/coupons/0/discountPercent
+          coupons: $response.body#/coupons
+
+        # ⚡ Conditional branching based on coupon availability (first matching action wins)
         onSuccess:
           - name: couponFound
             type: goto
             stepId: placeOrderWithCoupon
             criteria:
-              - condition: $response.body.coupons.length > 0
+              - context: $response.body
+                type: jsonpath
+                condition: $.coupons[0]
           - name: noCouponAvailable
             type: goto
             stepId: placeOrderWithoutCoupon
-            criteria:
-              - condition: $response.body.coupons.length == 0
 
       # ═══════════════════════════════════════════════════════════════
       # STEP 5a: Place order WITH coupon
       # ═══════════════════════════════════════════════════════════════
       - stepId: placeOrderWithCoupon
         description: Place the adoption order with coupon applied
-        operationId: petStoreApi.placeOrder
+        operationId: placeOrder
         requestBody:
           contentType: application/json
           payload:
@@ -402,37 +414,34 @@ workflows:
               source: "web-app"
               campaign: "holiday-special"
           replacements:
-            - target: "metadata.source"
+            - target: /metadata/source
               value: $inputs.source
-              default: "web-app"
         parameters:
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
+            value: Bearer {$steps.login.outputs.authToken}
           - name: X-Request-ID
             in: header
             value: $inputs.requestId
           - name: region
             in: cookie
             value: "eu-west-1"
-        
+
         successCriteria:
           - condition: $statusCode == 200
-          - condition: $response.body.id != null
-          - context: $response.body.status
+          - condition: $response.body#/id != null
+          - context: $response.body#/status
             type: regex
-            condition: ^(placed|approved)$
-          - context: $response.body
-            type: jsonpath
-            condition: $.totalPrice > 0
-        
+            condition: '^(placed|approved)$'
+          - condition: $response.body#/totalPrice > 0
+
         outputs:
-          orderId: $response.body.id
-          finalPrice: $response.body.totalPrice
-          discountApplied: $response.body.discountApplied
-          orderStatus: $response.body.status
-          estimatedDelivery: $response.body.shipDate
-        
+          orderId: $response.body#/id
+          finalPrice: $response.body#/totalPrice
+          discountApplied: $response.body#/discount
+          orderStatus: $response.body#/status
+          estimatedDelivery: $response.body#/shipDate
+
         # ⚡ onFailure: Handle 409 Conflict (pet already sold)
         onFailure:
           - name: handlePetSold
@@ -440,7 +449,7 @@ workflows:
             stepId: findAvailablePets
             criteria:
               - condition: $statusCode == 409
-            outputs:
+            x-outputs:
               retryReason: "Pet was sold, searching for alternatives"
           - name: handleValidation
             type: goto
@@ -452,16 +461,15 @@ workflows:
             retryAfter: 5
             retryLimit: 3
             criteria:
-              - condition: $statusCode == 408
-              - condition: $statusCode == 504
-        
+              - condition: $statusCode == 408 || $statusCode == 504
+
         onSuccess:
           - name: orderComplete
             type: goto
             stepId: sendConfirmation
             criteria:
               - condition: $statusCode == 200
-        
+
         x-custom-metadata:
           importance: "critical"
           owner: "checkout-team"
@@ -471,7 +479,7 @@ workflows:
       # ═══════════════════════════════════════════════════════════════
       - stepId: placeOrderWithoutCoupon
         description: Place adoption order without any coupon
-        operationId: petStoreApi.placeOrder
+        operationId: placeOrder
         requestBody:
           contentType: application/json
           payload:
@@ -483,17 +491,17 @@ workflows:
         parameters:
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
-        
+            value: Bearer {$steps.login.outputs.authToken}
+
         successCriteria:
           - condition: $statusCode == 200
-        
+
         outputs:
-          orderId: $response.body.id
-          finalPrice: $response.body.totalPrice
-          discountApplied: 0
-          orderStatus: $response.body.status
-        
+          orderId: $response.body#/id
+          finalPrice: $response.body#/totalPrice
+          discountApplied: $response.body#/discount
+          orderStatus: $response.body#/status
+
         # ⚡ onFailure: Handle 409 Conflict
         onFailure:
           - name: handlePetSold
@@ -501,7 +509,7 @@ workflows:
             stepId: findAvailablePets
             criteria:
               - condition: $statusCode == 409
-        
+
         onSuccess:
           - name: orderComplete
             type: goto
@@ -510,45 +518,41 @@ workflows:
               - condition: $statusCode == 200
 
       # ═══════════════════════════════════════════════════════════════
-      # STEP 6: Send confirmation notification
+      # STEP 6: Confirm the order (read it back)
       # ═══════════════════════════════════════════════════════════════
       - stepId: sendConfirmation
-        description: Send order confirmation to the user
-        operationId: petStoreApi.sendNotification
-        requestBody:
-          contentType: application/json
-          payload:
-            userId: $steps.login.outputs.userId
-            type: order_confirmation
-            orderId: $steps.placeOrderWithCoupon.outputs.orderId
-            petName: $steps.findAvailablePets.outputs.selectedPetName
-            message: "Your adoption order has been confirmed!"
+        description: Read the placed order back to build the confirmation sent to the user
+        operationId: getOrderById
+        parameters:
+          - name: orderId
+            in: path
+            value: $steps.placeOrderWithCoupon.outputs.orderId
+          - name: Authorization
+            in: header
+            value: Bearer {$steps.login.outputs.authToken}
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          confirmedStatus: $response.body#/status
+          confirmationId: $response.body#/id
+        onSuccess:
+          - name: adoptionComplete
+            type: end
+
+      # ═══════════════════════════════════════════════════════════════
+      # ERROR HANDLER: End workflow with error (reached only via goto)
+      # ═══════════════════════════════════════════════════════════════
+      - stepId: endWithError
+        description: Unrecoverable order error — close the user session before ending
+        operationId: logoutUser
         parameters:
           - name: Authorization
             in: header
-            value: Bearer $steps.login.outputs.authToken
+            value: Bearer {$steps.login.outputs.authToken}
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          notificationSent: true
-          confirmationId: $response.body.id
-
-      # ═══════════════════════════════════════════════════════════════
-      # ERROR HANDLER: End workflow with error
-      # ═══════════════════════════════════════════════════════════════
-      - stepId: endWithError
-        description: End workflow with error details
-        operationId: petStoreApi.logError
-        requestBody:
-          contentType: application/json
-          payload:
-            errorCode: $steps.login.outputs.errorCode
-            errorMessage: $steps.login.outputs.error
-            timestamp: "2024-12-11T10:00:00Z"
-        successCriteria:
-          - condition: $statusCode == 200
-        outputs:
-          logged: true
+          logoutStatus: $statusCode
 
     # ═══════════════════════════════════════════════════════════════
     # WORKFLOW OUTPUTS
@@ -582,7 +586,7 @@ workflows:
     steps:
       - stepId: authenticate
         description: Login to the system
-        operationId: petStoreApi.loginUser
+        operationId: loginUser
         parameters:
           - name: username
             in: query
@@ -593,7 +597,7 @@ workflows:
         successCriteria:
           - condition: $statusCode == 200
         outputs:
-          token: $response.body.token
+          token: $response.body#/token
         onFailure:
           - name: authFailed
             type: end
@@ -602,20 +606,20 @@ workflows:
 
       - stepId: listPets
         description: Get all available pets
-        operationId: petStoreApi.findPetsByStatus
+        operationId: findPetsByStatus
         parameters:
           - name: status
             in: query
             value: available
           - name: Authorization
             in: header
-            value: Bearer $steps.authenticate.outputs.token
+            value: Bearer {$steps.authenticate.outputs.token}
         successCriteria:
           - condition: $statusCode == 200
         outputs:
           pets: $response.body
-          petCount: $response.body.length
+          firstPetName: $response.body#/0/name
 
     outputs:
       availablePets: $steps.listPets.outputs.pets
-      totalFound: $steps.listPets.outputs.petCount
+      firstPetName: $steps.listPets.outputs.firstPetName

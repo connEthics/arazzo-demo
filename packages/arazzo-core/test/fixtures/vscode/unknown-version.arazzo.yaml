@@ -1,0 +1,13 @@
+arazzo: "2.0.0"
+info:
+  title: Unknown Version Test
+  version: 1.0.0
+sourceDescriptions:
+  - name: testSource
+    url: https://example.com/api
+    type: openapi
+workflows:
+  - workflowId: testWorkflow
+    steps:
+      - stepId: step1
+        operationId: getItems

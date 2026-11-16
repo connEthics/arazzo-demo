@@ -1,0 +1,14 @@
+{
+  "check_refund_eligibility": {
+    "DEFAULT": { "orderId": "ORD-20261042" }
+  },
+  "issue_refund": {
+    "DEFAULT": {
+      "orderId": "ORD-20261042",
+      "amount": 45,
+      "reasonCode": "damaged",
+      "idempotencyKey": "sha256-7b1d0c-demo",
+      "agentId": "agent_042"
+    }
+  }
+}

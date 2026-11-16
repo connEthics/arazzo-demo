@@ -1,0 +1,66 @@
+asyncapi: 3.0.0
+info:
+  title: Refund events (vue émetteur)
+  version: 1.0.0
+  description: |
+    Événement `refund.issued`, décrit **du point de vue du workflow** (émetteur) :
+    l'opération `sendRefundIssued` a `action: send`, comme l'étape Arazzo.
+    Specmatic attend l'AsyncAPI du système testé, donc l'action inverse : voir le README.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+defaultContentType: application/json
+servers:
+  local:
+    host: 127.0.0.1:9092
+    protocol: kafka
+    description: Broker Kafka local (conteneur apache/kafka:3.9.1) pour les tests
+channels:
+  refundIssued:
+    address: refund.issued
+    description: Un remboursement a été émis ; consommé par la comptabilité et le CRM.
+    messages:
+      refundIssued:
+        $ref: '#/components/messages/RefundIssued'
+operations:
+  sendRefundIssued:
+    action: send
+    summary: Publier refund.issued
+    channel:
+      $ref: '#/channels/refundIssued'
+    messages:
+      - $ref: '#/channels/refundIssued/messages/refundIssued'
+components:
+  messages:
+    RefundIssued:
+      name: RefundIssued
+      title: Remboursement émis
+      contentType: application/json
+      headers:
+        type: object
+        required: [idempotencyKey]
+        properties:
+          idempotencyKey:
+            type: string
+            description: Clé de dédoublonnage côté consommateurs (même valeur que l'Idempotency-Key HTTP).
+      payload:
+        type: object
+        required: [refundId, orderId, amount, currency, reasonCode, issuedAt]
+        properties:
+          refundId: { type: string }
+          orderId: { type: string }
+          amount: { type: number }
+          currency: { type: string }
+          reasonCode: { type: string, enum: [damaged, not_received, late_delivery, goodwill] }
+          issuedAt: { type: string, format: date-time }
+      examples:
+        - name: issued
+          headers:
+            idempotencyKey: sha256-7b1d0c-demo
+          payload:
+            refundId: rfd_5f2c91
+            orderId: ORD-20261042
+            amount: 45.0
+            currency: EUR
+            reasonCode: damaged
+            issuedAt: '2026-11-16T16:05:00Z'

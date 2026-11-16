@@ -1,0 +1,260 @@
+openapi: 3.1.0
+info:
+  title: Commerce API (stub de démonstration)
+  version: 1.0.0
+  summary: Commandes, paiements, factures et expéditions — stub pour l'exemple order-to-cash.
+  description: |
+    Stub minimal servi par Prism. Les `examples` sont alignés : la commande `ord_123`
+    est celle que l'événement `order.confirmed` (AsyncAPI) corrèle.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://api.example.test/commerce
+    description: Serveur fictif (remplacé par `--server commerce=http://127.0.0.1:4010` avec Respect)
+security:
+  - commerceOAuth: []
+  - {}
+tags:
+  - name: orders
+    description: Commandes
+  - name: payments
+    description: Paiements
+  - name: invoices
+    description: Facturation
+  - name: shipments
+    description: Expéditions
+paths:
+  /orders:
+    post:
+      tags: [orders]
+      operationId: createOrder
+      summary: Créer une commande
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customerId, lines]
+              properties:
+                customerId: { type: string }
+                lines:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/OrderLineRequest' }
+      responses:
+        '201':
+          description: Commande créée, en attente de confirmation (événement order.confirmed)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+              examples:
+                pending:
+                  value:
+                    id: ord_123
+                    status: pending
+                    customerId: cus_8812
+                    total: { amount: 149.9, currency: EUR }
+        '400':
+          $ref: '#/components/responses/Problem'
+  /orders/{orderId}/close:
+    post:
+      tags: [orders]
+      operationId: closeOrder
+      summary: Clôturer la commande (facturée et expédiée) et renvoyer son récapitulatif
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoiceId, shipmentId]
+              properties:
+                invoiceId: { type: string }
+                shipmentId: { type: string }
+      responses:
+        '200':
+          description: Récapitulatif de la commande clôturée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderSummary' }
+              examples:
+                closed:
+                  value:
+                    id: ord_123
+                    status: closed
+                    total: { amount: 149.9, currency: EUR }
+                    invoice: { id: inv_5501, number: FAC-2026-005501 }
+                    shipment: { id: shp_7740, trackingNumber: 6A12345678901 }
+                    lines:
+                      - { sku: BOOK-42, quantity: 2, shipped: true }
+                      - { sku: MUG-07, quantity: 1, shipped: true }
+                      - { sku: GIFT-CARD-50, quantity: 1, shipped: false }
+        '409':
+          $ref: '#/components/responses/Problem'
+  /payments:
+    post:
+      tags: [payments]
+      operationId: capturePayment
+      summary: Capturer le paiement d'une commande confirmée
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, amount, currency]
+              properties:
+                orderId: { type: string }
+                amount: { type: number, exclusiveMinimum: 0 }
+                currency: { type: string, pattern: '^[A-Z]{3}$' }
+      responses:
+        '201':
+          description: Paiement capturé
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status]
+                properties:
+                  id: { type: string }
+                  status: { type: string, enum: [captured, declined] }
+              examples:
+                captured:
+                  value: { id: pay_3021, status: captured }
+        '402':
+          $ref: '#/components/responses/Problem'
+  /invoices:
+    post:
+      tags: [invoices]
+      operationId: createInvoice
+      summary: Émettre la facture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, paymentId]
+              properties:
+                orderId: { type: string }
+                paymentId: { type: string }
+      responses:
+        '201':
+          description: Facture émise
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, number, status]
+                properties:
+                  id: { type: string }
+                  number: { type: string }
+                  status: { type: string, enum: [issued] }
+              examples:
+                issued:
+                  value: { id: inv_5501, number: FAC-2026-005501, status: issued }
+        '409':
+          $ref: '#/components/responses/Problem'
+  /shipments:
+    post:
+      tags: [shipments]
+      operationId: createShipment
+      summary: Créer l'expédition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId]
+              properties:
+                orderId: { type: string }
+                carrier: { type: string, enum: [colissimo, chronopost, dhl] }
+      responses:
+        '201':
+          description: Expédition créée
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status, trackingNumber]
+                properties:
+                  id: { type: string }
+                  status: { type: string, enum: [label_created, in_transit] }
+                  trackingNumber: { type: string }
+              examples:
+                created:
+                  value: { id: shp_7740, status: label_created, trackingNumber: 6A12345678901 }
+        '409':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    commerceOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.test/oauth/token
+          scopes: {}
+  responses:
+    Problem:
+      description: Erreur métier (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer }
+              detail: { type: string }
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    OrderLineRequest:
+      type: object
+      required: [sku, quantity]
+      properties:
+        sku: { type: string }
+        quantity: { type: integer, minimum: 1 }
+    Order:
+      type: object
+      required: [id, status, total]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [pending, confirmed, closed, cancelled] }
+        customerId: { type: string }
+        total: { $ref: '#/components/schemas/Money' }
+    OrderSummary:
+      type: object
+      required: [id, status, lines]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [closed] }
+        total: { $ref: '#/components/schemas/Money' }
+        invoice:
+          type: object
+          properties:
+            id: { type: string }
+            number: { type: string }
+        shipment:
+          type: object
+          properties:
+            id: { type: string }
+            trackingNumber: { type: string }
+        lines:
+          type: array
+          items:
+            type: object
+            required: [sku, quantity, shipped]
+            properties:
+              sku: { type: string }
+              quantity: { type: integer }
+              shipped: { type: boolean }

@@ -1,0 +1,18 @@
+arazzo: "1.0.1"
+info:
+  title: XSS Payload Test
+  version: 1.0.0
+sourceDescriptions:
+  - name: testSource
+    url: https://example.com/api
+    type: openapi
+workflows:
+  - workflowId: xssWorkflow
+    summary: '<img onerror=alert(1) src=x>'
+    steps:
+      - stepId: '<script>alert(1)</script>'
+        operationId: getItems
+        description: '<svg onload=alert(1)>'
+      - stepId: normalStep
+        operationId: listItems
+        summary: '<img onerror=alert(2) src=x>'

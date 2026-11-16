@@ -1,0 +1,357 @@
+openapi: 3.1.0
+info:
+  title: Travel API (stub de démonstration)
+  version: 1.0.0
+  summary: Vols, réservations et paiements — stub pour les exemples Arazzo ConnEthics.
+  description: |
+    Stub minimal servi par Prism. Les `examples` de réponse sont alignés entre eux
+    (même `offerId`, même `flightId`, même `bookingId`) pour que les workflows
+    `quote_trip` et `book_trip` s'exécutent de bout en bout avec des données cohérentes.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://api.example.test/travel
+    description: Serveur fictif (remplacé par `--server travel=http://127.0.0.1:4010` avec Respect)
+# Les credentials amont sont injectés par le moteur Arazzo (coffre), jamais par l'agent.
+# L'alternative vide `{}` rend l'authentification facultative sur le mock Prism.
+security:
+  - travelOAuth: []
+  - {}
+tags:
+  - name: flights
+    description: Recherche, prix et disponibilité (lecture seule)
+  - name: bookings
+    description: Réservations provisoires et confirmations
+  - name: payments
+    description: Capture et annulation de paiements
+paths:
+  /flights:
+    get:
+      tags: [flights]
+      operationId: searchFlights
+      summary: Rechercher des vols
+      parameters:
+        - { name: origin, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: destination, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: passengers, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 9 } }
+        - { name: cabin, in: query, schema: { type: string, enum: [economy, premium_economy, business], default: economy } }
+        - { name: sort, in: query, schema: { type: string, enum: [price_asc, departure_asc], default: price_asc } }
+      responses:
+        '200':
+          description: Offres de vol, triées
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FlightSearchResult' }
+              examples:
+                cdgLis:
+                  summary: Paris CDG → Lisbonne, 18/12/2026
+                  value:
+                    count: 2
+                    offers:
+                      - id: off_tp441_20261218
+                        flightId: flt_tp441_20261218
+                        flightNumber: TP441
+                        carrier: TAP Air Portugal
+                        departureAt: '2026-12-18T07:05:00+01:00'
+                        arrivalAt: '2026-12-18T08:55:00+00:00'
+                        indicativePrice: { amount: 289.0, currency: EUR }
+                      - id: off_af1024_20261218
+                        flightId: flt_af1024_20261218
+                        flightNumber: AF1024
+                        carrier: Air France
+                        departureAt: '2026-12-18T09:40:00+01:00'
+                        arrivalAt: '2026-12-18T11:35:00+00:00'
+                        indicativePrice: { amount: 341.0, currency: EUR }
+        '400':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /offers/{offerId}/price:
+    get:
+      tags: [flights]
+      operationId: priceOffer
+      summary: Calculer le prix total TTC d'une offre
+      parameters:
+        - { name: offerId, in: path, required: true, schema: { type: string } }
+        - { name: passengers, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 9 } }
+      responses:
+        '200':
+          description: Prix total verrouillé jusqu'à `expiresAt`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfferPrice' }
+              examples:
+                tp441:
+                  value:
+                    offerId: off_tp441_20261218
+                    passengers: 1
+                    total: { amount: 312.4, currency: EUR }
+                    breakdown:
+                      fare: 289.0
+                      taxes: 23.4
+                    expiresAt: '2026-11-16T18:00:00Z'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /flights/{flightId}/seats:
+    get:
+      tags: [flights]
+      operationId: getSeatAvailability
+      summary: Disponibilité des sièges d'un vol
+      parameters:
+        - { name: flightId, in: path, required: true, schema: { type: string } }
+        - { name: cabin, in: query, schema: { type: string, enum: [economy, premium_economy, business], default: economy } }
+      responses:
+        '200':
+          description: Sièges disponibles
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeatAvailability' }
+              examples:
+                tp441:
+                  value: { flightId: flt_tp441_20261218, cabin: economy, available: 14 }
+        '404':
+          $ref: '#/components/responses/Problem'
+  /bookings:
+    post:
+      tags: [bookings]
+      operationId: createBooking
+      summary: Créer une réservation provisoire (hold)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookingRequest' }
+      responses:
+        '201':
+          description: Réservation provisoire créée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+              examples:
+                held:
+                  value:
+                    id: bkg_7f3a2c
+                    status: held
+                    offerId: off_tp441_20261218
+                    seats: ['12A']
+                    holdExpiresAt: '2026-11-16T17:20:00Z'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /bookings/{bookingId}:
+    delete:
+      tags: [bookings]
+      operationId: cancelBooking
+      summary: Libérer une réservation provisoire (compensation)
+      parameters:
+        - { name: bookingId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204':
+          description: Réservation libérée
+        '404':
+          $ref: '#/components/responses/Problem'
+  /bookings/{bookingId}/confirm:
+    post:
+      tags: [bookings]
+      operationId: confirmBooking
+      summary: Confirmer la réservation auprès de la compagnie
+      parameters:
+        - { name: bookingId, in: path, required: true, schema: { type: string } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Réservation confirmée, PNR émis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+              examples:
+                confirmed:
+                  value:
+                    id: bkg_7f3a2c
+                    status: confirmed
+                    offerId: off_tp441_20261218
+                    seats: ['12A']
+                    reference: K7Q2ZP
+        '409':
+          $ref: '#/components/responses/Problem'
+        '502':
+          $ref: '#/components/responses/Problem'
+  /payments:
+    post:
+      tags: [payments]
+      operationId: createPayment
+      summary: Capturer un paiement
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentRequest' }
+      responses:
+        '201':
+          description: Paiement capturé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+              examples:
+                captured:
+                  value: { id: pay_91c2e8, status: captured, amount: 312.4, currency: EUR, bookingId: bkg_7f3a2c }
+        '402':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /payments/{paymentId}/void:
+    post:
+      tags: [payments]
+      operationId: voidPayment
+      summary: Annuler un paiement capturé (compensation)
+      parameters:
+        - { name: paymentId, in: path, required: true, schema: { type: string } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Paiement annulé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+              examples:
+                voided:
+                  value: { id: pay_91c2e8, status: voided, amount: 312.4, currency: EUR, bookingId: bkg_7f3a2c }
+        '409':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    travelOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.test/oauth/token
+          scopes: {}
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 64 }
+  responses:
+    Problem:
+      description: Erreur métier (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unavailable:
+      description: Service temporairement indisponible
+      headers:
+        Retry-After: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number, minimum: 0 }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    FlightOffer:
+      type: object
+      required: [id, flightId, flightNumber, departureAt, arrivalAt]
+      properties:
+        id: { type: string }
+        flightId: { type: string }
+        flightNumber: { type: string }
+        carrier: { type: string }
+        departureAt: { type: string, format: date-time }
+        arrivalAt: { type: string, format: date-time }
+        indicativePrice: { $ref: '#/components/schemas/Money' }
+    FlightSearchResult:
+      type: object
+      required: [count, offers]
+      properties:
+        count: { type: integer, minimum: 0 }
+        offers:
+          type: array
+          items: { $ref: '#/components/schemas/FlightOffer' }
+    OfferPrice:
+      type: object
+      required: [offerId, total, expiresAt]
+      properties:
+        offerId: { type: string }
+        passengers: { type: integer }
+        total: { $ref: '#/components/schemas/Money' }
+        breakdown:
+          type: object
+          properties:
+            fare: { type: number }
+            taxes: { type: number }
+        expiresAt: { type: string, format: date-time }
+    SeatAvailability:
+      type: object
+      required: [flightId, available]
+      properties:
+        flightId: { type: string }
+        cabin: { type: string }
+        available: { type: integer, minimum: 0 }
+    Passenger:
+      type: object
+      required: [firstName, lastName, dateOfBirth]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 60 }
+        lastName: { type: string, minLength: 1, maxLength: 60 }
+        dateOfBirth: { type: string, format: date }
+    BookingRequest:
+      type: object
+      required: [offerId, passengers, contactEmail]
+      properties:
+        offerId: { type: string }
+        passengers:
+          type: array
+          minItems: 1
+          maxItems: 9
+          items: { $ref: '#/components/schemas/Passenger' }
+        seatPreference: { type: string, enum: [window, aisle, any] }
+        contactEmail: { type: string, format: email }
+    Booking:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [held, confirmed, released] }
+        offerId: { type: string }
+        seats:
+          type: array
+          items: { type: string }
+        holdExpiresAt: { type: string, format: date-time }
+        reference: { type: string, pattern: '^[A-Z0-9]{6}$' }
+    PaymentRequest:
+      type: object
+      required: [bookingId, amount, currency, paymentMethodToken]
+      properties:
+        bookingId: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        paymentMethodToken: { type: string }
+    Payment:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [captured, declined, voided] }
+        amount: { type: number }
+        currency: { type: string }
+        bookingId: { type: string }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

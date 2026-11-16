@@ -1,0 +1,175 @@
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/e2e-order-to-cash/e2e-order-to-cash.arazzo.yaml
+info:
+  title: Order-to-cash hybride HTTP + événements (test E2E)
+  summary: Commande HTTP, attente de l'événement order.confirmed, paiement, puis facture et expédition jointes.
+  version: 1.0.0
+  description: |
+    Illustre les nouveautés Arazzo 1.1 :
+
+    - source `type: asyncapi` et étape `action: receive` avec `correlationId` et `timeout` (ms) ;
+    - `dependsOn` au niveau de l'étape : éventail (facture et expédition après le paiement)
+      puis **jonction** (`closeOrder` attend les deux) ;
+    - Selector Object (`context` / `selector` / `type`) en JSONPath RFC 9535 et en JSON Pointer.
+
+    Les critères de succès restent en `simple` + JSON Pointer, seule forme portable entre runners.
+sourceDescriptions:
+  - name: commerce
+    url: ./openapi.yaml
+    type: openapi
+  - name: orderEvents
+    url: ./asyncapi.yaml
+    type: asyncapi
+
+workflows:
+  - workflowId: orderToCash
+    summary: De la commande à l'encaissement
+    inputs:
+      type: object
+      required: [customerId, lines]
+      properties:
+        customerId:
+          type: string
+          description: Identifiant client.
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, quantity]
+            properties:
+              sku: { type: string }
+              quantity: { type: integer, minimum: 1 }
+        carrier:
+          type: string
+          enum: [colissimo, chronopost, dhl]
+          default: colissimo
+    steps:
+      - stepId: createOrder
+        description: POST /orders — la commande part en validation asynchrone.
+        operationId: $sourceDescriptions.commerce.createOrder
+        requestBody:
+          contentType: application/json
+          payload:
+            customerId: $inputs.customerId
+            lines: $inputs.lines
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'pending'
+        outputs:
+          orderId: $response.body#/id
+          totalAmount: $response.body#/total/amount
+          currency: $response.body#/total/currency
+
+      - stepId: awaitOrderConfirmation
+        description: |
+          Attend sur `order.confirmed` le message dont le correlationId (`orderId`) est celui
+          de la commande créée. Échec si rien n'arrive en 6 s.
+        operationId: $sourceDescriptions.orderEvents.receiveOrderConfirmed
+        action: receive
+        correlationId: $steps.createOrder.outputs.orderId
+        timeout: 6000
+        # Redondant avec la dépendance implicite créée par `$steps.createOrder…` (§5.8.5.2),
+        # mais nécessaire à arazzo-cli 0.9.0 en mode --parallel.
+        dependsOn:
+          - createOrder
+        successCriteria:
+          - condition: $message.payload#/status == 'confirmed'
+        outputs:
+          confirmedAt: $message.payload#/confirmedAt
+          warehouseId: $message.payload#/warehouseId
+
+      - stepId: capturePayment
+        description: POST /payments — seulement après la confirmation.
+        operationId: $sourceDescriptions.commerce.capturePayment
+        dependsOn:
+          - awaitOrderConfirmation
+        requestBody:
+          contentType: application/json
+          payload:
+            orderId: $steps.createOrder.outputs.orderId
+            amount: $steps.createOrder.outputs.totalAmount
+            currency: $steps.createOrder.outputs.currency
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'captured'
+        outputs:
+          paymentId: $response.body#/id
+
+      # --- éventail : facture et expédition dépendent du paiement, pas l'une de l'autre ---
+      - stepId: createInvoice
+        operationId: $sourceDescriptions.commerce.createInvoice
+        dependsOn:
+          - capturePayment
+        requestBody:
+          contentType: application/json
+          payload:
+            orderId: $steps.createOrder.outputs.orderId
+            paymentId: $steps.capturePayment.outputs.paymentId
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/status == 'issued'
+        outputs:
+          invoiceId: $response.body#/id
+          invoiceNumber: $response.body#/number
+
+      - stepId: createShipment
+        operationId: $sourceDescriptions.commerce.createShipment
+        dependsOn:
+          - capturePayment
+        requestBody:
+          contentType: application/json
+          payload:
+            orderId: $steps.createOrder.outputs.orderId
+            carrier: $inputs.carrier
+        successCriteria:
+          - condition: $statusCode == 201
+        outputs:
+          shipmentId: $response.body#/id
+          trackingNumber: $response.body#/trackingNumber
+
+      # --- jonction : la clôture attend la facture ET l'expédition ---
+      - stepId: closeOrder
+        operationId: $sourceDescriptions.commerce.closeOrder
+        dependsOn:
+          - createInvoice
+          - createShipment
+        parameters:
+          - name: orderId
+            in: path
+            value: $steps.createOrder.outputs.orderId
+        requestBody:
+          contentType: application/json
+          payload:
+            invoiceId: $steps.createInvoice.outputs.invoiceId
+            shipmentId: $steps.createShipment.outputs.shipmentId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'closed'
+        outputs:
+          summary: $response.body
+          # Selector Object 1.1 en JSON Pointer (seul type accepté par Specmatic)
+          invoiceNumber:
+            context: $response.body
+            selector: /invoice/number
+            type: jsonpointer
+
+    outputs:
+      orderId: $steps.createOrder.outputs.orderId
+      paymentId: $steps.capturePayment.outputs.paymentId
+      trackingNumber: $steps.createShipment.outputs.trackingNumber
+      invoiceNumber: $steps.closeOrder.outputs.invoiceNumber
+      # Selector Object 1.1 en JSONPath RFC 9535 (filtre) : SKU réellement expédiés
+      shippedSkus:
+        context: $steps.closeOrder.outputs.summary
+        selector: $.lines[?@.shipped == true].sku
+        type:
+          type: jsonpath
+          version: rfc9535
+      # Nombre de lignes en attente (cartes cadeaux dématérialisées, etc.)
+      pendingLines:
+        context: $steps.closeOrder.outputs.summary
+        selector: $.lines[?@.shipped == false]
+        type:
+          type: jsonpath
+          version: rfc9535

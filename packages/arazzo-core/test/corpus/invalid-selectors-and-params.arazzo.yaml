@@ -1,0 +1,55 @@
+# expect: arazzo-selector-syntax, arazzo-eto-version, arazzo-migration-param-object-value, arazzo-param-querystring-exclusive, arazzo-param-querystring-string, arazzo-criterion-embedded-expression, arazzo-replacement-target-syntax, arazzo-selector-context-structured
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/invalid-selectors.arazzo.yaml
+info:
+  title: Invalid selectors and parameters
+  version: 1.0.0
+sourceDescriptions:
+  - name: api
+    url: ./api.yaml
+    type: openapi
+workflows:
+  - workflowId: w
+    inputs:
+      type: object
+      properties:
+        id:
+          type: string
+    steps:
+      - stepId: search
+        operationId: search
+        parameters:
+          - name: filter
+            in: query
+            value:
+              status: active
+          - name: raw
+            in: querystring
+            value: 42
+        requestBody:
+          contentType: application/json
+          payload:
+            meta:
+              source: web
+          replacements:
+            - target: meta.source
+              value: $inputs.id
+        successCriteria:
+          - context: $response.body
+            condition: $[?@.id == $inputs.id]
+            type: jsonpath
+        outputs:
+          first:
+            context: $response.body
+            selector: $.items[0
+            type: jsonpath
+          ptr:
+            context: $response.body
+            selector: /items/0
+            type:
+              type: jsonpointer
+              version: rfc9535
+          code:
+            context: $statusCode
+            selector: /x
+            type: jsonpointer

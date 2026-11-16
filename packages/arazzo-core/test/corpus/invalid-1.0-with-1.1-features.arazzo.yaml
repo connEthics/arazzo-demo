@@ -1,0 +1,33 @@
+# expect: arazzo-version-feature-mismatch
+# A 1.0.1 document using 1.1 features: one diagnostic per feature, no raw schema errors.
+arazzo: 1.0.1
+$self: https://examples.connethics.com/arazzo/legacy.arazzo.yaml
+info:
+  title: Mismatch
+  version: 1.0.0
+sourceDescriptions:
+  - name: api
+    url: ./api.yaml
+    type: openapi
+  - name: bus
+    url: ./bus.asyncapi.yaml
+    type: asyncapi
+workflows:
+  - workflowId: w
+    steps:
+      - stepId: call
+        operationId: $sourceDescriptions.api.call
+        timeout: 5000
+        parameters:
+          - name: q
+            in: querystring
+            value: a=1
+        outputs:
+          total:
+            context: $response.body
+            selector: /total
+            type: jsonpointer
+      - stepId: wait
+        channelPath: '{$sourceDescriptions.bus.url}#/channels/done'
+        action: receive
+        dependsOn: [call]

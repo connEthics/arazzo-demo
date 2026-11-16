@@ -1,0 +1,17 @@
+arazzo: "1.0.1"
+info:
+  title: Duplicate StepId Test
+  version: 1.0.0
+sourceDescriptions:
+  - name: testApi
+    url: http://example.com
+    type: openapi
+workflows:
+  - workflowId: testWorkflow
+    steps:
+      - stepId: duplicateStep
+        operationId: op1
+      - stepId: duplicateStep
+        operationId: op2
+      - stepId: uniqueStep
+        operationId: op3

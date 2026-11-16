@@ -1,0 +1,170 @@
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/e2e-session-renewal/e2e-session-renewal.arazzo.yaml
+info:
+  title: Renouvellement de session sur 401 (test E2E)
+  summary: Une failure action `retry` réutilise le workflow `renewSession`, puis rejoue l'étape.
+  version: 1.0.0
+  description: |
+    Illustre trois nouveautés Arazzo 1.1 :
+
+    - **réutilisation de workflow depuis une action** : `type: retry` + `workflowId` +
+      `parameters` (§5.8.8) — le workflow `renewSession` est exécuté, puis l'étape est rejouée,
+      dans la limite de `retryLimit`, après `retryAfter` secondes ;
+    - **`in: querystring`** (§5.8.6) : la query string complète est une seule valeur ;
+    - un **cas négatif explicite** (`rejectExpiredSession`) qui réussit quand l'API refuse
+      une session expirée.
+sourceDescriptions:
+  - name: billing
+    url: ./openapi.yaml
+    type: openapi
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # Workflow réutilisable : appelé par les failure actions, testable seul
+  # ---------------------------------------------------------------------------
+  - workflowId: renewSession
+    summary: Prolonger une session expirée
+    description: Prolonge la session côté serveur à l'aide du refresh token. Réutilisable.
+    inputs:
+      type: object
+      required: [sessionToken, refreshToken]
+      properties:
+        sessionToken:
+          type: string
+          description: Jeton de session à prolonger.
+        refreshToken:
+          type: string
+          minLength: 8
+          description: Refresh token associé à la session.
+    steps:
+      - stepId: renew
+        operationId: $sourceDescriptions.billing.renewSession
+        requestBody:
+          contentType: application/json
+          payload:
+            sessionToken: $inputs.sessionToken
+            refreshToken: $inputs.refreshToken
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'renewed'
+        outputs:
+          expiresAt: $response.body#/expiresAt
+    outputs:
+      expiresAt: $steps.renew.outputs.expiresAt
+
+  # ---------------------------------------------------------------------------
+  # Workflow principal : 401 → renewSession → l'étape est rejouée
+  # ---------------------------------------------------------------------------
+  - workflowId: listUnpaidInvoices
+    summary: Lister les factures impayées, en renouvelant la session si besoin
+    inputs:
+      type: object
+      required: [sessionToken, refreshToken, pageSize]
+      properties:
+        sessionToken:
+          type: string
+          description: Jeton de session (éventuellement expiré).
+        refreshToken:
+          type: string
+          minLength: 8
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+    steps:
+      - stepId: listInvoices
+        description: |
+          GET /invoices?status=unpaid&sort=-dueDate&limit=… — la query string est passée
+          d'un bloc (`in: querystring`, interpolation `{…}` autorisée).
+        operationId: $sourceDescriptions.billing.listInvoices
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$inputs.sessionToken}
+          - name: invoiceFilter
+            in: querystring
+            value: status=unpaid&sort=-dueDate&limit={$inputs.pageSize}
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/count > 0
+        onFailure:
+          - reference: $components.failureActions.renewSessionOn401
+          - name: giveUp
+            type: end
+        outputs:
+          unpaidCount: $response.body#/count
+          firstInvoiceId: $response.body#/items/0/id
+      - stepId: getInvoice
+        operationId: $sourceDescriptions.billing.getInvoice
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$inputs.sessionToken}
+          - name: invoiceId
+            in: path
+            value: $steps.listInvoices.outputs.firstInvoiceId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'unpaid'
+        onFailure:
+          - reference: $components.failureActions.renewSessionOn401
+        outputs:
+          amountDue: $response.body#/amountDue/amount
+          currency: $response.body#/amountDue/currency
+          paymentLink: $response.body#/paymentLink
+    outputs:
+      unpaidCount: $steps.listInvoices.outputs.unpaidCount
+      invoiceId: $steps.listInvoices.outputs.firstInvoiceId
+      amountDue: $steps.getInvoice.outputs.amountDue
+      currency: $steps.getInvoice.outputs.currency
+      paymentLink: $steps.getInvoice.outputs.paymentLink
+
+  # ---------------------------------------------------------------------------
+  # Cas négatif explicite : le test RÉUSSIT si l'API refuse la session expirée
+  # ---------------------------------------------------------------------------
+  - workflowId: rejectExpiredSession
+    summary: 'Cas négatif : une session expirée est refusée avec SESSION_EXPIRED'
+    description: |
+      Aucun renouvellement ici : on vérifie le contrat d'erreur (401 + code métier stable)
+      sur lequel repose la failure action `renewSessionOn401`.
+    inputs:
+      type: object
+      required: [expiredSessionToken]
+      properties:
+        expiredSessionToken:
+          type: string
+          description: Jeton expiré. Avec le mock Prism, un jeton vide simule l'expiration.
+    steps:
+      - stepId: listWithExpiredSession
+        operationId: $sourceDescriptions.billing.listInvoices
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$inputs.expiredSessionToken}
+          - name: invoiceFilter
+            in: querystring
+            value: status=unpaid
+        successCriteria:
+          - condition: $statusCode == 401
+          - condition: $response.body#/code == 'SESSION_EXPIRED'
+        outputs:
+          errorCode: $response.body#/code
+    outputs:
+      errorCode: $steps.listWithExpiredSession.outputs.errorCode
+
+components:
+  failureActions:
+    renewSessionOn401:
+      name: renewSessionOn401
+      type: retry
+      workflowId: renewSession
+      parameters:
+        - name: sessionToken
+          value: $inputs.sessionToken
+        - name: refreshToken
+          value: $inputs.refreshToken
+      retryAfter: 1
+      retryLimit: 2
+      criteria:
+        - condition: $statusCode == 401

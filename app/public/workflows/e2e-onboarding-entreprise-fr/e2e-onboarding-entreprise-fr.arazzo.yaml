@@ -1,0 +1,185 @@
+arazzo: 1.1.0
+$self: https://arazzo.connethics.com/workflows/e2e-onboarding-entreprise-fr/e2e-onboarding-entreprise-fr.arazzo.yaml
+info:
+  title: Onboarding d'une entreprise française (B2B)
+  summary: SIREN → KYC → création du compte → webhook account.created.
+  version: 1.0.0
+  description: |
+    Parcours d'entrée en relation d'un client professionnel :
+
+    1. recherche de l'entreprise par son **SIREN** dans un registre (stub de type INPI/SIRENE) ;
+    2. vérification **KYC/KYB** de l'entreprise et de son représentant légal ;
+    3. **création du compte**, idempotente (clé dérivée du SIREN) ;
+    4. envoi du **webhook `account.created`** au partenaire (étape AsyncAPI `action: send`).
+
+    Les étapes HTTP sont regroupées dans le workflow `verifierEtCreerCompte`, exécutable seul
+    (Prism + Respect). Le workflow `onboarderEntreprise` l'appelle comme une étape, puis émet le
+    webhook. Aucune clé ni URL d'API réelle : tout pointe vers `api.example.test`.
+sourceDescriptions:
+  - name: onboarding
+    url: ./openapi.yaml
+    type: openapi
+  - name: webhooks
+    url: ./asyncapi.yaml
+    type: asyncapi
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # Partie HTTP : exécutable de bout en bout avec Prism + Respect
+  # ---------------------------------------------------------------------------
+  - workflowId: verifierEtCreerCompte
+    summary: Vérifier l'entreprise et créer son compte
+    description: Registre, KYC puis création de compte. Aucune étape asynchrone.
+    inputs:
+      $ref: '#/components/inputs/demandeOnboarding'
+    steps:
+      - stepId: rechercherEntreprise
+        description: L'entreprise doit exister au registre et être active (état administratif A).
+        operationId: $sourceDescriptions.onboarding.rechercherEntrepriseParSiren
+        parameters:
+          - name: siren
+            in: path
+            value: $inputs.siren
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/etatAdministratif == 'A'
+        onFailure:
+          - name: entrepriseIntrouvableOuCessee
+            type: end
+        outputs:
+          denomination: $response.body#/denomination
+          formeJuridique: $response.body#/formeJuridique
+          codeNaf: $response.body#/codeNaf
+      - stepId: verifierKyc
+        description: KYC/KYB du représentant légal ; un risque élevé ou un refus arrête le parcours.
+        operationId: $sourceDescriptions.onboarding.verifierKyc
+        requestBody:
+          contentType: application/json
+          payload:
+            siren: $inputs.siren
+            denomination: $steps.rechercherEntreprise.outputs.denomination
+            representant: $inputs.representant
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/statut == 'approuve'
+          - condition: $response.body#/niveauRisque != 'eleve'
+        onFailure:
+          - name: kycIndisponible
+            type: retry
+            retryAfter: 5
+            retryLimit: 2
+            criteria:
+              - condition: $statusCode == 503
+          - name: kycNonConcluant
+            type: end
+        outputs:
+          verificationId: $response.body#/id
+          niveauRisque: $response.body#/niveauRisque
+      - stepId: creerCompte
+        description: Création idempotente — la clé est dérivée du SIREN, un rejeu ne crée pas de doublon.
+        operationId: $sourceDescriptions.onboarding.creerCompte
+        parameters:
+          - name: Idempotency-Key
+            in: header
+            value: onboarding-{$inputs.siren}
+        requestBody:
+          contentType: application/json
+          payload:
+            siren: $inputs.siren
+            denomination: $steps.rechercherEntreprise.outputs.denomination
+            emailContact: $inputs.emailContact
+            verificationKycId: $steps.verifierKyc.outputs.verificationId
+            offre: $inputs.offre
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/statut == 'actif'
+        outputs:
+          compteId: $response.body#/id
+          creeLe: $response.body#/creeLe
+    outputs:
+      compteId: $steps.creerCompte.outputs.compteId
+      creeLe: $steps.creerCompte.outputs.creeLe
+      denomination: $steps.rechercherEntreprise.outputs.denomination
+      niveauRisque: $steps.verifierKyc.outputs.niveauRisque
+
+  # ---------------------------------------------------------------------------
+  # Parcours complet : sous-workflow HTTP + webhook AsyncAPI
+  # ---------------------------------------------------------------------------
+  - workflowId: onboarderEntreprise
+    summary: Onboarder une entreprise et notifier le partenaire
+    inputs:
+      $ref: '#/components/inputs/demandeOnboarding'
+    steps:
+      - stepId: verifierEtCreer
+        description: Appelle le workflow HTTP ci-dessus (étape `workflowId`, paramètres = inputs).
+        workflowId: verifierEtCreerCompte
+        parameters:
+          - name: siren
+            value: $inputs.siren
+          - name: emailContact
+            value: $inputs.emailContact
+          - name: representant
+            value: $inputs.representant
+          - name: offre
+            value: $inputs.offre
+        # Dans une étape `workflowId`, `$outputs.x` désigne les sorties du workflow appelé
+        # (forme équivalente : `$workflows.verifierEtCreerCompte.outputs.x`, §5.9 ;
+        # seule la forme `$outputs.x` est résolue par Respect 2.79 dans ce contexte).
+        outputs:
+          compteId: $outputs.compteId
+          creeLe: $outputs.creeLe
+          denomination: $outputs.denomination
+          niveauRisque: $outputs.niveauRisque
+      - stepId: notifierCompteCree
+        description: |
+          Webhook `account.created` vers le partenaire. Étape `send` : terminée dès l'émission,
+          sans accusé de réception modélisé (§5.8.5.3).
+        operationId: $sourceDescriptions.webhooks.envoyerCompteCree
+        action: send
+        parameters:
+          - name: X-Event-Type
+            in: header
+            value: account.created
+          - name: X-Event-Id
+            in: header
+            value: evt_{$steps.verifierEtCreer.outputs.compteId}
+        requestBody:
+          contentType: application/json
+          payload:
+            compteId: $steps.verifierEtCreer.outputs.compteId
+            siren: $inputs.siren
+            denomination: $steps.verifierEtCreer.outputs.denomination
+            offre: $inputs.offre
+            niveauRisque: $steps.verifierEtCreer.outputs.niveauRisque
+            creeLe: $steps.verifierEtCreer.outputs.creeLe
+    outputs:
+      compteId: $steps.verifierEtCreer.outputs.compteId
+      denomination: $steps.verifierEtCreer.outputs.denomination
+
+components:
+  inputs:
+    demandeOnboarding:
+      type: object
+      required: [siren, emailContact, representant]
+      properties:
+        siren:
+          type: string
+          pattern: '^[0-9]{9}$'
+          description: Numéro SIREN de l'entreprise (9 chiffres).
+        emailContact:
+          type: string
+          format: email
+          description: Adresse e-mail du contact administratif.
+        representant:
+          type: object
+          description: Représentant légal soumis au KYC.
+          required: [nom, prenom, dateNaissance]
+          properties:
+            nom: { type: string }
+            prenom: { type: string }
+            dateNaissance: { type: string, format: date }
+        offre:
+          type: string
+          enum: [essentiel, pro, entreprise]
+          default: pro
+          description: Offre souscrite.

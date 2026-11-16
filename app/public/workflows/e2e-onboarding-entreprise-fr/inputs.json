@@ -1,0 +1,6 @@
+{
+  "siren": "123456789",
+  "emailContact": "admin@exemple-societe.example.test",
+  "representant": { "nom": "DURAND", "prenom": "Alix", "dateNaissance": "1980-05-17" },
+  "offre": "pro"
+}

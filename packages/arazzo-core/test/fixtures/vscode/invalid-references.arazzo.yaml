@@ -1,0 +1,15 @@
+arazzo: "1.0.1"
+info:
+  title: Invalid References Test
+  version: 1.0.0
+sourceDescriptions:
+  - name: testSource
+    url: https://example.com/api
+    type: invalid
+workflows:
+  - workflowId: mainWorkflow
+    dependsOn:
+      - nonExistentWorkflow
+    steps:
+      - stepId: step1
+        operationId: getItems

@@ -1,0 +1,120 @@
+# valid
+# Arazzo 1.1: HTTP + AsyncAPI (send/receive), correlationId, timeout,
+# dependsOn join of two asynchronous receives, Selector (JSONPath RFC 9535).
+arazzo: 1.1.0
+$self: https://examples.connethics.com/arazzo/order-to-cash.arazzo.yaml
+info:
+  title: Order to cash
+  version: 1.0.0
+sourceDescriptions:
+  - name: shop
+    url: ./shop.openapi.yaml
+    type: openapi
+  - name: events
+    url: ./events.asyncapi.yaml
+    type: asyncapi
+workflows:
+  - workflowId: orderToCash
+    summary: Create an order, wait for its confirmation, pay, then join invoice and shipment events.
+    inputs:
+      type: object
+      required: [sku, quantity]
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    steps:
+      - stepId: createOrder
+        operationPath: '{$sourceDescriptions.shop.url}#/paths/~1orders/post'
+        requestBody:
+          contentType: application/json
+          payload:
+            sku: $inputs.sku
+            quantity: $inputs.quantity
+        successCriteria:
+          - condition: $statusCode == 201
+        outputs:
+          orderId: $response.body#/id
+          total:
+            context: $response.body
+            selector: $.lines[?@.sku == 'shipping'].amount
+            type:
+              type: jsonpath
+              version: rfc9535
+      - stepId: awaitConfirmation
+        channelPath: '{$sourceDescriptions.events.url}#/channels/orderConfirmed'
+        action: receive
+        correlationId: $steps.createOrder.outputs.orderId
+        timeout: 6000
+        successCriteria:
+          - condition: $message.payload#/status == 'confirmed'
+        outputs:
+          confirmedAt: $message.payload#/confirmedAt
+        onFailure:
+          - name: notConfirmed
+            type: end
+      - stepId: pay
+        operationId: $sourceDescriptions.shop.payOrder
+        parameters:
+          - name: orderId
+            in: path
+            value: $steps.createOrder.outputs.orderId
+          - name: Idempotency-Key
+            in: header
+            value: 'pay-{$steps.createOrder.outputs.orderId}'
+        successCriteria:
+          - condition: $statusCode == 200
+          - context: $response.body
+            condition: $[?@.status == 'paid']
+            type: jsonpath
+        outputs:
+          paymentId: $response.body#/paymentId
+        onFailure:
+          - name: retryPayment
+            type: retry
+            retryAfter: 2
+            retryLimit: 3
+            criteria:
+              - condition: $statusCode == 503
+      - stepId: awaitInvoice
+        operationId: $sourceDescriptions.events.onInvoiceCreated
+        action: receive
+        correlationId: $steps.createOrder.outputs.orderId
+        timeout: 30000
+        dependsOn: [pay]
+        successCriteria:
+          - context: $message.payload
+            condition: $.invoiceId
+            type: jsonpath
+        outputs:
+          invoiceId: $message.payload#/invoiceId
+      - stepId: awaitShipment
+        channelPath: '{$sourceDescriptions.events.url}#/channels/shipmentCreated'
+        action: receive
+        correlationId: $steps.createOrder.outputs.orderId
+        timeout: 30000
+        dependsOn: [pay]
+        successCriteria:
+          - condition: $message.header.type == 'shipment.created'
+        outputs:
+          trackingId: $message.payload#/trackingId
+      - stepId: publishCompleted
+        channelPath: '{$sourceDescriptions.events.url}#/channels/orderCompleted'
+        action: send
+        dependsOn: [awaitInvoice, awaitShipment]
+        parameters:
+          - name: tenant
+            in: header
+            value: connethics
+        requestBody:
+          payload:
+            orderId: $steps.createOrder.outputs.orderId
+            invoiceId: $steps.awaitInvoice.outputs.invoiceId
+            trackingId: $steps.awaitShipment.outputs.trackingId
+    outputs:
+      orderId: $steps.createOrder.outputs.orderId
+      paymentId: $steps.pay.outputs.paymentId
+      invoiceId: $steps.awaitInvoice.outputs.invoiceId
+      trackingId: $steps.awaitShipment.outputs.trackingId
