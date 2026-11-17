@@ -26,6 +26,14 @@ describe('stylesheet', () => {
     }
   });
 
+  it('wraps the toolbar in a narrow pane instead of overflowing the canvas', () => {
+    const row = /\.af-toolbar__row \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(row).toMatch(/flex-wrap: wrap;/);
+    // …and the search box (top left) moves under the toolbar instead of being covered.
+    expect(/\.af-canvas \{[^}]*container-type: inline-size;/.test(css)).toBe(true);
+    expect(css).toMatch(/@container \(max-width: 900px\) \{\s*\.react-flow__panel\.af-search \{\s*margin-top: 58px;/);
+  });
+
   it('gives every edge kind a distinct stroke signature (dash, width, double line)', () => {
     const sig = (k: string) => {
       const rule = new RegExp(`\\.af-edge--${k} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';

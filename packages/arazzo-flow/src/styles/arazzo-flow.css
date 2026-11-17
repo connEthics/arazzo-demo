@@ -167,6 +167,7 @@
   position: relative;
   width: 100%;
   height: 100%;
+  container-type: inline-size;
   font-family: var(--af-font);
   color: var(--af-node-fg);
   background: var(--af-canvas-bg);
@@ -912,8 +913,25 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
+/* Narrow pane (< 900 px, e.g. a VS Code editor split): the search box goes under the
+   toolbar instead of being covered by it. */
+@container (max-width: 900px) {
+  .react-flow__panel.af-search {
+    margin-top: 58px;
+  }
+}
+/* Below ~610 px the toolbar wraps on two rows. */
+@container (max-width: 610px) {
+  .react-flow__panel.af-search {
+    margin-top: 96px;
+  }
+}
+/* Wraps in a narrow pane (VS Code editor split, ~480 px) instead of overflowing
+   to the left of the canvas, where the zoom buttons became unreachable. */
 .af-toolbar__row {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 2px;
   padding: 3px;
