@@ -23,7 +23,7 @@ export function ArazzoMark({ size = 32, title }: { size?: number; title?: string
       role={title ? "img" : undefined}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      className="shrink-0"
+      className="shrink-0 rounded-[22%] dark:outline dark:outline-1 dark:outline-offset-0 dark:outline-[#334155]"
     >
       <rect width="64" height="64" rx="14" fill="#0f172a" />
       {WARP.map((x) => (

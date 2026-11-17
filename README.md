@@ -1,227 +1,124 @@
-# 🎭 Arazzo Visualizer
+# Arazzo Studio by ConnEthics
 
-Interactive visualizer for [Arazzo](https://spec.openapis.org/arazzo/latest.html) specifications - the OpenAPI standard for API workflow orchestration.
+**API workflows humans can read and machines can run.**
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)
-![React Flow](https://img.shields.io/badge/React_Flow-12-purple)
-![Mermaid](https://img.shields.io/badge/Mermaid-11-pink)
-![License](https://img.shields.io/badge/License-MIT-green)
+Arazzo Studio is a free, in-browser editor for [Arazzo](https://spec.openapis.org/arazzo/v1.1.0.html) **1.1**, the OpenAPI Initiative standard for multi-step API workflows. Write the YAML, see the workflow graph, generate the documentation. The same file can then run as an end-to-end test with an Arazzo runner and back a tool for your AI agents.
 
-## 🚀 Demo
+👉 **[arazzo.connethics.com](https://arazzo.connethics.com)** · editor at [`/builder`](https://arazzo.connethics.com/builder)
 
-👉 **[arazzo.connethics.com](https://arazzo.connethics.com)**
+![Arazzo 1.1.0](https://img.shields.io/badge/Arazzo-1.1.0-2563eb)
+![Next.js](https://img.shields.io/badge/Next.js-16-0f172a?logo=next.js)
+![Core packages: MIT](https://img.shields.io/badge/core%20packages-MIT-2563eb)
+![App: source-available](https://img.shields.io/badge/app-source--available-64748b)
 
-## ✨ Features
+![Arazzo Studio landing page](app/public/screenshots/v2/landing-desktop-light.png)
 
-### Visualization Modes
-- 🔄 **Interactive Flow View** - Drag, zoom, and explore workflow nodes with React Flow + ELK.js auto-layout
-- 📊 **Mermaid Flowchart** - Flowchart diagrams with conditional paths
-- 🔀 **Sequence Diagrams** - Visualize API interactions between actors with request/response flows
-- 🏊 **Swimlane View** - Actor-based lanes showing event exchanges between API sources
-- 📖 **Documentation View** - Comprehensive workflow documentation with step details
+## What it does
 
-### Editor & Export
-- 📄 **Live YAML Editor** - Monaco-powered editor with syntax highlighting
-- 📋 **Copy to Clipboard** - One-click Mermaid syntax export for all diagram types
-- 🌙 **Dark/Light Mode** - Theme toggle for comfortable viewing
+- **Arazzo 1.1.0**, backward compatible with 1.0.x.
+- **AsyncAPI steps**: `channelPath`, `action: send | receive`, `correlationId`, `timeout`, next to OpenAPI operations.
+- **`dependsOn`**: fan-out and join, drawn with a dedicated dotted edge and a junction node.
+- **Selector Objects**: JSONPath (RFC 9535), XPath and JSON Pointer, with the declared expression type.
+- **Validation** against the official OpenAPI Initiative JSON Schema (1.1 and 1.0), plus semantic rules (unknown steps or sources, `dependsOn` cycles, unresolved expressions).
+- **YAML, graph and documentation in sync**: Monaco editor, interactive graph, generated docs, Mermaid export.
 
-### Interactivity
-- 🎯 **Step Details** - Click any step to see parameters, inputs, outputs, and success criteria
-- 🔗 **Clickable Nodes** - Input/Output nodes open workflow details panel
-- ↔️ **Layout Toggle** - Switch between horizontal and vertical flow layouts
-- 📁 **Example Workflows** - Pet Store adoption demo included
+Related tools from ConnEthics:
 
-## 🏃 Quick Start
+- **Arazzo for VS Code — by ConnEthics**: validation, graph and documentation preview in your editor ([Marketplace](https://marketplace.visualstudio.com/items?itemName=connethics.arazzo-vscode), [source](https://github.com/connEthics/arazzo-vscode)).
+- **AI skill file** [`arazzo.skill.md`](arazzo.skill.md): teaches Claude Code, Cursor, GitHub Copilot or Cline to write and review Arazzo 1.1, expose workflows as MCP tools and run them as E2E tests.
 
-### Prerequisites
-
-- Node.js 22.x or higher
-- npm or yarn
-
-### Development
-
-```bash
-# Clone the repository
-git clone https://github.com/connEthics/arazzo-demo.git
-cd arazzo-demo/app
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Production Build
-
-```bash
-cd app
-npm run build
-npm start
-```
-
-## 📁 Project Structure
+## Monorepo structure
 
 ```
 arazzo-demo/
-├── app/                        # Next.js application
+├── app/                          # Arazzo Studio (Next.js 16, App Router) — not an npm workspace member
 │   ├── src/
-│   │   ├── app/               # App router pages
-│   │   │   ├── builder/       # Main visualizer page
-│   │   │   └── showcase/      # Demo showcase
-│   │   ├── components/        # React components
-│   │   │   ├── ArazzoFlow.tsx        # React Flow + ELK.js visualization
-│   │   │   ├── MermaidDiagram.tsx    # Mermaid rendering with click handling
-│   │   │   ├── DetailDrawer.tsx      # Step details side panel
-│   │   │   ├── DocumentationView.tsx # Full documentation renderer
-│   │   │   └── nodes/                # Custom React Flow nodes
-│   │   ├── lib/               # Core logic
-│   │   │   ├── arazzo-parser.ts      # YAML parsing & flow conversion
-│   │   │   ├── mermaid-converter.ts  # Flowchart & sequence generation
-│   │   │   └── swimlane-converter.ts # Swimlane diagram generation
-│   │   └── types/             # TypeScript definitions
+│   │   ├── app/                  # Routes: / (landing), /builder (Studio), /showcase
+│   │   ├── components/           # UI components (landing/ = landing page sections)
+│   │   ├── features/builder/     # Studio: editor, canvas, inspectors
+│   │   ├── lib/                  # Parsing, Mermaid and swimlane converters
+│   │   └── styles/brand-tokens.css  # ConnEthics design tokens (--ce-*)
 │   └── public/
-│       ├── workflows/         # Example Arazzo specs (.yaml)
-│       └── openapi/           # Example OpenAPI specs
-├── workflows/                 # Additional workflow examples
-├── openapi/                   # Additional OpenAPI specs
-└── README.md
+│       ├── workflows/            # Arazzo 1.1.0 examples (see below)
+│       ├── openapi/              # OpenAPI stubs for the historical examples
+│       └── arazzo.skill.md       # AI skill file served by the landing page
+├── packages/
+│   ├── arazzo-core/              # @connethics/arazzo-core — types, parsing, validation, graph model, Mermaid (MIT)
+│   └── arazzo-flow/              # @connethics/arazzo-flow — read-only React workflow graph (MIT)
+├── scripts/sync-shared.mjs       # Copies core/flow into arazzo-vscode and the ConnEthics website
+├── docs/                         # Arazzo reference and front-end architecture notes
+└── arazzo.skill.md
 ```
 
-## 🚀 Deploy to Vercel
+The root `package.json` is an npm workspace for `packages/*` only. The Studio in `app/` is installed, built and deployed on its own.
 
-### One-Click Deploy
+## Examples
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/connEthics/arazzo-demo)
+All examples are Arazzo **1.1.0** documents with their OpenAPI / AsyncAPI stubs, inputs and a README that records what was actually run. Index and validation details: [`app/public/workflows/README.md`](app/public/workflows/README.md).
 
-### Manual Deploy
+| Use case | Example | Highlights |
+|---|---|---|
+| MCP tools for AI agents | [`mcp-travel-booking`](app/public/workflows/mcp-travel-booking/) | `quote_trip` (read-only) and `book_trip` with compensations, `mcp-tools.json` |
+| MCP tools for AI agents | [`mcp-support-refund`](app/public/workflows/mcp-support-refund/) | Guard-rail `successCriteria`, AsyncAPI `send` |
+| Executable E2E tests | [`e2e-order-to-cash`](app/public/workflows/e2e-order-to-cash/) | `receive` with `correlationId` and `timeout`, `dependsOn` fan-out and join, Selectors |
+| Executable E2E tests | [`e2e-session-renewal`](app/public/workflows/e2e-session-renewal/) | Failure action calling a reusable workflow with `parameters`, retry |
+| Partner integration docs | [`e2e-onboarding-entreprise-fr`](app/public/workflows/e2e-onboarding-entreprise-fr/) | Company lookup, KYC, account, webhook; `workflowId` step |
+| Historical (migrated to 1.1) | [`pet-adoption`](app/public/workflows/pet-adoption.arazzo.yaml), [`ecommerce-onboarding`](app/public/workflows/ecommerce-onboarding.arazzo.yaml) | Loaded by the Studio demo; Selector Objects |
 
-1. Fork this repository
-2. Import to [Vercel](https://vercel.com/new)
-3. Set root directory to `app`
-4. Deploy!
+Once deployed, each file is also served at `https://arazzo.connethics.com/workflows/…`.
 
-The `vercel.json` in the root configures:
-- YAML files in `/workflows` are served with correct Content-Type headers
+## Quick start
 
-**Note:** When importing to Vercel, set the root directory to `app` in the project settings.
+Prerequisites: Node.js 22 or later.
 
-## 📝 Adding Your Own Workflows
+```bash
+git clone https://github.com/connEthics/arazzo-demo.git
+cd arazzo-demo
 
-1. Add your Arazzo YAML file to `app/public/workflows/`
-2. Optionally add OpenAPI specs to `app/public/openapi/`
-3. Your workflow will appear in the examples dropdown
+# Shared packages (optional, for core/flow development)
+npm install
+npm run build && npm test
 
-### Arazzo Spec Structure
-
-```yaml
-arazzo: 1.0.1
-info:
-  title: My Workflow
-  version: 1.0.0
-
-sourceDescriptions:
-  - name: myApi
-    type: openapi
-    url: /openapi/my-api.yaml
-
-workflows:
-  - workflowId: my-workflow
-    summary: Description of workflow
-    inputs:
-      type: object
-      properties:
-        inputParam:
-          type: string
-    steps:
-      - stepId: step-1
-        operationId: myApi.operation
-        parameters:
-          - name: param
-            in: query
-            value: $inputs.inputParam
-        successCriteria:
-          - condition: $statusCode == 200
-        outputs:
-          result: $response.body.data
+# Arazzo Studio
+cd app
+npm install
+npm run dev        # http://localhost:3000
+npm run build && npm start
 ```
 
-## 📦 Open Source Components
+### Deploy to Vercel
 
-This project is built with the following open source libraries:
+Import the repository in [Vercel](https://vercel.com/new) and set the **root directory to `app`**. `vercel.json` serves `/workflows/*` with a YAML content type and CORS.
 
-| Component | Version | License | Description |
-|-----------|---------|---------|-------------|
-| [Next.js](https://nextjs.org/) | 16.0.9 | MIT | React framework for production |
-| [React](https://react.dev/) | 19.2.1 | MIT | UI component library |
-| [@xyflow/react](https://reactflow.dev/) | 12.10.0 | MIT | Interactive node-based diagrams |
-| [ELK.js](https://github.com/kieler/elkjs) | 0.11.0 | EPL-2.0 | Eclipse Layout Kernel for automatic graph layout |
-| [Mermaid](https://mermaid.js.org/) | 11.12.2 | MIT | Diagram and flowchart generation |
-| [Monaco Editor](https://microsoft.github.io/monaco-editor/) | 4.7.0 | MIT | VS Code's code editor |
-| [js-yaml](https://github.com/nodeca/js-yaml) | 4.1.1 | MIT | YAML parser and serializer |
-| [react-markdown](https://github.com/remarkjs/react-markdown) | 10.1.0 | MIT | Markdown renderer for React |
-| [Tailwind CSS](https://tailwindcss.com/) | 4.x | MIT | Utility-first CSS framework |
-| [TypeScript](https://www.typescriptlang.org/) | 5.x | Apache-2.0 | Typed JavaScript |
+## Brand
 
-## 📚 Resources
+Colors, typography and the Arazzo mark come from the ConnEthics design tokens (`app/src/styles/brand-tokens.css`, generated from `tokens.json`): primary blue `#2563eb`, orange as a decorative accent only, slate neutrals, Inter and JetBrains Mono. The page follows the system light or dark theme.
 
-- [Arazzo Specification](https://spec.openapis.org/arazzo/latest.html)
+## License
+
+This repository contains code under **two different licenses**:
+
+| Part | License |
+|---|---|
+| `packages/arazzo-core` (`@connethics/arazzo-core`) | **MIT** © 2026 ConnEthics, see [`packages/arazzo-core/LICENSE`](packages/arazzo-core/LICENSE). The bundled JSON Schemas are the OpenAPI Initiative's (Apache-2.0). |
+| `packages/arazzo-flow` (`@connethics/arazzo-flow`) | **MIT** © 2026 ConnEthics, see [`packages/arazzo-flow/LICENSE`](packages/arazzo-flow/LICENSE). |
+| The Arazzo Studio application (`app/` and everything else) | The terms in [`LICENSE.md`](LICENSE.md), including its MIT exception for `app/src/components/arazzo/` ([conditions](app/src/components/arazzo/LICENSE)). |
+
+**Using the hosted Studio at arazzo.connethics.com is free.** The application source is published so you can read and study it, but `LICENSE.md` does not grant the right to use, copy, modify or redistribute it without written authorization from ConnEthics. It is therefore *not* open source in the OSI sense.
+
+**In progress:** ConnEthics intends to move the application to a source-available license with a defined path to open source (the Functional Source License, FSL-1.1-MIT, is under consideration). Until `LICENSE.md` is updated, it is the only text that applies to the application. For licensing questions: [connethics.com](https://www.connethics.com).
+
+Third-party dependencies keep their own licenses: MIT (Next.js, React, React Flow, Mermaid, Monaco Editor, js-yaml, yaml, react-markdown, Tailwind CSS), EPL-2.0 (ELK.js), Apache-2.0 (TypeScript).
+
+## Resources
+
+- [Arazzo Specification 1.1.0](https://spec.openapis.org/arazzo/v1.1.0.html)
 - [OpenAPI Initiative](https://www.openapis.org/)
-- [React Flow Documentation](https://reactflow.dev/)
-- [Mermaid Documentation](https://mermaid.js.org/)
-- [ELK.js Documentation](https://eclipse.dev/elk/)
-
-## 📄 License
-
-This project has a **dual license** structure:
-
-### 📋 Main Project - Proprietary License
-
-The main codebase is **open source but not free to use**. All rights are reserved by connEthics.
-
-- ✅ You may **view and study** the source code for educational purposes
-- ❌ You may **NOT** use, copy, modify, or distribute without explicit authorization
-- 📧 For licensing inquiries: [connethics.com](https://connethics.com)
-
-👉 See the full license terms in [LICENSE.md](LICENSE.md)
-
-### 🆓 Arazzo Components - MIT License
-
-The components in [`app/src/components/arazzo/`](app/src/components/arazzo/) are released under the **MIT License** and are free to use:
-
-- `ActionList.tsx` - Displays onSuccess/onFailure actions
-- `ArazzoSpecHeader.tsx` - Spec info header display
-- `CriterionBadge.tsx` - Success/failure criteria badges
-- `DependsOnList.tsx` - Step dependencies visualization
-- `PayloadReplacements.tsx` - Request body replacement display
-- `ReusableRef.tsx` - Component reference display
-- `SchemaViewer.tsx` - JSON Schema viewer
-- `SourceDescriptionsList.tsx` - API source descriptions
-- `WorkflowList.tsx` - Workflow listing component
-- `index.ts` - Component exports
-
-**Conditions:**
-- Include a link to the original project: https://github.com/connEthics/arazzo-demo
-- Include the MIT License notice
-
-👉 See the MIT license in [app/src/components/arazzo/LICENSE](app/src/components/arazzo/LICENSE)
-
-### Third-Party Dependencies
-
-This project uses open source dependencies with the following licenses:
-- **MIT License**: Next.js, React, React Flow, Mermaid, Monaco Editor, js-yaml, react-markdown, Tailwind CSS
-- **EPL-2.0**: ELK.js
-- **Apache-2.0**: TypeScript
+- [Arazzo for VS Code — by ConnEthics](https://marketplace.visualstudio.com/items?itemName=connethics.arazzo-vscode)
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://connethics.com">connethics.com</a>
-  <br><br>
-  <a href="https://github.com/connEthics/arazzo-demo">
-    <img src="https://img.shields.io/badge/GitHub-View_Source-black?logo=github" alt="GitHub">
-  </a>
+  Arazzo Studio by <a href="https://www.connethics.com">ConnEthics</a>.<br>
+  Arazzo is a specification of the OpenAPI Initiative. Arazzo Studio is an independent tool, not an official OAI product.
 </p>

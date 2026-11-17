@@ -25,15 +25,15 @@ export default function CodeWindow({
   className?: string;
 }) {
   return (
-    <div className={`relative rounded-xl border border-[#1e293b] bg-[#020617] shadow-[var(--ce-shadow-xl)] ${className}`}>
+    <div className={`relative min-w-0 max-w-full rounded-xl border border-[#1e293b] bg-[#020617] shadow-[var(--ce-shadow-xl)] ${className}`}>
       <div className="flex items-center gap-2 border-b border-[#1e293b] px-4 py-2.5">
         <span className="h-3 w-3 rounded-full bg-[#334155]" aria-hidden="true" />
         <span className="h-3 w-3 rounded-full bg-[#334155]" aria-hidden="true" />
         <span className="h-3 w-3 rounded-full bg-[#334155]" aria-hidden="true" />
         <span className="ml-3 truncate font-mono text-xs text-[#cbd5e1]">{filename}</span>
       </div>
-      <pre className="overflow-x-auto px-0 py-3 font-mono text-[12.5px] leading-6 sm:text-[13px]">
-        <code>
+      <pre className="overflow-x-auto px-0 py-3 font-mono [font-variant-ligatures:none] text-[12.5px] leading-6 sm:text-[13px]">
+        <code className="block w-max min-w-full">
           {lines.map((line, i) => (
             <div
               key={i}

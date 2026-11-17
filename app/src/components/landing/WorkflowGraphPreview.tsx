@@ -105,7 +105,7 @@ export default function WorkflowGraphPreview() {
     <figure className="m-0">
       <svg
         viewBox="0 0 420 610"
-        className="w-full h-auto max-w-[420px] mx-auto block"
+        className="w-full h-auto max-w-[420px] mx-auto block [font-variant-ligatures:none]"
         role="img"
         aria-labelledby="otc-title otc-desc"
       >
@@ -139,7 +139,7 @@ export default function WorkflowGraphPreview() {
         <path d="M210 540 V566" style={seq} markerEnd="url(#otc-arrow-seq)" />
 
         {/* edge labels */}
-        <text x="232" y="333" className="font-mono" fontSize="10.5" style={{ fill: v("graph-depends-on-text") }}>
+        <text x="210" y="338" textAnchor="middle" className="font-mono" fontSize="10.5" style={{ fill: v("graph-depends-on-text") }}>
           dependsOn
         </text>
 

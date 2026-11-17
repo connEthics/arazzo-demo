@@ -12,7 +12,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default function DocPreview() {
   return (
-    <div className="rounded-2xl border border-ce-border bg-ce-raised shadow-[var(--ce-shadow-lg)] overflow-hidden text-left">
+    <div className="rounded-2xl border border-ce-border bg-ce-raised [font-variant-ligatures:none] shadow-[var(--ce-shadow-lg)] overflow-hidden text-left">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-ce-border bg-ce-surface">
         <span className="text-xs font-medium text-ce-muted">orderToCash</span>
         <span className="text-xs text-ce-subtle" aria-hidden="true">/</span>
@@ -40,7 +40,7 @@ export default function DocPreview() {
 
       <Row label="Depends on">
         <span className="inline-flex items-center gap-2 rounded-md border border-[var(--ce-graph-depends-on-fg)] bg-[var(--ce-graph-depends-on-bg)] px-2 py-0.5 font-mono text-[12px] text-[var(--ce-graph-depends-on-text)]">
-          ↙ awaitOrderConfirmation
+          awaitOrderConfirmation
         </span>
       </Row>
 
