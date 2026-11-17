@@ -137,7 +137,7 @@ async function getInstance(c: ElkConfig): Promise<Instance> {
   if (instance && instance.key === key) return instance;
   terminate(instance);
   if (c.engine) instance = { key, elk: c.engine, mode: 'main-thread' };
-  else if (c.mode === 'main-thread' || typeof Worker === 'undefined') instance = { key, elk: await mainThreadElk(), mode: 'main-thread' };
+  else if (c.mode === 'main-thread' || (!c.createWorker && typeof Worker === 'undefined')) instance = { key, elk: await mainThreadElk(), mode: 'main-thread' };
   else {
     try {
       instance = await workerElk(c);

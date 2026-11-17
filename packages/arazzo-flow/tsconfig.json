@@ -17,7 +17,8 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@connethics/arazzo-core": ["../arazzo-core/src/index.ts"]
+      "@connethics/arazzo-core": ["../arazzo-core/src/index.ts"],
+      "@connethics/arazzo-flow": ["./src/index.ts"]
     }
   },
   "include": ["src", "test", "demo/src", "vitest.config.ts", "tsup.config.ts", "demo/vite.config.ts"]

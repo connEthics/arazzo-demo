@@ -202,7 +202,7 @@ function secondLine(n: GraphNode): ReactNode {
       return n.path ? (
         <span className="af-mono">{n.path}</span>
       ) : (
-        <span className="af-mono af-muted">{n.operationId}</span>
+        <span className="af-mono af-muted">{n.operationId ? shortWorkflow(n.operationId) : ''}</span>
       );
   }
 }
@@ -231,7 +231,7 @@ export const StepNode = memo(function StepNode({ id, data }: NodeProps<AfNode>) 
       </div>
       {density !== 'compact' && (
         <>
-          <div className="af-card__line">{n.summary ?? n.operationId ?? ' '}</div>
+          <div className="af-card__line">{n.summary ?? (n.operationId ? shortWorkflow(n.operationId) : ' ')}</div>
           <div className="af-card__line af-card__line--sub">{secondLine(n)}</div>
           <div className="af-card__chips">{stepChips(n, outEdges, m)}</div>
         </>

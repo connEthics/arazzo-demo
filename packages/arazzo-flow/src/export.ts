@@ -52,6 +52,31 @@ export function dataUrlToBlob(url: string): Blob {
   return new Blob([decodeURIComponent(data)], { type });
 }
 
+const SVG_PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity'];
+
+/**
+ * html-to-image does not carry class-based SVG paint (our edges are styled by CSS variables):
+ * inline the computed values on every SVG shape for the duration of the export.
+ */
+function inlineSvgPaint(root: Element): () => void {
+  const saved: [SVGElement, string | null][] = [];
+  root.querySelectorAll<SVGElement>('path, polygon, polyline, circle, line, rect').forEach((el) => {
+    if (!(el instanceof SVGElement)) return;
+    const cs = getComputedStyle(el);
+    saved.push([el, el.getAttribute('style')]);
+    for (const p of SVG_PROPS) {
+      const v = cs.getPropertyValue(p);
+      if (v) el.style.setProperty(p, v);
+    }
+  });
+  return () => {
+    for (const [el, style] of saved) {
+      if (style === null) el.removeAttribute('style');
+      else el.setAttribute('style', style);
+    }
+  };
+}
+
 /**
  * Render the whole graph (not just the visible part) to SVG or PNG.
  * `root` is the `.af-root` element of `<ArazzoGraph>`.
@@ -67,6 +92,7 @@ export async function exportImage(root: HTMLElement, format: 'svg' | 'png', o: I
   const prevLod = root.dataset.lod;
   root.dataset.lod = 'full';
   root.dataset.exporting = 'true';
+  const restore = inlineSvgPaint(viewport);
   try {
     const opts = {
       width,
@@ -80,6 +106,7 @@ export async function exportImage(root: HTMLElement, format: 'svg' | 'png', o: I
     const url = format === 'png' ? await toPng(viewport, opts) : await toSvg(viewport, opts);
     return dataUrlToBlob(url);
   } finally {
+    restore();
     if (prevLod) root.dataset.lod = prevLod;
     delete root.dataset.exporting;
   }

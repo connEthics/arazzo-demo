@@ -268,7 +268,7 @@ function GraphInner(props: InnerProps) {
 
   // fitView margins: room for search/toolbar (top) and the defaults banner.
   const fitPadding = useMemo(
-    () => ({ top: view.defaults ? '104px' : '64px', bottom: '36px', left: '28px', right: showList ? '320px' : '28px' }) as const,
+    () => ({ top: view.defaults ? '104px' : '64px', bottom: '36px', left: '28px', right: showList ? '330px' : '28px' }) as const,
     [view.defaults, showList],
   );
 
@@ -538,14 +538,26 @@ function GraphInner(props: InnerProps) {
     async (format: 'svg' | 'png') => {
       const root = wrapperRef.current;
       if (!root || !layout) throw new Error('arazzo-flow: graph not laid out yet');
-      const xs = [...Object.values(layout.nodes), ...layout.frames];
+      const xs: { x: number; y: number; width: number; height: number }[] = [...Object.values(layout.nodes), ...layout.frames];
+      for (const e of Object.values(layout.edges)) {
+        for (const p of e.points ?? []) xs.push({ x: p.x, y: p.y, width: 0, height: 0 });
+        if (e.label) xs.push({ x: e.label.x - 8, y: e.label.y, width: e.label.width + 16, height: e.label.height });
+      }
+      // Labels rendered outside ELK (lanes mode, self loops): read their DOM boxes in flow coordinates.
+      const vp = rf.getViewport();
+      const rootBox = root.getBoundingClientRect();
+      root.querySelectorAll<HTMLElement>('.af-edge-label').forEach((el) => {
+        const b = el.getBoundingClientRect();
+        if (!b.width) return;
+        xs.push({ x: (b.left - rootBox.left - vp.x) / vp.zoom, y: (b.top - rootBox.top - vp.y) / vp.zoom, width: b.width / vp.zoom, height: b.height / vp.zoom });
+      });
       const x0 = Math.min(...xs.map((p) => p.x));
       const y0 = Math.min(...xs.map((p) => p.y));
       const x1 = Math.max(...xs.map((p) => p.x + p.width));
       const y1 = Math.max(...xs.map((p) => p.y + p.height));
       return exportImage(root, format, { bounds: { x: x0, y: y0 - 12, width: x1 - x0, height: y1 - y0 + 24 } });
     },
-    [layout],
+    [layout, rf],
   );
   const doExport = useCallback(
     async (format: ExportFormat) => {
