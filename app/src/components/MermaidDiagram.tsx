@@ -43,7 +43,10 @@ export default function MermaidDiagram({
     mermaid.initialize({
       startOnLoad: false,
       theme: isDark ? 'dark' : 'default',
-      securityLevel: 'loose',
+      // 'strict' sanitizes labels: the chart is built from user-pasted YAML and
+      // the SVG is injected with dangerouslySetInnerHTML. Node clicks are
+      // handled on the DOM, not through Mermaid `click` callbacks.
+      securityLevel: 'strict',
       flowchart: {
         useMaxWidth: false,
         htmlLabels: true,

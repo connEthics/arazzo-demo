@@ -134,7 +134,7 @@ export default function DocumentationView({
 
         {/* Footer - Properly positioned for print */}
         <footer className={`mt-12 pt-6 border-t text-center text-sm ${mutedClass} print:mt-8`} style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
-          <p>Generated with Arazzo Builder</p>
+          <p>Generated with Arazzo Studio by ConnEthics</p>
           <p className="mt-1">
             Made with ❤️ by <a href="https://connethics.com" className="text-blue-600 hover:underline print:text-blue-600">connethics.com</a>
           </p>

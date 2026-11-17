@@ -676,9 +676,9 @@ function ShowcaseContent() {
             {activeSection === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Arazzo Builder Components</h2>
+                  <h2 className="text-2xl font-bold mb-2">Arazzo Studio Components</h2>
                   <p className={`${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                    This showcase displays the UI components used in the Arazzo Builder application.
+                    This showcase displays the UI components used in the Arazzo Studio application.
                     Browse through different sections to see components in action.
                   </p>
                 </div>
@@ -1500,7 +1500,7 @@ function ShowcaseContent() {
 
       {/* Footer */}
       <footer className={`flex-shrink-0 py-3 px-6 text-center text-xs border-t ${isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'}`}>
-        Arazzo Builder Component Showcase • Made with ❤️ by{' '}
+        Arazzo Studio Component Showcase • Made with ❤️ by{' '}
         <a href="https://connethics.com" className="text-blue-500 hover:underline">connethics.com</a>
       </footer>
     </div>

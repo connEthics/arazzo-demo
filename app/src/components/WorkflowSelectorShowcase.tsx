@@ -101,7 +101,7 @@ export default function WorkflowSelectorShowcase({ isDark }: WorkflowSelectorSho
           <div className={`p-4 rounded-lg border mb-4 ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
             <div className="flex items-center gap-4">
               <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Arazzo Builder
+                Arazzo Studio
               </h4>
               <div className={`w-px h-6 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
               <WorkflowSelector

@@ -770,7 +770,7 @@ Units      retryAfter = seconds · timeout = milliseconds
 
 ## Examples (all valid Arazzo 1.1.0, executed 2026-11-16)
 
-Browse them at https://arazzo.connethics.com/workflows/ (source: `app/public/workflows/` in
+Open them in Arazzo Studio at `https://arazzo.connethics.com/builder?example=<folder>` (source: `app/public/workflows/` in
 https://github.com/connEthics/arazzo-demo). Each one has its OpenAPI/AsyncAPI stubs, `inputs.json` and a README
 with the run commands and the observed results.
 
@@ -787,7 +787,8 @@ with the run commands and the observed results.
 
 - **Arazzo Studio by ConnEthics**: https://arazzo.connethics.com. A visual viewer and builder, with Mermaid export.
 - **Arazzo for VS Code — by ConnEthics**: [`connethics.arazzo-vscode`](https://marketplace.visualstudio.com/items?itemName=connethics.arazzo-vscode).
-  It offers a preview, a flowchart, an outline and diagnostics. Arazzo 1.1 support is rolling out.
+  It validates Arazzo 1.0.x and 1.1.x (official JSON Schemas + semantic rules) and offers an interactive graph, a
+  documentation preview, an outline, completion and quick fixes (including migration to 1.1.0).
 - **`@connethics/arazzo-core`** (MIT, `packages/arazzo-core` in arazzo-demo). It validates 1.0.x and 1.1.x documents in two
   layers: the official JSON Schemas, then semantic rules with codes such as `arazzo-step-target-exclusive`. It also builds
   a renderer-agnostic workflow graph and exports Mermaid. npm publication is planned.

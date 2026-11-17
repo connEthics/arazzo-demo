@@ -45,7 +45,7 @@ export default function BuilderHeader({
   onWorkflowDelete,
   isDark = false,
   onThemeToggle,
-  title = 'Arazzo Builder',
+  title = 'Arazzo Studio',
 }: BuilderHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
