@@ -6,7 +6,7 @@ import InputPanel from './InputPanel';
 import OutputPanel from './OutputPanel';
 import { ExpressionSuggestion } from './ExpressionInput';
 import { Action } from './ActionFormEditor';
-import type { Step, WorkflowInputs, SourceDescription, Components } from '@/types/arazzo';
+import type { Step, WorkflowInputs, SourceDescription, Components, OutputValue } from '@/types/arazzo';
 
 interface InspectorProps {
   /** Current selection data (step, input, output) */
@@ -18,7 +18,7 @@ interface InspectorProps {
   /** Workflow inputs schema */
   workflowInputs?: WorkflowInputs;
   /** Workflow outputs mapping */
-  workflowOutputs?: Record<string, string>;
+  workflowOutputs?: Record<string, OutputValue>;
   /** Current workflow ID */
   workflowId?: string;
   /** All steps in current workflow for goto dropdown */
@@ -30,7 +30,7 @@ interface InspectorProps {
   /** Handle workflow input update */
   onInputUpdate?: (inputs: WorkflowInputs) => void;
   /** Handle workflow output update */
-  onOutputUpdate?: (outputs: Record<string, string>) => void;
+  onOutputUpdate?: (outputs: Record<string, OutputValue>) => void;
   /** Handle reordering */
   onReorderInput?: (startIndex: number, endIndex: number) => void;
   onReorderOutput?: (startIndex: number, endIndex: number) => void;

@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import type { Step, SourceDescription, WorkflowInputs } from '@/types/arazzo';
+import type { Step, SourceDescription, WorkflowInputs, OutputValue, SchemaDefinition } from '@/types/arazzo';
 import { StepContent, SourceContent, InputContent, OutputContent } from './DetailViews';
 import { Badge, MarkdownText } from './primitives';
 import { ExpressionSuggestion } from './ExpressionInput';
@@ -16,8 +16,8 @@ export interface DetailData {
   sourceForStep?: SourceDescription; // Source description for the step's API
   input?: { name: string; schema: Record<string, unknown> };
   reusableInput?: { name: string; inputs: WorkflowInputs };
-  output?: { name: string; value: string; stepId?: string; allOutputs?: Record<string, string> };
-  schema?: { name: string; schema: any };
+  output?: { name: string; value: string; stepId?: string; allOutputs?: Record<string, OutputValue> };
+  schema?: { name: string; schema: SchemaDefinition };
 }
 
 interface DetailDrawerProps {
@@ -25,7 +25,7 @@ interface DetailDrawerProps {
   isDark?: boolean;
   onClose: () => void;
   workflowInputs?: WorkflowInputs;
-  workflowOutputs?: Record<string, string>;
+  workflowOutputs?: Record<string, OutputValue>;
   workflowId?: string;
   onNavigateToDoc?: (workflowId: string, stepId: string) => void;
   onStepClick?: (stepId: string) => void;
@@ -106,7 +106,7 @@ function DetailDrawer({ data, isDark = false, onClose, workflowInputs, workflowO
       {/* Subtitle - Replaced by editable StepHeader description */}
       {data.type === 'source' && data.source?.type && (
         <div className={`flex-shrink-0 px-4 py-2 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-          <Badge variant={data.source.type === 'openapi' ? 'openapi' : 'arazzo'} isDark={isDark} size="xs">
+          <Badge variant={data.source.type === 'openapi' ? 'openapi' : data.source.type === 'asyncapi' ? 'asyncapi' : 'arazzo'} isDark={isDark} size="xs">
             {data.source.type.toUpperCase()}
           </Badge>
         </div>

@@ -66,7 +66,7 @@ export interface ArazzoSpec extends Extensions {
 // ─────────────────────────────────────────────────────────────────────────────────
 // 4.6.2 Info Object
 // ─────────────────────────────────────────────────────────────────────────────────
-export interface ArazzoInfo {
+export interface ArazzoInfo extends Extensions {
   /** REQUIRED. Human readable title of the Arazzo Description */
   title: string;
   /** REQUIRED. Version identifier of the Arazzo document */
@@ -80,7 +80,7 @@ export interface ArazzoInfo {
 // ─────────────────────────────────────────────────────────────────────────────────
 // 4.6.3 Source Description Object
 // ─────────────────────────────────────────────────────────────────────────────────
-export interface SourceDescription {
+export interface SourceDescription extends Extensions {
   /** REQUIRED. Unique name for the source description. Should match [A-Za-z0-9_\-]+ */
   name: string;
   /** REQUIRED. URL to the source description (OpenAPI or Arazzo document) */

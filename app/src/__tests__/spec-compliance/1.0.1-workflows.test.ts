@@ -1,4 +1,5 @@
 import { parseArazzoSpec } from '@/lib/arazzo-parser';
+import type { Parameter } from '@/types/arazzo';
 
 /**
  * Arazzo Specification 1.0.1 Compliance Tests
@@ -90,7 +91,7 @@ ${workflowYaml}
     const workflow = result.workflows[0];
 
     expect(workflow.parameters).toHaveLength(2);
-    expect(workflow.parameters?.[0].in).toBe('header');
+    expect((workflow.parameters?.[0] as Parameter).in).toBe('header');
     expect(workflow.parameters?.[1].value).toBe('$inputs.query');
   });
 });

@@ -91,6 +91,16 @@ export default function ExpressionAutocompleteStandalone({
     }
   }, [onChange]);
 
+  // Select a suggestion
+  const selectSuggestion = useCallback((suggestion: Suggestion) => {
+    // Replace the $... part with the selected expression
+    const lastDollar = value.lastIndexOf('$');
+    const prefix = lastDollar > 0 ? value.substring(0, lastDollar) : '';
+    onChange(prefix + suggestion.expression);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  }, [value, onChange]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!showSuggestions || filteredSuggestions.length === 0) return;
@@ -113,17 +123,7 @@ export default function ExpressionAutocompleteStandalone({
         setShowSuggestions(false);
         break;
     }
-  }, [showSuggestions, filteredSuggestions, selectedIndex]);
-
-  // Select a suggestion
-  const selectSuggestion = useCallback((suggestion: Suggestion) => {
-    // Replace the $... part with the selected expression
-    const lastDollar = value.lastIndexOf('$');
-    const prefix = lastDollar > 0 ? value.substring(0, lastDollar) : '';
-    onChange(prefix + suggestion.expression);
-    setShowSuggestions(false);
-    inputRef.current?.focus();
-  }, [value, onChange]);
+  }, [showSuggestions, filteredSuggestions, selectedIndex, selectSuggestion]);
 
   // Close suggestions when clicking outside
   useEffect(() => {

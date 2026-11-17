@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useBuilder } from '../context/BuilderContext';
 import yaml from 'js-yaml';
-import type { ArazzoSpec } from '@/types/arazzo';
+import { DEFAULT_EXAMPLE_ID, findExample, loadArazzoWithSources } from '../data/examples';
+import { detectSourceType } from '../utils/oas-helpers';
 
 type ImportMode = 'sample' | 'url' | 'paste';
 
@@ -41,27 +42,8 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch the Arazzo workflow from public/workflows
-      const workflowResponse = await fetch('/workflows/pet-adoption.arazzo.yaml');
-      const workflowYaml = await workflowResponse.text();
-      const spec = yaml.load(workflowYaml) as ArazzoSpec;
-
-      // Fetch the OpenAPI source referenced in the workflow
-      const sources: Record<string, any> = {};
-      for (const sourceDesc of spec.sourceDescriptions || []) {
-        try {
-          // Resolve relative URL (./openapi/petstore.yaml -> /openapi/petstore.yaml)
-          const sourceUrl = sourceDesc.url.startsWith('./') 
-            ? sourceDesc.url.substring(1) 
-            : sourceDesc.url;
-          const sourceResponse = await fetch(sourceUrl);
-          const sourceYaml = await sourceResponse.text();
-          sources[sourceDesc.name] = yaml.load(sourceYaml);
-        } catch (err) {
-          console.warn(`Failed to load source ${sourceDesc.name}:`, err);
-        }
-      }
-
+      const example = findExample(DEFAULT_EXAMPLE_ID)!;
+      const { spec, sources } = await loadArazzoWithSources(example.path);
       dispatch({
         type: 'LOAD_SAMPLE',
         payload: { spec, sources }
@@ -75,12 +57,23 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
     }
   };
 
-  const parseSpec = (content: string): any => {
+  const parseSpec = (content: string): unknown => {
     try {
       return JSON.parse(content);
     } catch {
       return yaml.load(content);
     }
+  };
+
+  /** Validates an OpenAPI or (Arazzo 1.1) AsyncAPI document and adds it as a source. */
+  const addSource = (content: unknown) => {
+    const type = detectSourceType(content);
+    if (!type) {
+      throw new Error('Invalid source: expected an OpenAPI ("openapi"/"swagger") or AsyncAPI ("asyncapi") document');
+    }
+    const title = (content as { info?: { title?: string } }).info?.title;
+    const name = title?.replace(/\s+/g, '-').toLowerCase() || `source-${sourceCount + 1}`;
+    dispatch({ type: 'ADD_SOURCE', payload: { name, content, type } });
   };
 
   const handleUrlImport = async () => {
@@ -90,15 +83,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
     try {
       const response = await fetch(url);
       const text = await response.text();
-      const content = parseSpec(text);
-      
-      if (!content.openapi && !content.swagger) {
-        throw new Error('Invalid OpenAPI specification');
-      }
-      
-      const name = content.info?.title?.replace(/\s+/g, '-').toLowerCase() || `source-${sourceCount + 1}`;
-      
-      dispatch({ type: 'ADD_SOURCE', payload: { name, content } });
+      addSource(parseSpec(text));
       setUrl('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
@@ -112,15 +97,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
     setIsLoading(true);
     setError(null);
     try {
-      const content = parseSpec(pastedSpec);
-      
-      if (!content.openapi && !content.swagger) {
-        throw new Error('Invalid OpenAPI specification');
-      }
-      
-      const name = content.info?.title?.replace(/\s+/g, '-').toLowerCase() || `source-${sourceCount + 1}`;
-      
-      dispatch({ type: 'ADD_SOURCE', payload: { name, content } });
+      addSource(parseSpec(pastedSpec));
       setPastedSpec('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse');
@@ -197,7 +174,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://api.example.com/openapi.yaml"
+                  placeholder="https://api.example.com/openapi.yaml (or asyncapi.yaml)"
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm"
                   onKeyDown={(e) => e.key === 'Enter' && handleUrlImport()}
                 />
@@ -216,7 +193,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
                 <textarea
                   value={pastedSpec}
                   onChange={(e) => setPastedSpec(e.target.value)}
-                  placeholder="Paste OpenAPI YAML or JSON..."
+                  placeholder="Paste OpenAPI or AsyncAPI YAML / JSON..."
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-mono h-24 resize-none"
                 />
                 <button

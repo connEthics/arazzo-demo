@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { useBuilder } from '../context/BuilderContext';
 import SourceManagerV2 from './SourceManagerV2';
 import OperationsToolbox from './OperationsToolbox';
+import DiagnosticsPanel from './DiagnosticsPanel';
 import {
   OperationsIcon,
   CodeIcon,
@@ -27,13 +28,18 @@ const YamlEditor = dynamic(
   }
 );
 
-type LeftMode = 'operations' | 'yaml';
+export type LeftMode = 'operations' | 'yaml' | 'problems';
 
 interface LeftPanelProps {
   width: number;
   onWidthChange: (width: number) => void;
   onYamlFullscreen: () => void;
   isMobile?: boolean;
+  /** Controlled mode (the header problem counter opens the "problems" tab). */
+  mode?: LeftMode;
+  onModeChange?: (mode: LeftMode) => void;
+  /** A diagnostic pointing at a step was clicked. */
+  onRevealStep?: (workflowIndex: number, stepId: string) => void;
 }
 
 // Active Sources Section
@@ -84,8 +90,9 @@ function ActiveSourcesSection({
             const stepsCount = state.spec.workflows.reduce((acc, wf) => 
               acc + wf.steps.filter(s => s.operationId?.startsWith(name + '.')).length, 0
             );
-            const source = state.sources[name];
-            const pathCount = source?.paths ? Object.keys(source.paths).length : 0;
+            const source = state.sources[name] as { paths?: object; channels?: object } | undefined;
+            const isAsync = !!source?.channels && !source?.paths;
+            const pathCount = Object.keys((isAsync ? source?.channels : source?.paths) ?? {}).length;
             
             return (
               <div 
@@ -99,7 +106,7 @@ function ActiveSourcesSection({
                 <div className="flex items-center justify-between">
                   <span className="truncate font-medium">{name}</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-[9px] text-slate-400">{pathCount} ops</span>
+                    <span className="text-[9px] text-slate-400">{pathCount} {isAsync ? 'channels' : 'paths'}</span>
                     {isUsed && (
                       <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 px-1 py-0.5 rounded">
                         {stepsCount}
@@ -121,8 +128,18 @@ function LeftPanel({
   onWidthChange, 
   onYamlFullscreen,
   isMobile = false,
+  mode,
+  onModeChange,
+  onRevealStep,
 }: LeftPanelProps) {
-  const [leftMode, setLeftMode] = useState<LeftMode>('yaml');
+  const { diagnostics } = useBuilder();
+  const problemCount = diagnostics.filter(d => d.severity === 'error' || d.severity === 'warning').length;
+  const [localMode, setLocalMode] = useState<LeftMode>('yaml');
+  const leftMode = mode ?? localMode;
+  const setLeftMode = (next: LeftMode) => {
+    setLocalMode(next);
+    onModeChange?.(next);
+  };
   const [activeSourcesExpanded, setActiveSourcesExpanded] = useState(true);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -177,6 +194,20 @@ function LeftPanel({
             <CodeIcon />
             <span>YAML</span>
           </button>
+          <button
+            onClick={() => setLeftMode('problems')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-200 dark:border-slate-700 ${
+              leftMode === 'problems' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+            data-testid="left-tab-problems"
+          >
+            <span>Problems</span>
+            <span className={`min-w-[1.25rem] px-1 rounded-full text-[10px] font-semibold ${
+              problemCount === 0
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            }`}>{problemCount}</span>
+          </button>
           {leftMode === 'yaml' && (
             <button
               onClick={onYamlFullscreen}
@@ -206,6 +237,10 @@ function LeftPanel({
             onToggle={() => setActiveSourcesExpanded(!activeSourcesExpanded)} 
           />
         </>
+      ) : leftMode === 'problems' ? (
+        <div className="flex-1 overflow-hidden">
+          <DiagnosticsPanel onRevealStep={onRevealStep} />
+        </div>
       ) : (
         /* YAML Editor - Full height, no active sources */
         <div className="flex-1 overflow-hidden">

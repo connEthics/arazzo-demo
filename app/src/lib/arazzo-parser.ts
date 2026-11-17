@@ -1,15 +1,41 @@
-import yaml from 'js-yaml';
-import type { ArazzoSpec, SuccessAction, FailureAction } from '@/types/arazzo';
-import { isReusableObject } from '@/types/arazzo';
-import type { Node, Edge } from '@xyflow/react';
+/**
+ * Arazzo parsing and validation for the Studio — thin layer over @connethics/arazzo-core
+ * (vendored, see docs/SHARED_PACKAGES.md). Core parses YAML/JSON with the `yaml` v2 package,
+ * validates against the official JSON Schemas (1.0 / 1.1) plus the semantic rules, and returns
+ * diagnostics with a rule code, a JSON path and a severity.
+ */
+import {
+  parseArazzo,
+  validate,
+  validateText,
+  createLineIndex,
+  type Diagnostic,
+  type Severity,
+  type JsonPath,
+} from '@connethics/arazzo-core';
+import type { ArazzoSpec } from '@/types/arazzo';
+
+export type { Diagnostic, Severity, JsonPath };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// YAML Parser
+// Parsing
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Parses an Arazzo document (YAML or JSON) and checks the root shape needed by the Studio.
+ * Throws on YAML syntax errors and when `arazzo`, `info` or `workflows` is missing.
+ * Use {@link parseAndValidate} to get the full list of diagnostics instead.
+ */
 export function parseArazzoSpec(input: string): ArazzoSpec {
-  const spec = yaml.load(input) as ArazzoSpec;
-  
+  const { doc, errors } = parseArazzo(input);
+  const fatal = errors.filter((e) => e.severity === 'error');
+  if (fatal.length > 0) {
+    throw new Error(`Invalid YAML: ${fatal[0].message}`);
+  }
+  const spec = doc as ArazzoSpec | undefined;
+  if (!spec || typeof spec !== 'object') {
+    throw new Error('Missing required field: arazzo (version)');
+  }
   if (!spec.arazzo) {
     throw new Error('Missing required field: arazzo (version)');
   }
@@ -19,236 +45,99 @@ export function parseArazzoSpec(input: string): ArazzoSpec {
   if (!spec.info) {
     throw new Error('Missing required field: info');
   }
-  
   return spec;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// React Flow Converter
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export interface FlowData {
-  nodes: Node[];
-  edges: Edge[];
+export interface LocatedDiagnostic extends Diagnostic {
+  /** 1-based line / column of the diagnostic in the source text, when known. */
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
 }
 
-export interface FlowOptions {
-  hideErrorFlows?: boolean;
+export interface ParseAndValidateResult {
+  spec: ArazzoSpec | undefined;
+  version: string | null;
+  isArazzo: boolean;
+  /** YAML syntax errors (as diagnostics with code `yaml-syntax`) followed by the validation diagnostics. */
+  diagnostics: LocatedDiagnostic[];
 }
 
-export function workflowToFlow(spec: ArazzoSpec, workflowId: string, options: FlowOptions = {}): FlowData {
-  const { hideErrorFlows = false } = options;
-  const workflow = spec.workflows.find(w => w.workflowId === workflowId);
-  if (!workflow) {
-    throw new Error(`Workflow not found: ${workflowId}`);
-  }
-  
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-  
-  const verticalGap = 140;
-  const horizontalGap = 320;
-  
-  // Calculate positions for branching
-  const branchOffsets = new Map<string, number>();
-  
-  // Input node
-  const inputProperties = workflow.inputs?.properties 
-    ? Object.keys(workflow.inputs.properties)
-    : [];
-  
-  nodes.push({
-    id: 'input',
-    type: 'input',
-    position: { x: 400, y: 0 },
-    data: {
-      label: 'Workflow Inputs',
-      properties: inputProperties,
-      required: workflow.inputs?.required || [],
-      schema: workflow.inputs?.properties || {},
-    },
-  });
-  
-  // Step nodes
-  workflow.steps.forEach((step, index) => {
-    const hasOnSuccess = step.onSuccess && step.onSuccess.length > 0;
-    const hasOnFailure = step.onFailure && step.onFailure.length > 0;
-    const hasSkip = !!step['x-skip'];
-    
-    // Check if this step is a branch target
-    const xOffset = branchOffsets.get(step.stepId) || 0;
-    
-    nodes.push({
-      id: step.stepId,
-      type: 'step',
-      position: { 
-        x: 400 + xOffset, 
-        y: (index + 1) * verticalGap 
-      },
-      data: {
-        step,
-        hasOnSuccess,
-        hasOnFailure,
-        hasSkip,
-        method: extractHttpMethod(step.operationId),
-      },
-    });
-    
-    // Track branch targets for positioning
-    if (step.onSuccess) {
-      step.onSuccess.forEach((action, actionIndex) => {
-        if (!isReusableObject(action)) {
-          const a = action as SuccessAction;
-          if (a.type === 'goto' && a.stepId) {
-            const offset = (actionIndex + 1) * horizontalGap;
-            branchOffsets.set(a.stepId, offset);
-          }
-        }
-      });
-    }
-    if (step.onFailure) {
-      step.onFailure.forEach((action, actionIndex) => {
-        if (!isReusableObject(action)) {
-          const a = action as FailureAction;
-          if (a.type === 'goto' && a.stepId) {
-            const offset = -(actionIndex + 1) * horizontalGap;
-            branchOffsets.set(a.stepId, offset);
-          }
-        }
-      });
-    }
-  });
-  
-  // Output node
-  if (workflow.outputs) {
-    const outputProperties = Object.keys(workflow.outputs);
-    nodes.push({
-      id: 'output',
-      type: 'output',
-      position: { x: 400, y: (workflow.steps.length + 1) * verticalGap },
-      data: {
-        label: 'Workflow Outputs',
-        properties: outputProperties,
-        expressions: workflow.outputs,
-      },
-    });
-  }
-  
-  // Edges
-  // Input to first step
-  if (workflow.steps.length > 0) {
-    edges.push({
-      id: 'e-input-first',
-      source: 'input',
-      target: workflow.steps[0].stepId,
-      type: 'smoothstep',
-      animated: true,
-      style: { stroke: '#10b981', strokeWidth: 1.5 },
-    });
-  }
-  
-  // Sequential step connections
-  for (let i = 0; i < workflow.steps.length - 1; i++) {
-    const currentStep = workflow.steps[i];
-    const nextStep = workflow.steps[i + 1];
-    
-    // Only add default edge if no onSuccess goto overrides it
-    const hasGotoNext = currentStep.onSuccess?.some(a => {
-      if (isReusableObject(a)) return false;
-      const action = a as SuccessAction;
-      return action.type === 'goto' && action.stepId === nextStep.stepId;
-    });
-    
-    const hasEnd = currentStep.onSuccess?.some(a => {
-      if (isReusableObject(a)) return false;
-      return (a as SuccessAction).type === 'end';
-    });
-    
-    if (!hasGotoNext && !hasEnd) {
-      edges.push({
-        id: `e-${currentStep.stepId}-${nextStep.stepId}`,
-        source: currentStep.stepId,
-        target: nextStep.stepId,
-        type: 'smoothstep',
-        style: { stroke: '#6366f1', strokeWidth: 1.5 },
-      });
-    }
-  }
-  
-  // onSuccess edges
-  workflow.steps.forEach(step => {
-    if (step.onSuccess) {
-      step.onSuccess.forEach((action, index) => {
-        if (isReusableObject(action)) return;
-        const a = action as SuccessAction;
-        if (a.type === 'goto' && a.stepId) {
-          edges.push({
-            id: `e-success-${step.stepId}-${a.stepId}-${index}`,
-            source: step.stepId,
-            target: a.stepId,
-            type: 'smoothstep',
-            animated: true,
-            label: `✓ ${a.name || 'success'}`,
-            labelStyle: { fill: '#10b981', fontSize: 10 },
-            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9 },
-            style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4,4' },
-          });
-        }
-      });
-    }
-    
-    // onFailure edges (conditionally hidden)
-    if (!hideErrorFlows && step.onFailure) {
-      step.onFailure.forEach((action, index) => {
-        if (isReusableObject(action)) return;
-        const a = action as FailureAction;
-        if (a.type === 'goto' && a.stepId) {
-          edges.push({
-            id: `e-failure-${step.stepId}-${a.stepId}-${index}`,
-            source: step.stepId,
-            target: a.stepId,
-            type: 'smoothstep',
-            animated: true,
-            label: `✗ ${a.name || 'failure'}`,
-            labelStyle: { fill: '#ef4444', fontSize: 10 },
-            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9 },
-            style: { stroke: '#ef4444', strokeWidth: 1.5, strokeDasharray: '4,4' },
-          });
-        }
-      });
-    }
-  });
-  
-  // Last step to output
-  if (workflow.outputs && workflow.steps.length > 0) {
-    const lastStep = workflow.steps[workflow.steps.length - 1];
-    edges.push({
-      id: `e-${lastStep.stepId}-output`,
-      source: lastStep.stepId,
-      target: 'output',
-      type: 'smoothstep',
-      style: { stroke: '#f59e0b', strokeWidth: 1.5 },
-    });
-  }
-  
-  return { nodes, edges };
+/** Parses and validates a document; diagnostics carry 1-based line / column positions. */
+export function parseAndValidate(input: string): ParseAndValidateResult {
+  const result = validateText(input);
+  const lineOf = createLineIndex(input);
+  const place = (range?: { start: number; end: number }) => {
+    if (!range) return {};
+    const s = lineOf(range.start);
+    const e = lineOf(range.end);
+    return { line: s.line + 1, column: s.character + 1, endLine: e.line + 1, endColumn: e.character + 1 };
+  };
+  const syntax: LocatedDiagnostic[] = result.errors.map((err) => ({
+    code: 'arazzo-yaml-syntax' as Diagnostic['code'],
+    message: err.message,
+    severity: err.severity,
+    path: [],
+    source: 'schema',
+    range: err.range,
+    ...place(err.range),
+  }));
+  return {
+    spec: result.doc as ArazzoSpec | undefined,
+    version: result.version,
+    isArazzo: result.isArazzo,
+    diagnostics: [...syntax, ...result.diagnostics.map((d) => ({ ...d, ...place(d.range) }))],
+  };
+}
+
+/** Validates an in-memory spec (builder state): diagnostics carry JSON paths, no positions. */
+export function validateSpec(spec: ArazzoSpec): Diagnostic[] {
+  return validate(spec);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Utilities
+// Diagnostics helpers
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function extractHttpMethod(operationId?: string): string | null {
-  if (!operationId) return null;
-  const op = operationId.toLowerCase();
-  if (op.includes('get') || op.includes('find') || op.includes('list') || op.includes('search')) return 'GET';
-  if (op.includes('post') || op.includes('create') || op.includes('place') || op.includes('add')) return 'POST';
-  if (op.includes('put') || op.includes('update')) return 'PUT';
-  if (op.includes('delete') || op.includes('remove')) return 'DELETE';
-  return null;
+const SEVERITY_ORDER: Record<Severity, number> = { error: 0, warning: 1, info: 2, hint: 3 };
+
+export function sortDiagnostics<T extends Diagnostic>(diagnostics: T[]): T[] {
+  return [...diagnostics].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
 }
 
-export type ExpressionSource = 
+export function countBySeverity(diagnostics: Diagnostic[]): Record<Severity, number> {
+  const counts: Record<Severity, number> = { error: 0, warning: 0, info: 0, hint: 0 };
+  for (const d of diagnostics) counts[d.severity]++;
+  return counts;
+}
+
+/** Workflow / step targeted by a diagnostic path (`['workflows', 0, 'steps', 2, …]`). */
+export function diagnosticTarget(
+  spec: ArazzoSpec,
+  path: JsonPath,
+): { workflowIndex: number; stepId?: string } | null {
+  if (path[0] !== 'workflows' || typeof path[1] !== 'number') return null;
+  const workflowIndex = path[1];
+  const workflow = spec.workflows?.[workflowIndex];
+  if (!workflow) return null;
+  if (path[2] === 'steps' && typeof path[3] === 'number') {
+    const step = workflow.steps?.[path[3]];
+    return step ? { workflowIndex, stepId: step.stepId } : { workflowIndex };
+  }
+  return { workflowIndex };
+}
+
+/** `workflows[0].steps[2].operationId` */
+export function formatPath(path: JsonPath): string {
+  return path.reduce<string>((acc, seg) => (typeof seg === 'number' ? `${acc}[${seg}]` : acc ? `${acc}.${seg}` : String(seg)), '');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Runtime expressions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type ExpressionSource =
   | { type: 'inputs'; source: string }
   | { type: 'steps'; source: string; field: string }
   | { type: 'url' }
@@ -256,65 +145,41 @@ export type ExpressionSource =
   | { type: 'statusCode' }
   | { type: 'request'; part: 'header' | 'query' | 'path' | 'body'; name?: string }
   | { type: 'response'; part: 'header' | 'body'; name?: string }
+  | { type: 'message'; part: 'header' | 'payload'; name?: string }
+  | { type: 'self' }
   | { type: 'components'; category: string; name: string };
 
+/** Identifies the data source of a runtime expression (used for data-flow links in the UI). */
 export function extractExpressionSource(expr: string): ExpressionSource | null {
-  // $url
   if (expr === '$url') return { type: 'url' };
-  
-  // $method
   if (expr === '$method') return { type: 'method' };
-  
-  // $statusCode
   if (expr === '$statusCode') return { type: 'statusCode' };
+  // 1.1: `$self` (document URI)
+  if (expr === '$self') return { type: 'self' };
 
-  // $inputs.name
   const inputMatch = expr.match(/\$inputs\.([\w-]+)/);
-  if (inputMatch) {
-    return { type: 'inputs', source: inputMatch[1] };
-  }
-  
-  // $steps.stepId.outputs.name
+  if (inputMatch) return { type: 'inputs', source: inputMatch[1] };
+
   const stepMatch = expr.match(/\$steps\.([\w-]+)\.outputs\.([\w-]+)/);
-  if (stepMatch) {
-    return { type: 'steps', source: stepMatch[1], field: stepMatch[2] };
-  }
+  if (stepMatch) return { type: 'steps', source: stepMatch[1], field: stepMatch[2] };
 
-  // $request.body
   if (expr === '$request.body') return { type: 'request', part: 'body' };
-
-  // $request.header.name, $request.query.name, $request.path.name
   const requestMatch = expr.match(/\$request\.(header|query|path)\.([\w-]+)/);
   if (requestMatch) {
-    return { 
-      type: 'request', 
-      part: requestMatch[1] as 'header' | 'query' | 'path', 
-      name: requestMatch[2] 
-    };
+    return { type: 'request', part: requestMatch[1] as 'header' | 'query' | 'path', name: requestMatch[2] };
   }
 
-  // $response.body
   if (expr === '$response.body') return { type: 'response', part: 'body' };
-
-  // $response.header.name
   const responseMatch = expr.match(/\$response\.header\.([\w-]+)/);
-  if (responseMatch) {
-    return { 
-      type: 'response', 
-      part: 'header', 
-      name: responseMatch[1] 
-    };
-  }
+  if (responseMatch) return { type: 'response', part: 'header', name: responseMatch[1] };
 
-  // $components.category.name
+  // 1.1: AsyncAPI message (`$message.payload`, `$message.header.<name>`)
+  if (expr === '$message.payload' || expr.startsWith('$message.payload#')) return { type: 'message', part: 'payload' };
+  const messageMatch = expr.match(/\$message\.header\.([\w-]+)/);
+  if (messageMatch) return { type: 'message', part: 'header', name: messageMatch[1] };
+
   const componentMatch = expr.match(/\$components\.(inputs|parameters|successActions|failureActions)\.([\w-]+)/);
-  if (componentMatch) {
-    return { 
-      type: 'components', 
-      category: componentMatch[1], 
-      name: componentMatch[2] 
-    };
-  }
-  
+  if (componentMatch) return { type: 'components', category: componentMatch[1], name: componentMatch[2] };
+
   return null;
 }

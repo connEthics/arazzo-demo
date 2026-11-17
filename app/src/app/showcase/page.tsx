@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import DetailDrawer, { DetailData } from '@/components/DetailDrawer';
@@ -10,6 +11,7 @@ import type { Step, SourceDescription, WorkflowInputs, Criterion, SuccessAction,
 import { ReusableRef, CriterionBadge, PayloadReplacements, DependsOnList, ActionList, SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList } from '@/components/arazzo';
 import { Badge, Card, CodeBlock, PropertyList } from '@/components/primitives';
 import ComplianceMatrix from '@/components/ComplianceMatrix';
+import ArazzoGraphShowcase from '@/components/ArazzoGraphShowcase';
 import UnifiedDocumentationViewShowcase from '@/components/UnifiedDocumentationViewShowcase';
 import WorkflowManagerShowcase from '@/components/WorkflowManagerShowcase';
 import RightPanelModeToggleShowcase from '@/components/RightPanelModeToggleShowcase';
@@ -29,7 +31,6 @@ import EditableDetailViewShowcase from '@/components/EditableDetailViewShowcase'
 
 // Dynamic imports for SSR safety
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
-const ArazzoFlow = dynamic(() => import('@/components/ArazzoFlow'), { ssr: false });
 
 // Sample data for demonstrations
 const sampleStep: Step = {
@@ -167,77 +168,6 @@ sequenceDiagram
     Note right of Client: 📦 orderConfirmation
     
     Note over Client,petstore: ✅ Outputs: orderConfirmation, selectedPet`;
-
-// Sample React Flow nodes and edges
-const sampleNodes = [
-  {
-    id: 'input-1',
-    type: 'input',
-    position: { x: 250, y: 0 },
-    data: {
-      label: 'Workflow Inputs',
-      properties: ['petType', 'maxPrice'],
-      required: ['petType'],
-      schema: {
-        petType: { type: 'string', default: 'dog' },
-        maxPrice: { type: 'number' }
-      }
-    },
-  },
-  {
-    id: 'step-1',
-    type: 'step',
-    position: { x: 250, y: 100 },
-    data: {
-      label: 'find-available-pets',
-      stepId: 'find-available-pets',
-      operationId: 'findPetsByStatus',
-      hasOutputs: true,
-    },
-  },
-  {
-    id: 'step-2',
-    type: 'step',
-    position: { x: 250, y: 200 },
-    data: {
-      label: 'select-pet',
-      stepId: 'select-pet',
-      operationId: 'getPetById',
-      hasOutputs: true,
-    },
-  },
-  {
-    id: 'step-3',
-    type: 'step',
-    position: { x: 250, y: 300 },
-    data: {
-      label: 'place-order',
-      stepId: 'place-order',
-      operationId: 'placeOrder',
-      hasOutputs: true,
-    },
-  },
-  {
-    id: 'output-1',
-    type: 'output',
-    position: { x: 250, y: 400 },
-    data: {
-      label: 'Workflow Outputs',
-      properties: ['orderId', 'status'],
-      expressions: {
-        orderId: '$steps.place-order.outputs.id',
-        status: '$steps.place-order.outputs.status'
-      }
-    },
-  },
-];
-
-const sampleEdges = [
-  { id: 'e1', source: 'input-1', target: 'step-1', animated: true },
-  { id: 'e2', source: 'step-1', target: 'step-2', label: 'onSuccess' },
-  { id: 'e3', source: 'step-2', target: 'step-3', label: 'onSuccess' },
-  { id: 'e4', source: 'step-3', target: 'output-1' },
-];
 
 // Component wrapper for showcase
 interface ComponentShowcaseProps {
@@ -466,8 +396,18 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
 }
 
 export default function ShowcasePage() {
+  return (
+    <Suspense fallback={null}>
+      <ShowcaseContent />
+    </Suspense>
+  );
+}
+
+function ShowcaseContent() {
   const [isDark, setIsDark] = useState(true);
-  const [activeSection, setActiveSection] = useState('compliance');
+  // `/showcase?section=<id>` opens a section directly (links, screenshots)
+  const searchParams = useSearchParams();
+  const [activeSection, setActiveSection] = useState(() => searchParams.get('section') ?? 'compliance');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [detailData, setDetailData] = useState<DetailData | null>(null);
 
@@ -476,6 +416,7 @@ export default function ShowcasePage() {
     { id: 'compliance', label: 'Compliance Matrix' },
     { id: 'arazzo', label: 'Arazzo Elements' },
     { id: 'spec-examples', label: 'Spec Examples' },
+    { id: 'flow', label: 'Arazzo Graph' },
     { id: 'mermaid', label: 'Mermaid Diagrams' },
 
     { id: 'group-builder-overview', label: 'Group: Page Builder Overview', isHeader: true },
@@ -495,7 +436,6 @@ export default function ShowcasePage() {
     { id: 'buttons', label: 'Buttons' },
     { id: 'inputs', label: 'Inputs' },
     { id: 'cards', label: 'Cards' },
-    { id: 'flow', label: 'React Flow' },
     { id: 'drawer', label: 'Detail Drawer' },
     { id: 'documentation', label: 'Documentation' },
   ];
@@ -1378,19 +1318,12 @@ export default function ShowcasePage() {
             {/* React Flow */}
             {activeSection === 'flow' && (
               <ComponentShowcase
-                title="React Flow Visualization"
-                description="Interactive node-based workflow visualization"
+                title="Arazzo Graph (@connethics/arazzo-flow)"
+                description="Shared read-only graph: ELK layered layout in a Web Worker, AsyncAPI send / receive nodes, dependsOn joins, retry loops, diagnostics, SVG / PNG / Mermaid export"
                 isDark={isDark}
+                code={`<ArazzoGraphFromDocument doc={doc} workflowId="orderToCash" theme={isDark ? 'connethics-dark' : 'connethics-light'} />`}
               >
-                <div className="h-[500px] rounded-lg overflow-hidden border" style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
-                  <ArazzoFlow
-                    nodes={sampleNodes}
-                    edges={sampleEdges}
-                    workflowId="demo-workflow"
-                    isDark={isDark}
-                    onDetailSelect={setDetailData}
-                  />
-                </div>
+                <ArazzoGraphShowcase isDark={isDark} />
               </ComponentShowcase>
             )}
 

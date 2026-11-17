@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Step, SourceDescription, WorkflowInputs, Parameter, Criterion, FailureAction } from '@/types/arazzo';
-import { isReusableObject } from '@/types/arazzo';
+import type { Step, SourceDescription, WorkflowInputs, Parameter, Criterion, FailureAction, OutputValue } from '@/types/arazzo';
+import { isReusableObject, outputValueToString } from '@/types/arazzo';
+import OutputsEditor from './arazzo/OutputsEditor';
 import { extractHttpMethod, getMethodBadgeVariant } from '@/lib/arazzo-utils';
 
 // Import Arazzo components
@@ -26,12 +27,12 @@ interface ContentProps {
 
 interface GeneratedSchema {
   type: string;
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
 }
 
 // Utility functions for schema generation
 function generateSchemaFromPayload(payload: Record<string, unknown>): GeneratedSchema {
-  const properties: Record<string, any> = {};
+  const properties: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(payload)) {
     if (typeof value === 'string') {
@@ -111,7 +112,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, onSt
   // Generate response schema from outputs
   const responseSchema = useMemo((): GeneratedSchema | null => {
     if (!step.outputs || Object.keys(step.outputs).length === 0) return null;
-    const properties: Record<string, any> = {};
+    const properties: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(step.outputs)) {
       properties[key] = { type: 'string', description: `Extracted from: ${value}` };
     }
@@ -131,7 +132,7 @@ export function StepContent({ step, sourceForStep, onStepClick, onRefClick, onSt
   return (
     <div className="space-y-4">
       {/* Operation Header - Unified StepHeader */}
-      {!hideHeader && (step.operationId || step.workflowId) && (
+      {!hideHeader && (step.operationId || step.workflowId || step.channelPath || step.operationPath) && (
         <StepHeader
           step={step}
           variant="inspector"
@@ -184,7 +185,7 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
       </Card>
 
       <Card title="Type" isDark={isDark}>
-        <Badge variant={source.type === 'openapi' ? 'openapi' : 'arazzo'} isDark={isDark}>
+        <Badge variant={source.type === 'openapi' ? 'openapi' : source.type === 'asyncapi' ? 'asyncapi' : 'arazzo'} isDark={isDark}>
           {source.type?.toUpperCase() ?? 'UNKNOWN'}
         </Badge>
       </Card>
@@ -231,8 +232,6 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
   onUpdate?: (inputs: WorkflowInputs) => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
 }) {
-  if (!input) return null;
-
   const {
     isDark,
     textClass = isDark ? 'text-white' : 'text-gray-900',
@@ -245,7 +244,7 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
   } = props;
 
   // Check if this is a single input property or the whole inputs block
-  const isSingleInput = input.name !== 'Workflow Inputs' && workflowInputs?.properties?.[input.name];
+  const isSingleInput = !!input && input.name !== 'Workflow Inputs' && workflowInputs?.properties?.[input.name];
   const inputSchema = isSingleInput ? workflowInputs?.properties?.[input.name] : null;
 
   // Extract x- extensions from schema
@@ -258,6 +257,8 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
         value: typeof value === 'string' ? value : JSON.stringify(value),
       }));
   }, [inputSchema]);
+
+  if (!input) return null;
 
   // If showing all workflow inputs
   if (!isSingleInput && (workflowInputs?.properties || (editable && input.name === 'Workflow Inputs'))) {
@@ -320,9 +321,9 @@ export function InputContent({ input, workflowInputs, title, ...props }: Content
 }
 
 export function OutputContent({ output, workflowOutputs, ...props }: ContentProps & {
-  output: { name: string; value: string; stepId?: string; allOutputs?: Record<string, string> };
-  workflowOutputs?: Record<string, string>;
-  onUpdate?: (outputs: Record<string, string>) => void;
+  output: { name: string; value: string; stepId?: string; allOutputs?: Record<string, OutputValue> };
+  workflowOutputs?: Record<string, OutputValue>;
+  onUpdate?: (outputs: Record<string, OutputValue>) => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
 }) {
   if (!output) return null;
@@ -351,63 +352,26 @@ export function OutputContent({ output, workflowOutputs, ...props }: ContentProp
         {showCard && (
           <Card isDark={isDark}>
             <div className="space-y-3">
-              {outputNames.map((name, index) => (
-                editable ? (
-                  <EditableListItem
-                    key={name}
-                    type="output"
-                    item={{ key: name, value: allOutputsData[name] }}
-                    isDark={isDark}
-                    expressionSuggestions={expressionSuggestions}
-                    onChange={(item) => {
-                      const newOutputs = { ...allOutputsData };
-                      if (item.key !== name) {
-                        delete newOutputs[name];
-                      }
-                      newOutputs[item.key] = item.value;
-                      onUpdate?.(newOutputs);
-                    }}
-                    onDelete={() => {
-                      const newOutputs = { ...allOutputsData };
-                      delete newOutputs[name];
-                      onUpdate?.(newOutputs);
-                    }}
-                    onMoveUp={index > 0 ? () => onReorder?.(index, index - 1) : undefined}
-                    onMoveDown={index < outputNames.length - 1 ? () => onReorder?.(index, index + 1) : undefined}
-                  />
-                ) : (
+              {editable ? (
+                <OutputsEditor
+                  outputs={allOutputsData}
+                  onChange={(outputs) => onUpdate?.(outputs)}
+                  onReorder={onReorder}
+                  isDark={isDark}
+                  expressionSuggestions={expressionSuggestions}
+                />
+              ) : outputNames.map((name) => (
                   <div key={name} className="flex flex-col gap-1 p-2 rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-medium ${textClass}`}>{name}</span>
                       <span className={mutedClass}>→</span>
                     </div>
                     <code className={`text-xs font-mono p-1 rounded ${codeBgClass} ${textClass} break-all`}>
-                      {allOutputsData[name]}
+                      {outputValueToString(allOutputsData[name])}
                     </code>
                   </div>
-                )
               ))}
             </div>
-            {editable && (
-              <button
-                onClick={() => {
-                  const newOutputs = { ...allOutputsData };
-                  const nextId = Object.keys(newOutputs).length + 1;
-                  newOutputs[`output_${nextId}`] = '';
-                  onUpdate?.(newOutputs);
-                }}
-                className={`w-full mt-3 py-2 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 transition-colors ${
-                  isDark 
-                    ? 'border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-300 hover:bg-slate-800' 
-                    : 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-sm font-medium">Add Output</span>
-              </button>
-            )}
           </Card>
         )}
       </div>

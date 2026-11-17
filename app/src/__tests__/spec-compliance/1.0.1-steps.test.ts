@@ -1,5 +1,5 @@
 import { parseArazzoSpec } from '@/lib/arazzo-parser';
-import { ArazzoSpec } from '@/types/arazzo';
+import type { SuccessAction, FailureAction } from '@/types/arazzo';
 
 /**
  * Arazzo Specification 1.0.1 Compliance Tests
@@ -100,10 +100,10 @@ ${stepsYaml}
     const step = result.workflows[0].steps[0];
 
     expect(step.onSuccess).toBeDefined();
-    expect(step.onSuccess?.[0].name).toBe('JoinWaitingList');
-    expect(step.onSuccess?.[0].type).toBe('goto');
-    expect(step.onSuccess?.[0].stepId).toBe('joinWaitingListStep');
-    expect(step.onSuccess?.[0].criteria?.[0].type).toBe('jsonpath');
+    expect((step.onSuccess?.[0] as SuccessAction).name).toBe('JoinWaitingList');
+    expect((step.onSuccess?.[0] as SuccessAction).type).toBe('goto');
+    expect((step.onSuccess?.[0] as SuccessAction).stepId).toBe('joinWaitingListStep');
+    expect((step.onSuccess?.[0] as SuccessAction).criteria?.[0].type).toBe('jsonpath');
   });
 
   it('should parse onFailure navigation (Spec Example 4.6.8.2)', () => {
@@ -123,9 +123,9 @@ ${stepsYaml}
     const step = result.workflows[0].steps[0];
 
     expect(step.onFailure).toBeDefined();
-    expect(step.onFailure?.[0].name).toBe('retryStep');
-    expect(step.onFailure?.[0].type).toBe('retry');
-    expect(step.onFailure?.[0].retryAfter).toBe(1);
-    expect(step.onFailure?.[0].retryLimit).toBe(5);
+    expect((step.onFailure?.[0] as FailureAction).name).toBe('retryStep');
+    expect((step.onFailure?.[0] as FailureAction).type).toBe('retry');
+    expect((step.onFailure?.[0] as FailureAction).retryAfter).toBe(1);
+    expect((step.onFailure?.[0] as FailureAction).retryLimit).toBe(5);
   });
 });

@@ -92,7 +92,7 @@ export default function WorkflowManagerShowcase({ isDark }: WorkflowManagerShowc
             Inline Creation
           </h4>
           <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            Inline form appears on "+ New Workflow" click
+            Inline form appears on &ldquo;+ New Workflow&rdquo; click
           </p>
         </div>
         
@@ -144,7 +144,7 @@ export default function WorkflowManagerShowcase({ isDark }: WorkflowManagerShowc
               Available Interactions
             </h4>
             <ul className={`text-sm space-y-1 ${isDark ? 'text-indigo-200/80' : 'text-indigo-700'}`}>
-              <li>• Click "+ New Workflow" to create</li>
+              <li>• Click &ldquo;+ New Workflow&rdquo; to create</li>
               <li>• Click on a workflow to select it</li>
               <li>• Double-click on name to rename</li>
               <li>• Click trash icon to delete</li>

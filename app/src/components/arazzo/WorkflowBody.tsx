@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { Workflow, WorkflowInputs } from '@/types/arazzo';
 import { SectionHeader, Badge } from '@/components/primitives';
 import { InputContent, OutputContent } from '../DetailViews';
+import type { ExpressionSuggestion } from '../ExpressionInput';
 
 interface WorkflowBodyProps {
     workflow: Workflow;
@@ -12,7 +13,7 @@ interface WorkflowBodyProps {
     onUpdate?: (updates: Partial<Workflow>) => void;
     onReorderInput?: (startIndex: number, endIndex: number) => void;
     onReorderOutput?: (startIndex: number, endIndex: number) => void;
-    expressionSuggestions?: any[];
+    expressionSuggestions?: ExpressionSuggestion[];
 }
 
 /**

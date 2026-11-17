@@ -109,30 +109,6 @@ export default function ExpressionInput({
     }
   }, [onChange]);
 
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!showDropdown || filteredSuggestions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(i => Math.max(i - 1, 0));
-        break;
-      case 'Enter':
-      case 'Tab':
-        e.preventDefault();
-        selectSuggestion(filteredSuggestions[selectedIndex]);
-        break;
-      case 'Escape':
-        setShowDropdown(false);
-        break;
-    }
-  }, [showDropdown, filteredSuggestions, selectedIndex]);
-
   // Select a suggestion
   const selectSuggestion = useCallback((suggestion: ExpressionSuggestion) => {
     const cursorPosition = inputRef.current?.selectionStart ?? value.length;
@@ -156,6 +132,30 @@ export default function ExpressionInput({
       inputRef.current?.focus();
     }, 0);
   }, [value, onChange]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!showDropdown || filteredSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        break;
+      case 'Enter':
+      case 'Tab':
+        e.preventDefault();
+        selectSuggestion(filteredSuggestions[selectedIndex]);
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        break;
+    }
+  }, [showDropdown, filteredSuggestions, selectedIndex, selectSuggestion]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

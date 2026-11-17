@@ -5,8 +5,8 @@ import { Step } from '@/types/arazzo';
 type AISuggestion = Partial<Pick<Step, 'parameters' | 'successCriteria' | 'outputs'>>;
 
 export async function suggestStepMapping(
-  stepContext: any,
-  previousSteps: any[]
+  stepContext: Step,
+  previousSteps: Step[]
 ): Promise<AISuggestion> {
   // Mock implementation of Google Vertex AI call
   // In a real app, this would use @google-cloud/vertexai

@@ -73,6 +73,10 @@ const PARAMETER_IN_OPTIONS: { value: ParameterIn; label: string; color: string }
   { value: 'path', label: 'path', color: 'bg-purple-500/20 text-purple-400' },
   { value: 'header', label: 'header', color: 'bg-amber-500/20 text-amber-400' },
   { value: 'cookie', label: 'cookie', color: 'bg-pink-500/20 text-pink-400' },
+  // Arazzo 1.1: whole query string (OAS 3.2), exclusive with `query`
+  { value: 'querystring', label: 'querystring', color: 'bg-sky-500/20 text-sky-400' },
+  // Arazzo 1.1 (AsyncAPI steps): channel parameter
+  { value: 'channel', label: 'channel', color: 'bg-teal-500/20 text-teal-400' },
 ];
 
 export default function EditableListItem(props: EditableListItemProps) {
@@ -91,13 +95,17 @@ export default function EditableListItem(props: EditableListItemProps) {
   const [localValue, setLocalValue] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Reset the local value when another field starts being edited (not on props.item changes,
+  // to avoid resetting while typing); adjusted during render rather than in an effect.
+  const [prevEditingField, setPrevEditingField] = useState<string | null>(null);
+  if (editingField !== prevEditingField) {
+    setPrevEditingField(editingField);
     if (editingField === 'name' && props.type === 'parameter') {
       setLocalValue(props.item.name);
     } else if (editingField === 'key' && props.type === 'output') {
       setLocalValue(props.item.key);
     }
-  }, [editingField]); // Don't depend on props.item to avoid resetting while typing if parent updates
+  }
 
   useEffect(() => {
     if ((editingField === 'name' || editingField === 'key') && nameInputRef.current) {

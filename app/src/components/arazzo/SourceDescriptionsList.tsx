@@ -41,7 +41,7 @@ function SourceDescriptionsList({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
               <Badge 
-                variant={source.type === 'openapi' ? 'openapi' : 'arazzo'} 
+                variant={source.type === 'openapi' ? 'openapi' : source.type === 'asyncapi' ? 'asyncapi' : 'arazzo'} 
                 isDark={isDark} 
                 size="xs"
               >

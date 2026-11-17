@@ -16,6 +16,9 @@ const sharedAliases = {
 
 const nextConfig: NextConfig = {
   turbopack: {
+    // The app is built on its own (Vercel Root Directory = app): never resolve from the
+    // repository root (npm workspace of packages/*).
+    root: path.resolve(__dirname),
     resolveAlias: sharedAliases,
   },
   webpack(config) {

@@ -2,11 +2,20 @@
 'use client';
 
 import { memo, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useBuilder } from '../context/BuilderContext';
 import BuilderCanvas from './BuilderCanvas';
 import MermaidDiagram from '@/components/MermaidDiagram';
 import UnifiedDocumentationView from '@/components/UnifiedDocumentationView';
-import { workflowToMermaidFlowchart, workflowToMermaidSequence } from '@/lib/mermaid-converter';
+import type { StudioGraphSelection } from '@/components/StudioGraph';
+import { workflowToMermaidSequence } from '@/lib/mermaid-converter';
+import { usePrefersDark } from '@/hooks';
+
+// Shared ConnEthics graph (@connethics/arazzo-flow): client-only (React Flow + ELK worker).
+const StudioGraph = dynamic(() => import('@/components/StudioGraph'), {
+  ssr: false,
+  loading: () => <div className="flex h-full items-center justify-center text-sm text-slate-400">Loading graph…</div>,
+});
 import { FlowchartIcon, SequenceIcon } from './icons';
 import type { DetailData } from '@/components/DetailDrawer';
 import type { Step, Components } from '@/types/arazzo';
@@ -32,6 +41,19 @@ interface CenterPanelProps {
   onViewSequence?: (workflowId: string) => void;
 }
 
+// Empty state component
+const EmptyState = ({ icon: Icon, message }: { icon: React.ComponentType; message: string }) => (
+  <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+    <div className="text-center flex flex-col items-center">
+      <div className="w-12 h-12 mb-2 flex items-center justify-center text-slate-300 [&>svg]:w-10 [&>svg]:h-10">
+        <Icon />
+      </div>
+      <p className="mt-2">{message}</p>
+      <p className="text-xs mt-1">Add steps in Builder mode</p>
+    </div>
+  </div>
+);
+
 function CenterPanel({
   viewMode,
   selectedWorkflowIndex,
@@ -43,7 +65,8 @@ function CenterPanel({
   onViewFlowchart,
   onViewSequence,
 }: CenterPanelProps) {
-  const { state, dispatch } = useBuilder();
+  const { state, dispatch, diagnostics } = useBuilder();
+  const isDark = usePrefersDark();
 
   const workflow = state.spec.workflows[selectedWorkflowIndex];
   const workflowId = workflow?.workflowId;
@@ -145,18 +168,26 @@ function CenterPanel({
     return suggestions;
   }, [workflow]);
 
-  // Generate Mermaid diagrams
-  const mermaidFlowchart = useMemo(() => {
-    if (!workflowId || !workflow) return '';
-    try {
-      return workflowToMermaidFlowchart(state.spec, workflowId, {
-        direction: 'TB',
-        hideErrorFlows: !showErrorFlow
-      });
-    } catch {
-      return '';
+  // Graph selection → detail panel (same DetailData as the sequence view)
+  const handleGraphSelect = useCallback((selection: StudioGraphSelection) => {
+    if (!selection) return;
+    if (selection.kind === 'input') {
+      onDetailSelect({ type: 'input' });
+      dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
+      return;
     }
-  }, [state.spec, workflowId, workflow, showErrorFlow]);
+    if (selection.kind === 'output') {
+      onDetailSelect({ type: 'output' });
+      dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'output' } });
+      return;
+    }
+    const step = workflow?.steps.find(s => s.stepId === selection.stepId);
+    if (!step) return;
+    onDetailSelect({ type: 'step', step });
+    dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: step.stepId } });
+  }, [workflow, onDetailSelect, dispatch]);
+
+  const selectedGraphStepId = detailData?.type === 'step' ? detailData.step?.stepId ?? null : null;
 
   const mermaidSequence = useMemo(() => {
     if (!workflowId || !workflow) return '';
@@ -171,18 +202,6 @@ function CenterPanel({
     }
   }, [state.spec, workflowId, workflow, hideOutputs, showStepNames, showErrorFlow]);
 
-  // Empty state component
-  const EmptyState = ({ icon: Icon, message }: { icon: React.ComponentType; message: string }) => (
-    <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-      <div className="text-center flex flex-col items-center">
-        <div className="w-12 h-12 mb-2 flex items-center justify-center text-slate-300 [&>svg]:w-10 [&>svg]:h-10">
-          <Icon />
-        </div>
-        <p className="mt-2">{message}</p>
-        <p className="text-xs mt-1">Add steps in Builder mode</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="flex-1 relative bg-slate-100 dark:bg-slate-900 min-w-0 min-h-0 overflow-hidden flex flex-col h-full">
@@ -213,18 +232,17 @@ function CenterPanel({
       )}
 
       {viewMode === 'flowchart' && (
-        <div className="h-full overflow-auto">
-          {workflow && workflow.steps.length > 0 ? (
-            <MermaidDiagram
-              chart={mermaidFlowchart}
-              isDark={false}
-              steps={currentWorkflowSteps}
-              sources={state.spec.sourceDescriptions || []}
-              workflowInputs={currentWorkflowInputs}
-              workflowOutputs={currentWorkflowOutputs}
-              selectedStepId={detailData?.type === 'step' ? detailData.step?.stepId : null}
-              selectedType={detailData?.type === 'source' ? null : detailData?.type || null}
-              onDetailSelect={onDetailSelect}
+        <div className="h-full min-h-0" data-testid="flowchart-view">
+          {workflow && workflow.steps.length > 0 && workflowId ? (
+            <StudioGraph
+              doc={state.spec}
+              workflowId={workflowId}
+              isDark={isDark}
+              sources={state.sources}
+              diagnostics={diagnostics}
+              selectedStepId={selectedGraphStepId}
+              onSelect={handleGraphSelect}
+              showFailureEdges={showErrorFlow}
             />
           ) : (
             <EmptyState icon={FlowchartIcon} message="No steps to visualize" />

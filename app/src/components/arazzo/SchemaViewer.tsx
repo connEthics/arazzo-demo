@@ -2,6 +2,25 @@
 
 import { useState } from 'react';
 import { Badge } from '../primitives';
+import type { BadgeVariant } from '../primitives/Badge';
+
+/** JSON Schema subset displayed by the viewer (inputs, OpenAPI parameters / bodies). */
+export interface ViewSchema {
+  type?: string;
+  format?: string;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  example?: unknown;
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  required?: string[];
+  properties?: Record<string, ViewSchema>;
+  items?: ViewSchema;
+}
 
 // Recursive component to display schema properties with validation rules
 export default function SchemaViewer({ 
@@ -13,7 +32,7 @@ export default function SchemaViewer({
   defaultCollapsed = true,
 }: { 
   name: string; 
-  schema: any; 
+  schema: ViewSchema;
   required?: boolean; 
   isDark: boolean; 
   level?: number;
@@ -35,7 +54,7 @@ export default function SchemaViewer({
     schema.example !== undefined || isObject || isArray;
 
   // Count properties for badge
-  const propCount = isObject ? Object.keys(schema.properties).length : 0;
+  const propCount = isObject ? Object.keys(schema.properties ?? {}).length : 0;
   
   return (
     <div className={`rounded-lg border ${borderClass} ${bgClass} overflow-hidden mb-3 transition-all duration-200 shadow-sm`}>
@@ -48,7 +67,7 @@ export default function SchemaViewer({
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`font-mono font-semibold text-sm ${textClass}`}>{name}</span>
             {schema.type && (
-              <Badge variant={`type-${schema.type}` as any} isDark={isDark} size="xs">
+              <Badge variant={`type-${schema.type}` as BadgeVariant} isDark={isDark} size="xs">
                 {schema.type.toUpperCase()}
                 {schema.format && ` (${schema.format})`}
               </Badge>
@@ -101,8 +120,8 @@ export default function SchemaViewer({
               <div className="space-y-1.5">
                 <span className={`text-xs font-medium uppercase ${mutedClass}`}>Allowed Values</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {schema.enum.map((val: any, idx: number) => (
-                    <Badge key={idx} variant="info" isDark={isDark} size="sm">{val}</Badge>
+                  {schema.enum.map((val: unknown, idx: number) => (
+                    <Badge key={idx} variant="info" isDark={isDark} size="sm">{typeof val === 'string' ? val : JSON.stringify(val)}</Badge>
                   ))}
                 </div>
               </div>
@@ -157,7 +176,7 @@ export default function SchemaViewer({
             {isObject && (
               <div className="mt-3 pl-3 border-l-2 border-indigo-400/30 space-y-3">
                 <span className={`text-xs font-semibold uppercase ${mutedClass} tracking-wider`}>Properties</span>
-                {Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => (
+                {Object.entries(schema.properties ?? {}).map(([propName, propSchema]) => (
                   <SchemaViewer
                     key={propName}
                     name={propName}

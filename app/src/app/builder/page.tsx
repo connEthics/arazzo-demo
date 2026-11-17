@@ -1,95 +1,75 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { BuilderProvider, useBuilder } from '@/features/builder/context/BuilderContext';
 import BuilderHeader, { type ViewMode, type MobilePanel } from '@/features/builder/components/BuilderHeader';
-import LeftPanel from '@/features/builder/components/LeftPanel';
+import LeftPanel, { type LeftMode } from '@/features/builder/components/LeftPanel';
 import CenterPanel from '@/features/builder/components/CenterPanel';
 import RightPanel from '@/features/builder/components/RightPanel';
 import MobileMenu from '@/features/builder/components/MobileMenu';
 import YamlFullscreen from '@/features/builder/components/YamlFullscreen';
+import ExamplesGallery from '@/features/builder/components/ExamplesGallery';
+import { DEFAULT_EXAMPLE_ID, findExample, loadArazzoWithSources, type ExampleEntry } from '@/features/builder/data/examples';
+import { countBySeverity } from '@/lib/arazzo-parser';
 import type { DetailData } from '@/components/DetailDrawer';
 import yaml from 'js-yaml';
-import type { ArazzoSpec } from '@/types/arazzo';
 
 // ============================================================================
 // Builder Page Content
 // ============================================================================
 
 function BuilderPageContent() {
-  const { state, dispatch } = useBuilder();
+  const { state, dispatch, diagnostics } = useBuilder();
   const hasLoadedDemo = useRef(false);
-  
+
   // -------------------------------------------------------------------------
-  // Load Demo Workflow on Mount
+  // Examples (gallery + `/builder?example=<folder>`)
   // -------------------------------------------------------------------------
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [loadingExample, setLoadingExample] = useState<string | null>(null);
+  const [exampleError, setExampleError] = useState<string | null>(null);
+  const [detailData, setDetailData] = useState<DetailData | null>(null);
+
+  const loadExample = useCallback(async (example: ExampleEntry) => {
+    setLoadingExample(example.id);
+    setExampleError(null);
+    try {
+      const { spec, sources } = await loadArazzoWithSources(example.path);
+      dispatch({ type: 'LOAD_SAMPLE', payload: { spec, sources } });
+
+      const firstWorkflow = spec.workflows[0];
+      const defaultStep =
+        firstWorkflow?.steps.find(s => s.stepId === example.defaultStepId) ?? firstWorkflow?.steps[0];
+      if (defaultStep) {
+        dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: defaultStep.stepId } });
+        setDetailData({ type: 'step', step: defaultStep });
+      } else {
+        dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
+        setDetailData(null);
+      }
+      setExamplesOpen(false);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('example', example.id);
+        window.history.replaceState(null, '', url.toString());
+      }
+    } catch (error) {
+      console.error('Failed to load example:', error);
+      setExampleError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoadingExample(null);
+    }
+  }, [dispatch]);
+
+  // Load `?example=<id>` (default: pet-adoption) on mount
   useEffect(() => {
     if (hasLoadedDemo.current) return;
     hasLoadedDemo.current = true;
-    
-    async function loadDemoWorkflow() {
-      try {
-        // Load the demo workflow
-        const workflowResponse = await fetch('/workflows/pet-adoption.arazzo.yaml');
-        if (!workflowResponse.ok) return;
-        const workflowYaml = await workflowResponse.text();
-        const spec = yaml.load(workflowYaml) as ArazzoSpec;
-        
-        // Load the OpenAPI source if available
-        const sources: Record<string, unknown> = {};
-        if (spec.sourceDescriptions) {
-          for (const source of spec.sourceDescriptions) {
-            try {
-              // Try to load local OpenAPI files
-              const sourceUrl = source.url.startsWith('http') 
-                ? source.url 
-                : `/openapi/${source.url.split('/').pop()}`;
-              const sourceResponse = await fetch(sourceUrl);
-              if (sourceResponse.ok) {
-                const sourceYaml = await sourceResponse.text();
-                sources[source.name] = yaml.load(sourceYaml);
-              }
-            } catch {
-              // Ignore source loading errors
-            }
-          }
-        }
-        
-        dispatch({ 
-          type: 'LOAD_SAMPLE', 
-          payload: { spec, sources } 
-        });
+    const requested = new URLSearchParams(window.location.search).get('example');
+    const example = findExample(requested) ?? findExample(DEFAULT_EXAMPLE_ID);
+    if (example) void loadExample(example);
+  }, [loadExample]);
 
-        // Select specific step by default
-        const defaultStepId = 'placeOrderWithCoupon';
-        const defaultStep = spec.workflows[0].steps.find(s => s.stepId === defaultStepId);
-        
-        if (defaultStep) {
-          dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: defaultStepId } });
-          
-          // Also set detailData for diagram highlighting
-          let sourceForStep;
-          if (defaultStep.operationId && defaultStep.operationId.includes('.')) {
-            const sourceName = defaultStep.operationId.split('.')[0];
-            sourceForStep = spec.sourceDescriptions?.find(s => s.name === sourceName);
-          }
-          
-          setDetailData({
-            type: 'step',
-            step: defaultStep,
-            sourceForStep
-          });
-        } else {
-          dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'input' } });
-        }
-      } catch (error) {
-        console.error('Failed to load demo workflow:', error);
-      }
-    }
-    
-    loadDemoWorkflow();
-  }, [dispatch]);
-  
   // Use selectedWorkflowIndex from context
   const selectedWorkflowIndex = state.selectedWorkflowIndex;
   
@@ -120,9 +100,22 @@ function BuilderPageContent() {
   const [showErrorFlow, setShowErrorFlow] = useState(true);
   
   // -------------------------------------------------------------------------
-  // Detail Data (for diagram modes)
+  // Left panel mode (YAML / Operations / Problems)
   // -------------------------------------------------------------------------
-  const [detailData, setDetailData] = useState<DetailData | null>(null);
+  const [leftMode, setLeftMode] = useState<LeftMode>('yaml');
+  const problemCounts = useMemo(() => countBySeverity(diagnostics), [diagnostics]);
+
+  const handleShowProblems = useCallback(() => {
+    setShowLeftPanel(true);
+    setLeftMode('problems');
+    setMobilePanel('left');
+  }, []);
+
+  // A diagnostic pointing at a step: select it in the diagram views too
+  const handleRevealStep = useCallback((workflowIndex: number, stepId: string) => {
+    const step = state.spec.workflows[workflowIndex]?.steps.find(s => s.stepId === stepId);
+    if (step) setDetailData({ type: 'step', step });
+  }, [state.spec.workflows]);
 
   // Auto-open right panel when a node is selected in Builder mode
   useEffect(() => {
@@ -234,6 +227,17 @@ function BuilderPageContent() {
         onShowStepNamesChange={setShowStepNames}
         onShowErrorFlowChange={setShowErrorFlow}
         onExportYaml={handleExportYaml}
+        onOpenExamples={() => setExamplesOpen(true)}
+        problemCounts={problemCounts}
+        onShowProblems={handleShowProblems}
+      />
+
+      <ExamplesGallery
+        open={examplesOpen}
+        onClose={() => setExamplesOpen(false)}
+        onLoad={(ex) => void loadExample(ex)}
+        loadingId={loadingExample}
+        error={exampleError}
       />
 
       {/* Mobile Menu */}
@@ -267,6 +271,9 @@ function BuilderPageContent() {
                   width={leftPanelWidth}
                   onWidthChange={setLeftPanelWidth}
                   onYamlFullscreen={() => setYamlFullscreen(true)}
+                  mode={leftMode}
+                  onModeChange={setLeftMode}
+                  onRevealStep={handleRevealStep}
                 />
               </div>
             )}
@@ -279,6 +286,9 @@ function BuilderPageContent() {
                   onWidthChange={setLeftPanelWidth}
                   onYamlFullscreen={() => setYamlFullscreen(true)}
                   isMobile
+                  mode={leftMode}
+                  onModeChange={setLeftMode}
+                  onRevealStep={handleRevealStep}
                 />
               </div>
             )}

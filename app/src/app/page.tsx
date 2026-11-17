@@ -127,12 +127,12 @@ const useCases: UseCase[] = [
       {
         label: "mcp-travel-booking",
         detail: "quote_trip (read-only) and book_trip, with compensations",
-        href: "/workflows/mcp-travel-booking/mcp-travel-booking.arazzo.yaml",
+        href: "/builder?example=mcp-travel-booking",
       },
       {
         label: "mcp-support-refund",
         detail: "eligibility, refund, then an AsyncAPI send",
-        href: "/workflows/mcp-support-refund/mcp-support-refund.arazzo.yaml",
+        href: "/builder?example=mcp-support-refund",
       },
     ],
   },
@@ -146,12 +146,12 @@ const useCases: UseCase[] = [
       {
         label: "e2e-order-to-cash",
         detail: "receive with timeout, dependsOn fan-out and join",
-        href: "/workflows/e2e-order-to-cash/e2e-order-to-cash.arazzo.yaml",
+        href: "/builder?example=e2e-order-to-cash",
       },
       {
         label: "e2e-session-renewal",
         detail: "401, reusable renewSession workflow, retry",
-        href: "/workflows/e2e-session-renewal/e2e-session-renewal.arazzo.yaml",
+        href: "/builder?example=e2e-session-renewal",
       },
     ],
   },
@@ -165,12 +165,12 @@ const useCases: UseCase[] = [
       {
         label: "e2e-onboarding-entreprise-fr",
         detail: "company lookup, KYC, account, webhook",
-        href: "/workflows/e2e-onboarding-entreprise-fr/e2e-onboarding-entreprise-fr.arazzo.yaml",
+        href: "/builder?example=e2e-onboarding-entreprise-fr",
       },
       {
         label: "ecommerce-onboarding",
         detail: "three APIs, Selector Objects",
-        href: "/workflows/ecommerce-onboarding.arazzo.yaml",
+        href: "/builder?example=ecommerce-onboarding",
       },
     ],
   },

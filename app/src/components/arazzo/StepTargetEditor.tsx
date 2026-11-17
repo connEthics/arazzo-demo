@@ -3,6 +3,9 @@
 import { useMemo } from 'react';
 import type { Step, AsyncAction } from '@/types/arazzo';
 import { Badge, Card } from '../primitives';
+import { stepTargetKind, switchTargetUpdates, type StepTargetKind } from '@/lib/step-target';
+
+export { stepTargetKind, switchTargetUpdates, type StepTargetKind };
 
 /**
  * StepTargetEditor — Arazzo 1.1 step fields:
@@ -15,37 +18,12 @@ import { Badge, Card } from '../primitives';
  * edited step always satisfies `arazzo-step-target-exclusive`.
  */
 
-export type StepTargetKind = 'operationId' | 'operationPath' | 'workflowId' | 'channelPath';
-
 const TARGETS: { value: StepTargetKind; label: string; placeholder: string }[] = [
   { value: 'operationId', label: 'OpenAPI operationId', placeholder: '$sourceDescriptions.shop.createOrder' },
   { value: 'operationPath', label: 'OpenAPI operationPath', placeholder: '{$sourceDescriptions.shop.url}#/paths/~1orders/post' },
   { value: 'workflowId', label: 'Workflow', placeholder: 'renewSession' },
   { value: 'channelPath', label: 'AsyncAPI channel (1.1)', placeholder: '{$sourceDescriptions.events.url}#/channels/orderConfirmed' },
 ];
-
-export function stepTargetKind(step: Pick<Step, StepTargetKind>): StepTargetKind | null {
-  if (step.channelPath !== undefined) return 'channelPath';
-  if (step.workflowId !== undefined) return 'workflowId';
-  if (step.operationPath !== undefined) return 'operationPath';
-  if (step.operationId !== undefined) return 'operationId';
-  return null;
-}
-
-/** Updates that switch a step to another target kind (keeping the value when possible). */
-export function switchTargetUpdates(step: Step, kind: StepTargetKind): Partial<Step> {
-  const current = stepTargetKind(step);
-  const value = current ? (step[current] as string | undefined) ?? '' : '';
-  const updates: Partial<Step> = { operationId: undefined, operationPath: undefined, workflowId: undefined, channelPath: undefined };
-  updates[kind] = kind === current ? value : '';
-  if (kind === 'channelPath') {
-    updates.action = step.action ?? 'receive';
-  } else {
-    updates.action = undefined;
-    updates.correlationId = undefined;
-  }
-  return updates;
-}
 
 interface StepTargetEditorProps {
   step: Step;
@@ -60,7 +38,8 @@ interface StepTargetEditorProps {
 export default function StepTargetEditor({ step, isDark = false, editable = false, onUpdate, availableSteps = [], onStepClick }: StepTargetEditorProps) {
   const kind = stepTargetKind(step);
   const canEdit = editable && !!onUpdate;
-  const isAsync = kind === 'channelPath';
+  // AsyncAPI step: a channelPath, or an AsyncAPI operationId / operationPath declaring an action
+  const isAsync = kind === 'channelPath' || step.action !== undefined;
   const dependsOn = useMemo(() => step.dependsOn ?? [], [step.dependsOn]);
   const candidates = useMemo(() => availableSteps.filter((id) => id && id !== step.stepId), [availableSteps, step.stepId]);
   // Remote / cross-workflow dependencies ($workflows.x.steps.y) are kept as-is.
@@ -97,8 +76,12 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
         <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs" data-testid="step-11-fields">
           {isAsync && (
             <>
-              <dt className={mutedClass}>channelPath</dt>
-              <dd className="font-mono break-all">{step.channelPath}</dd>
+              {step.channelPath !== undefined && (
+                <>
+                  <dt className={mutedClass}>channelPath</dt>
+                  <dd className="font-mono break-all">{step.channelPath}</dd>
+                </>
+              )}
               <dt className={mutedClass}>action</dt>
               <dd className="font-mono">{step.action ?? '—'}</dd>
             </>
@@ -166,6 +149,19 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
             </label>
           )}
         </div>
+
+        {/* AsyncAPI operation referenced by operationId / operationPath (1.1) */}
+        {kind && kind !== 'channelPath' && kind !== 'workflowId' && (
+          <label className={`flex items-center gap-2 text-xs ${mutedClass}`}>
+            <input
+              type="checkbox"
+              aria-label="AsyncAPI operation"
+              checked={step.action !== undefined}
+              onChange={(e) => onUpdate!(e.target.checked ? { action: 'receive' } : { action: undefined, correlationId: undefined })}
+            />
+            AsyncAPI operation (send / receive)
+          </label>
+        )}
 
         {/* AsyncAPI */}
         {isAsync && (

@@ -4,7 +4,12 @@ import { useMemo, useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import yaml from 'js-yaml';
 import { parseDocument, LineCounter } from 'yaml';
+import type { OnMount } from '@monaco-editor/react';
 import { useBuilder } from '../context/BuilderContext';
+import { parseAndValidate, parseArazzoSpec } from '@/lib/arazzo-parser';
+
+type MonacoEditorInstance = Parameters<OnMount>[0];
+type MonacoApi = Parameters<OnMount>[1];
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -17,7 +22,9 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
   const [localYaml, setLocalYaml] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<MonacoEditorInstance | null>(null);
+  const monacoRef = useRef<MonacoApi | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
   const decorationsRef = useRef<string[]>([]);
 
   // Convert current spec to YAML for display
@@ -29,17 +36,13 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
         noRefs: true,
         sortKeys: false
       });
-    } catch (e) {
+    } catch {
       return '# Error converting spec to YAML';
     }
   }, [state.spec]);
 
-  // Sync local YAML when spec changes (if not actively editing)
-  useEffect(() => {
-    if (!isEditing) {
-      setLocalYaml(specYaml);
-    }
-  }, [specYaml, isEditing]);
+  // While not editing, the editor shows the spec; local edits live in localYaml.
+  const displayedYaml = isEditing ? localYaml : specYaml;
 
   // Handle highlighting when lastModifiedPath changes
   useEffect(() => {
@@ -47,8 +50,8 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
 
     try {
       const lineCounter = new LineCounter();
-      const doc = parseDocument(localYaml, { lineCounter });
-      const node = doc.getIn(state.lastModifiedPath, true) as any;
+      const doc = parseDocument(displayedYaml, { lineCounter });
+      const node = doc.getIn(state.lastModifiedPath, true) as { range?: [number, number, number] } | undefined;
       
       if (node && node.range) {
         // Get line number (1-based for Monaco)
@@ -99,29 +102,56 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
     } catch (e) {
       console.error('Failed to highlight YAML line:', e);
     }
-  }, [state.lastModifiedPath, localYaml, isEditing, isDark]);
+  }, [state.lastModifiedPath, displayedYaml, isEditing, isDark]);
 
-  const handleEditorDidMount = (editor: any) => {
+  const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
+    setEditorReady(true);
   };
+
+  // Inline diagnostics of @connethics/arazzo-core (YAML syntax, JSON Schema, semantic rules)
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const model = editor?.getModel();
+    if (!editor || !monaco || !model) return;
+    const handle = setTimeout(() => {
+      const { diagnostics } = parseAndValidate(displayedYaml);
+      const severity = {
+        error: monaco.MarkerSeverity.Error,
+        warning: monaco.MarkerSeverity.Warning,
+        info: monaco.MarkerSeverity.Info,
+        hint: monaco.MarkerSeverity.Hint,
+      } as const;
+      monaco.editor.setModelMarkers(
+        model,
+        'arazzo-core',
+        diagnostics
+          .filter(d => d.line !== undefined)
+          .map(d => ({
+            severity: severity[d.severity],
+            message: d.message,
+            code: d.code,
+            source: 'arazzo',
+            startLineNumber: d.line!,
+            startColumn: d.column!,
+            endLineNumber: d.endLine ?? d.line!,
+            endColumn: d.endColumn ?? d.column! + 1,
+          })),
+      );
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [displayedYaml, editorReady]);
 
   const handleEditorChange = (value: string | undefined) => {
     setLocalYaml(value || '');
     setIsEditing(true);
     setError(null);
 
-    // Try to parse and validate
+    // Try to parse (core parser: YAML syntax + root shape)
     try {
-      const parsed = yaml.load(value || '') as any;
-      if (!parsed?.arazzo) {
-        setError('Missing "arazzo" field');
-        return;
-      }
-      if (!parsed?.workflows || !Array.isArray(parsed.workflows)) {
-        setError('Missing or invalid "workflows" array');
-        return;
-      }
-      // Valid - update spec
+      parseArazzoSpec(value || '');
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid YAML');
@@ -130,12 +160,7 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
 
   const handleApplyChanges = () => {
     try {
-      const parsed = yaml.load(localYaml) as any;
-      if (!parsed?.arazzo || !parsed?.workflows) {
-        setError('Invalid Arazzo spec');
-        return;
-      }
-      
+      const parsed = parseArazzoSpec(localYaml);
       dispatch({
         type: 'LOAD_SPEC',
         payload: parsed
@@ -190,7 +215,7 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
           height="100%"
           language="yaml"
           theme={isDark ? 'vs-dark' : 'light'}
-          value={localYaml}
+          value={displayedYaml}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
           options={{

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { Step } from '@/types/arazzo';
 import { Badge, EditableField } from '@/components/primitives';
-import { extractHttpMethod, getMethodBadgeVariant, type HttpMethod } from '@/lib/arazzo-utils';
+import { extractHttpMethod, getMethodBadgeVariant, splitOperationId, splitChannelPath, type HttpMethod } from '@/lib/arazzo-utils';
 
 export type StepHeaderVariant = 'node' | 'card' | 'inspector';
 
@@ -38,22 +38,14 @@ export default function StepHeader({
     onClick,
     children
 }: StepHeaderProps) {
-    const method = useMemo(() => extractHttpMethod(step.operationId), [step.operationId]);
+    const opRef = useMemo(() => splitOperationId(step.operationId), [step.operationId]);
+    const channelRef = useMemo(() => splitChannelPath(step.channelPath), [step.channelPath]);
+    const isAsync = step.channelPath !== undefined || step.action !== undefined;
+    const method = useMemo(() => (isAsync ? null : extractHttpMethod(opRef.operationName ?? undefined)), [isAsync, opRef.operationName]);
 
-    const operationName = useMemo(() => {
-        if (!step.operationId) return null;
-        return step.operationId.includes('.')
-            ? step.operationId.split('.').pop()
-            : step.operationId;
-    }, [step.operationId]);
+    const operationName = step.channelPath !== undefined ? channelRef.channel : opRef.operationName;
 
-    const resolvedSourceName = useMemo(() => {
-        if (sourceName) return sourceName;
-        if (step.operationId?.includes('.')) {
-            return step.operationId.split('.')[0];
-        }
-        return null;
-    }, [sourceName, step.operationId]);
+    const resolvedSourceName = sourceName || (step.channelPath !== undefined ? channelRef.sourceName : opRef.sourceName);
 
     // View specific styles
     const containerClasses = useMemo(() => {
@@ -102,6 +94,13 @@ export default function StepHeader({
                         </h4>
                     )}
 
+                    {/* AsyncAPI action badge (Arazzo 1.1) */}
+                    {isAsync && (
+                        <Badge variant="asyncapi" size="xs" isDark={isDark} className="uppercase">
+                            {step.action === 'send' ? '↗ send' : step.action === 'receive' ? '↘ receive' : 'async'}
+                        </Badge>
+                    )}
+
                     {/* HTTP Method Badge */}
                     {method && (
                         <Badge
@@ -116,7 +115,7 @@ export default function StepHeader({
                     {/* Operation Path/ID or Workflow ID */}
                     {(operationName || step.workflowId) && variant !== 'node' && (
                         <div className="flex items-center">
-                            {editable && onUpdate && variant === 'inspector' ? (
+                            {editable && onUpdate && variant === 'inspector' && step.channelPath === undefined ? (
                                 <EditableField
                                     value={step.operationId || step.workflowId || ''}
                                     onChange={(val) => {

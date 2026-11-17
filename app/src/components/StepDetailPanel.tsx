@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import type { Step, Parameter, SuccessAction, FailureAction } from '@/types/arazzo';
-import { isReusableObject } from '@/types/arazzo';
+import { isReusableObject, outputValueToString } from '@/types/arazzo';
 
 interface StepDetailPanelProps {
   step: Step;
@@ -126,7 +126,7 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
               {Object.entries(step.outputs).map(([key, value]) => (
                 <div key={key} className={`${codeBgClass} rounded px-2 py-1 border-l-2 border-amber-400`}>
                   <span className={`text-xs font-medium ${textClass}`}>{key}</span>
-                  <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5 break-all`}>{value}</code>
+                  <code className={`text-[10px] font-mono ${mutedClass} block mt-0.5 break-all`}>{outputValueToString(value)}</code>
                 </div>
               ))}
             </div>
@@ -169,7 +169,7 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
                           {Object.entries(a.outputs).map(([key, value]) => (
                             <div key={key} className="flex flex-col gap-0.5">
                               <span className={`text-[9px] ${textClass}`}>{key}:</span>
-                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{value}</code>
+                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{outputValueToString(value)}</code>
                             </div>
                           ))}
                         </div>
@@ -218,7 +218,7 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
                           {Object.entries(a.outputs).map(([key, value]) => (
                             <div key={key} className="flex flex-col gap-0.5">
                               <span className={`text-[9px] ${textClass}`}>{key}:</span>
-                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{value}</code>
+                              <code className={`text-[9px] font-mono ${mutedClass} break-all`}>{outputValueToString(value)}</code>
                             </div>
                           ))}
                         </div>

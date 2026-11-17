@@ -35,11 +35,12 @@ function CodeBlock({
   }, [code, maxHeight]);
 
   // Sync with forceExpanded prop
-  useEffect(() => {
-    if (forceExpanded !== undefined) {
-      setIsExpanded(forceExpanded);
-    }
-  }, [forceExpanded]);
+  // (state adjusted during render rather than in an effect: no cascading re-render)
+  const [prevForceExpanded, setPrevForceExpanded] = useState(forceExpanded);
+  if (forceExpanded !== prevForceExpanded) {
+    setPrevForceExpanded(forceExpanded);
+    if (forceExpanded !== undefined) setIsExpanded(forceExpanded);
+  }
 
   const bgClass = isDark ? 'bg-slate-900' : 'bg-gray-900';
 

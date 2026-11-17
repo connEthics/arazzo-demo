@@ -1,12 +1,29 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useMemo, useReducer, ReactNode } from 'react';
 import { BuilderState, BuilderAction } from '../types/builder';
-import type { SuccessAction } from '@/types/arazzo';
+import type { Step } from '@/types/arazzo';
+import { validateSpec, sortDiagnostics, type Diagnostic } from '@/lib/arazzo-parser';
+
+/** Merge step updates; `undefined` removes a field (keeps the YAML export clean). */
+function mergeStep(step: Step, updates: Partial<Step>): Step {
+  const merged: Record<string, unknown> = { ...step, ...updates };
+  for (const key of Object.keys(merged)) {
+    if (merged[key] === undefined) delete merged[key];
+  }
+  return merged as unknown as Step;
+}
+
+/** Rewrites `dependsOn` entries pointing at a renamed / deleted local step. */
+function remapDependsOn(dependsOn: string[] | undefined, from: string, to: string | null): string[] | undefined {
+  if (!dependsOn) return dependsOn;
+  const next = dependsOn.flatMap((d) => (d === from ? (to ? [to] : []) : [d]));
+  return next.length > 0 ? next : undefined;
+}
 
 const initialState: BuilderState = {
   spec: {
-    arazzo: '1.0.1',
+    arazzo: '1.1.0',
     info: { title: 'New Arazzo Spec', version: '1.0.0' },
     sourceDescriptions: [],
     workflows: [{ workflowId: 'workflow_1', steps: [] }]
@@ -48,7 +65,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
           ...state.spec,
           sourceDescriptions: [
             ...state.spec.sourceDescriptions,
-            { name: action.payload.name, url: 'uploaded', type: 'openapi' }
+            { name: action.payload.name, url: action.payload.url ?? 'uploaded', type: action.payload.type ?? 'openapi' }
           ]
         }
       };
@@ -78,7 +95,12 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                 .filter(s => s.stepId !== stepToDelete)
                 .map(s => {
                   // Remove references to deleted step in other steps
-                  let updated = { ...s };
+                  const updated = { ...s };
+                  if (updated.dependsOn) {
+                    const deps = remapDependsOn(updated.dependsOn, stepToDelete, null);
+                    if (deps) updated.dependsOn = deps;
+                    else delete updated.dependsOn;
+                  }
                   if (updated.onSuccess) {
                     updated.onSuccess = updated.onSuccess.filter(a => {
                       if ('reference' in a) return true;
@@ -120,12 +142,17 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
               steps: wf.steps.map(s => {
                 // Update the step itself
                 if (s.stepId === oldStepId) {
-                  return { ...s, ...action.payload.updates };
+                  return mergeStep(s, action.payload.updates);
                 }
 
                 // If renaming, update all references to this stepId in other steps
                 if (isRenaming) {
-                  let updated = { ...s };
+                  const updated = { ...s };
+
+                  // Update dependsOn references (Arazzo 1.1)
+                  if (updated.dependsOn) {
+                    updated.dependsOn = remapDependsOn(updated.dependsOn, oldStepId, newStepId!);
+                  }
 
                   // Update onSuccess references
                   if (updated.onSuccess) {
@@ -205,7 +232,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
               steps: wf.steps.map(s => {
                 if (s.stepId !== action.payload.sourceStepId) return s;
 
-                let updated = { ...s };
+                const updated = { ...s };
                 if (updated.onSuccess) {
                   updated.onSuccess = updated.onSuccess.filter(a => {
                     if ('reference' in a) return true;
@@ -235,7 +262,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
                 ...wf.steps.map(s => {
                   if (s.stepId !== edgeSource) return s;
                   // Update source step: change goTo from target to new step
-                  let updated = { ...s };
+                  const updated = { ...s };
                   if (updated.onSuccess) {
                     updated.onSuccess = updated.onSuccess.map(a => {
                       if ('reference' in a) return a;
@@ -308,10 +335,11 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
     case 'DELETE_COMPONENT': {
       const { type, name } = action.payload;
       const newComponents = { ...(state.spec.components || {}) };
-      if (newComponents[type]) {
-        const subMap = { ...newComponents[type] };
-        delete (subMap as any)[name];
-        newComponents[type] = subMap as any;
+      const current = newComponents[type] as Record<string, unknown> | undefined;
+      if (current) {
+        const subMap = { ...current };
+        delete subMap[name];
+        (newComponents as Record<string, unknown>)[type] = subMap;
       }
       return {
         ...state,
@@ -456,6 +484,11 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         selectedStepId: null,
         selectedNodeType: null
       };
+    case 'REVEAL_PATH':
+      return {
+        ...state,
+        lastModifiedPath: action.payload
+      };
     case 'CLEAR_AUTO_LAYOUT':
       return {
         ...state,
@@ -469,13 +502,26 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
 const BuilderContext = createContext<{
   state: BuilderState;
   dispatch: React.Dispatch<BuilderAction>;
+  /** Diagnostics of @connethics/arazzo-core for the current spec (errors first). */
+  diagnostics: Diagnostic[];
 } | null>(null);
+
+function safeValidate(spec: BuilderState['spec']): Diagnostic[] {
+  try {
+    return sortDiagnostics(validateSpec(spec));
+  } catch (error) {
+    console.error('Arazzo validation failed:', error);
+    return [];
+  }
+}
 
 export function BuilderProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(builderReducer, initialState);
+  const diagnostics = useMemo(() => safeValidate(state.spec), [state.spec]);
+  const value = useMemo(() => ({ state, dispatch, diagnostics }), [state, diagnostics]);
 
   return (
-    <BuilderContext.Provider value={{ state, dispatch }}>
+    <BuilderContext.Provider value={value}>
       {children}
     </BuilderContext.Provider>
   );

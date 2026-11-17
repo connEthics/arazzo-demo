@@ -15,13 +15,17 @@ import {
   useReactFlow,
   XYPosition,
   useOnSelectionChange,
-  useViewport
+  useViewport,
+  type NodeChange,
+  type EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useBuilder } from '../context/BuilderContext';
 import { UnifiedStepNode } from '@/components/nodes';
 import { WorkflowInputNode, WorkflowOutputNode } from './nodes';
 import { extractOperations } from '../utils/oas-helpers';
+import { canvasLayoutEdges, layoutCanvas } from '../utils/elk-layout';
+import { splitOperationId } from '@/lib/arazzo-utils';
 import CanvasToolbar from '@/components/CanvasToolbar';
 import type { Step, SuccessAction, FailureAction } from '@/types/arazzo';
 
@@ -36,54 +40,79 @@ type EdgeType = 'success' | 'failure' | 'data';
 
 /**
  * Calculate topological order of steps based on connections.
- * Returns: { ordered: Step[], startStepIds: string[], endStepIds: string[] }
+ * Returns: { ordered, startStepIds, endStepIds, sequenceEdges, dependsOnEdges }
  * - startStepIds: steps with no predecessor (connected from START)
  * - endStepIds: steps with no successor (connected to END)
+ * - sequenceEdges: implicit "next step" transitions (Arazzo: a step without an unconditional
+ *   success action continues with the next step of the list)
+ * - dependsOnEdges: Arazzo 1.1 `dependsOn` prerequisites (local stepIds)
  */
 function getTopologicalInfo(steps: Step[]): {
   ordered: Step[];
   startStepIds: Set<string>;
   endStepIds: Set<string>;
+  sequenceEdges: Array<[string, string]>;
+  dependsOnEdges: Array<[string, string]>;
 } {
-  if (steps.length === 0) return { ordered: [], startStepIds: new Set(), endStepIds: new Set() };
-  
+  if (steps.length === 0) {
+    return { ordered: [], startStepIds: new Set(), endStepIds: new Set(), sequenceEdges: [], dependsOnEdges: [] };
+  }
+
   // Build adjacency map (stepId -> target stepIds)
   const successors = new Map<string, Set<string>>();
   const predecessors = new Map<string, Set<string>>();
-  
+
   steps.forEach(step => {
     successors.set(step.stepId, new Set());
     predecessors.set(step.stepId, new Set());
   });
-  
-  // Collect edges from onSuccess goto actions
-  steps.forEach(step => {
+  const link = (from: string, to: string) => {
+    if (!predecessors.has(to) || !successors.has(from) || from === to) return;
+    successors.get(from)?.add(to);
+    predecessors.get(to)?.add(from);
+  };
+
+  const sequenceEdges: Array<[string, string]> = [];
+  const dependsOnEdges: Array<[string, string]> = [];
+
+  steps.forEach((step, index) => {
+    let unconditional = false;
     step.onSuccess?.forEach(action => {
       if ('reference' in action) return;
       const a = action as SuccessAction;
-      if (a.type === 'goto' && a.stepId && predecessors.has(a.stepId)) {
-        successors.get(step.stepId)?.add(a.stepId);
-        predecessors.get(a.stepId)?.add(step.stepId);
+      if (!a.criteria || a.criteria.length === 0) unconditional = true;
+      if (a.type === 'goto' && a.stepId) link(step.stepId, a.stepId);
+    });
+    const next = steps[index + 1];
+    // A dependsOn on the previous step replaces the implicit sequence (as in the core graph model)
+    if (!unconditional && next && !next.dependsOn?.includes(step.stepId)) {
+      sequenceEdges.push([step.stepId, next.stepId]);
+      link(step.stepId, next.stepId);
+    }
+    step.dependsOn?.forEach(dep => {
+      if (predecessors.has(dep) && dep !== step.stepId) {
+        dependsOnEdges.push([dep, step.stepId]);
+        link(dep, step.stepId);
       }
     });
   });
-  
+
   // Find steps with no predecessors (start nodes)
   const startSteps = steps.filter(s => predecessors.get(s.stepId)?.size === 0);
-  
+
   // BFS to get order
   const ordered: Step[] = [];
   const visited = new Set<string>();
-  
+
   // If no clear start, use all steps as potential starts (original order)
   const queue = startSteps.length > 0 ? [...startSteps] : [...steps];
-  
+
   while (queue.length > 0) {
     const step = queue.shift()!;
     if (visited.has(step.stepId)) continue;
     visited.add(step.stepId);
     ordered.push(step);
-    
+
     // Add successors to queue
     const succs = successors.get(step.stepId) || new Set();
     succs.forEach(succId => {
@@ -93,14 +122,14 @@ function getTopologicalInfo(steps: Step[]): {
       }
     });
   }
-  
+
   // Add any remaining steps not in the graph
   steps.forEach(step => {
     if (!visited.has(step.stepId)) {
       ordered.push(step);
     }
   });
-  
+
   // Find end steps (no successors)
   const endStepIds = new Set<string>();
   steps.forEach(step => {
@@ -108,13 +137,13 @@ function getTopologicalInfo(steps: Step[]): {
       endStepIds.add(step.stepId);
     }
   });
-  
-  // Start steps (no predecessors) - if none found, all steps are starts
-  const startStepIds = startSteps.length > 0 
+
+  // Start steps (no predecessors) - if none found, the first step is the start
+  const startStepIds = startSteps.length > 0
     ? new Set(startSteps.map(s => s.stepId))
-    : new Set(steps.map(s => s.stepId));
-  
-  return { ordered, startStepIds, endStepIds };
+    : new Set([steps[0].stepId]);
+
+  return { ordered, startStepIds, endStepIds, sequenceEdges, dependsOnEdges };
 }
 
 interface BuilderCanvasProps {
@@ -145,8 +174,8 @@ function BuilderCanvasContent({
     showDescriptions: false,
   });
   
-  // Layout direction
-  const [layoutDirection, setLayoutDirection] = useState<'horizontal' | 'vertical'>('horizontal');
+  // Layout direction (cards connect top → bottom: vertical by default, as UI-SPEC TB)
+  const [layoutDirection, setLayoutDirection] = useState<'horizontal' | 'vertical'>('vertical');
   
   useOnSelectionChange({
     onChange: ({ nodes: selectedN }) => {
@@ -229,10 +258,11 @@ function BuilderCanvasContent({
       // Store position by stepId
       nodePositionsRef.current.set(step.stepId, position);
       
-      // Get method from operations
-      const opId = step.operationId?.split('.').pop() || '';
-      const sourceName = step.operationId?.split('.')[0] || '';
-      const operation = operations.find(op => op.operationId === opId && op.sourceName === sourceName);
+      // Get method from operations (`$sourceDescriptions.<source>.<op>`, `<source>.<op>` or `<op>`)
+      const { sourceName: opSource, operationName } = splitOperationId(step.operationId);
+      const opId = operationName || '';
+      const operation = operations.find(op => op.operationId === opId && (!opSource || op.sourceName === opSource));
+      const sourceName = opSource || operation?.sourceName || '';
       
       // Extract parameters for display (filter out reusable refs)
       const parameters = step.parameters
@@ -286,7 +316,8 @@ function BuilderCanvasContent({
           stepId: step.stepId,
           stepIndex: idx,
           operationId: opId,
-          method: operation?.method || 'GET',
+          method: step.channelPath ? null : operation?.method || null,
+          step,
           sourceName,
           parameters,
           outputs: step.outputs,
@@ -362,6 +393,46 @@ function BuilderCanvasContent({
       }
     });
     
+    // Implicit sequence (next step of the list) — not a stored connection, not deletable
+    topoInfo.sequenceEdges.forEach(([from, to]) => {
+      const source = stepIdToNodeId.get(from);
+      const target = stepIdToNodeId.get(to);
+      if (!source || !target) return;
+      newEdges.push({
+        id: `sequence-${from}-${to}`,
+        source,
+        target,
+        sourceHandle: 'flow-out',
+        targetHandle: 'flow-in',
+        type: 'smoothstep',
+        deletable: false,
+        style: { stroke: '#94a3b8', strokeWidth: 1.5 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+        data: { type: 'sequence' }
+      });
+    });
+
+    // Arazzo 1.1 dependsOn (join point): dotted, edited from the inspector
+    topoInfo.dependsOnEdges.forEach(([from, to]) => {
+      const source = stepIdToNodeId.get(from);
+      const target = stepIdToNodeId.get(to);
+      if (!source || !target) return;
+      newEdges.push({
+        id: `depends-${from}-${to}`,
+        source,
+        target,
+        sourceHandle: 'flow-out',
+        targetHandle: 'flow-in',
+        type: 'smoothstep',
+        deletable: false,
+        label: 'dependsOn',
+        labelStyle: { fill: '#2563eb', fontWeight: 600, fontSize: 10 },
+        style: { stroke: '#2563eb', strokeWidth: 1.5, strokeDasharray: '1 4', strokeLinecap: 'round' },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#2563eb' },
+        data: { type: 'dependsOn' }
+      });
+    });
+
     steps.forEach((step, srcIdx) => {
       const sourceNodeId = `node-${srcIdx}`;
       
@@ -471,10 +542,10 @@ function BuilderCanvasContent({
   }, [state.spec.workflows, state.selectedWorkflowIndex, stepIdToNodeId, validStepIds, displayOptions.showErrorFlow, displayOptions.showDataFlow, topoInfo, setEdges]);
 
   // Update positions ref when nodes move
-  const handleNodesChange = useCallback((changes: any) => {
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
     onNodesChange(changes);
     // Update position ref for moved nodes
-    changes.forEach((change: any) => {
+    changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
         const nodeId = change.id;
         if (nodeId === 'node-input') {
@@ -665,11 +736,11 @@ function BuilderCanvasContent({
   );
 
   // Handle edge deletion - remove goTo from source step
-  const handleEdgesChange = useCallback((changes: any) => {
+  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
     
     // Check for edge removals
-    changes.forEach((change: any) => {
+    changes.forEach((change) => {
       if (change.type === 'remove') {
         // Find the removed edge
         const removedEdge = edges.find(e => e.id === change.id);
@@ -696,89 +767,63 @@ function BuilderCanvasContent({
   const { zoomIn, zoomOut, fitView, setViewport, getNodes } = useReactFlow();
   const { zoom } = useViewport();
 
-  // Auto-layout handler with direction support
-  const handleAutoLayout = useCallback((direction?: 'horizontal' | 'vertical') => {
-    const steps = state.spec.workflows[state.selectedWorkflowIndex]?.steps || [];
-    if (steps.length === 0) return;
-    
+  // Auto-layout: ELK layered on the core workflow graph (see utils/elk-layout.ts)
+  const layoutRunRef = useRef(0);
+  const handleAutoLayout = useCallback(async (direction?: 'horizontal' | 'vertical') => {
+    const workflow = state.spec.workflows[state.selectedWorkflowIndex];
+    const steps = workflow?.steps || [];
+    if (!workflow || steps.length === 0) return;
     const dir = direction || layoutDirection;
-    const startX = 300;
-    const startY = 150;
-    
-    // Calculate new positions
-    const newPositions = new Map<string, { x: number; y: number }>();
-    
-    if (dir === 'horizontal') {
-      // Horizontal layout: steps flow left to right in rows
-      const gapX = 350;
-      const gapY = 280;
-      const maxRows = Math.max(2, Math.ceil(Math.sqrt(steps.length / 2)));
-      
-      steps.forEach((step, idx) => {
-        const row = idx % maxRows;
-        const col = Math.floor(idx / maxRows);
-        newPositions.set(step.stepId, {
-          x: startX + (col * gapX),
-          y: startY + (row * gapY)
-        });
-      });
-    } else {
-      // Vertical layout: steps flow top to bottom in columns
-      const gapX = 320;
-      const gapY = 250;
-      const maxCols = Math.max(2, Math.ceil(Math.sqrt(steps.length * 2)));
-      
-      steps.forEach((step, idx) => {
-        const col = idx % maxCols;
-        const row = Math.floor(idx / maxCols);
-        newPositions.set(step.stepId, {
-          x: startX + (col * gapX),
-          y: startY + (row * gapY)
-        });
-      });
+    const run = ++layoutRunRef.current;
+
+    const current = getNodes();
+    const layoutNodes = current.map(n => ({
+      id: n.id,
+      width: n.measured?.width ?? n.width ?? 260,
+      height: n.measured?.height ?? n.height ?? 120,
+    }));
+    const edgesForLayout = canvasLayoutEdges(state.spec, workflow.workflowId, {
+      input: 'node-input',
+      output: 'node-output',
+      steps: stepIdToNodeId,
+    });
+
+    let positions: Map<string, { x: number; y: number }>;
+    try {
+      positions = await layoutCanvas(layoutNodes, edgesForLayout, dir);
+    } catch (error) {
+      console.error('ELK auto-layout failed:', error);
+      return;
     }
-    
-    // Calculate bounds for input/output nodes
-    let maxX = 0;
-    newPositions.forEach(pos => {
-      if (pos.x > maxX) maxX = pos.x;
+    if (run !== layoutRunRef.current) return; // a newer layout started meanwhile
+
+    // Persist positions (keyed by stepId, stable across renames of other steps)
+    positions.forEach((pos, nodeId) => {
+      if (nodeId === 'node-input') nodePositionsRef.current.set('input', pos);
+      else if (nodeId === 'node-output') nodePositionsRef.current.set('output', pos);
+      else {
+        const stepId = current.find(n => n.id === nodeId)?.data?.stepId as string | undefined;
+        if (stepId) nodePositionsRef.current.set(stepId, pos);
+      }
     });
-    
-    // Update nodePositionsRef
-    newPositions.forEach((pos, stepId) => {
-      nodePositionsRef.current.set(stepId, pos);
-    });
-    nodePositionsRef.current.set('input', { x: 50, y: startY });
-    nodePositionsRef.current.set('output', { x: maxX + 350, y: startY });
-    
-    // Apply positions directly to nodes
-    setNodes(currentNodes => 
+
+    setNodes(currentNodes =>
       currentNodes.map(node => {
-        if (node.id === 'node-input') {
-          return { ...node, position: { x: 50, y: startY } };
-        }
-        if (node.id === 'node-output') {
-          return { ...node, position: { x: maxX + 350, y: startY } };
-        }
-        const stepId = node.data?.stepId as string;
-        const newPos = newPositions.get(stepId);
-        if (newPos) {
-          return { ...node, position: newPos };
-        }
-        return node;
+        const pos = positions.get(node.id);
+        return pos ? { ...node, position: pos } : node;
       })
     );
-    
+
     // Fit view after layout
-    setTimeout(() => fitView({ duration: 300, padding: 0.15 }), 100);
-  }, [state.spec.workflows, state.selectedWorkflowIndex, setNodes, layoutDirection, fitView]);
+    setTimeout(() => fitView({ duration: 300, padding: 0.12 }), 200);
+  }, [state.spec, state.selectedWorkflowIndex, setNodes, layoutDirection, fitView, getNodes, stepIdToNodeId]);
 
   // Auto-layout when sample is loaded
   useEffect(() => {
     if (state.needsAutoLayout && nodes.length > 1) {
       // Wait a bit for nodes to be rendered, then auto-layout
       const timer = setTimeout(() => {
-        handleAutoLayout('horizontal');
+        void handleAutoLayout();
         dispatch({ type: 'CLEAR_AUTO_LAYOUT' });
       }, 200);
       return () => clearTimeout(timer);
@@ -805,7 +850,7 @@ function BuilderCanvasContent({
   // Layout direction change
   const handleLayoutDirectionChange = useCallback((direction: 'horizontal' | 'vertical') => {
     setLayoutDirection(direction);
-    handleAutoLayout(direction);
+    void handleAutoLayout(direction);
   }, [handleAutoLayout]);
 
   return (
@@ -821,6 +866,7 @@ function BuilderCanvasContent({
         onDragOver={onDragOver}
         onDrop={onDrop}
         fitView
+        minZoom={0.2}
         panOnScroll
         selectionOnDrag
         panOnDrag
@@ -837,7 +883,7 @@ function BuilderCanvasContent({
           onZoomOut={handleZoomOut}
           onZoomReset={handleZoomReset}
           onZoomToFit={handleZoomToFit}
-          onAutoLayout={() => handleAutoLayout()}
+          onAutoLayout={() => void handleAutoLayout()}
           layoutDirection={layoutDirection}
           onLayoutDirectionChange={handleLayoutDirectionChange}
           displayOptions={displayOptions}

@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Badge } from './primitives';
+import type { SchemaProperty } from '@/types/arazzo';
 
 interface SchemaEditorProps {
   name: string;
-  schema: any;
+  schema: SchemaProperty;
   required?: boolean;
   isDark: boolean;
-  onChange: (name: string, schema: any, required: boolean) => void;
+  onChange: (name: string, schema: SchemaProperty, required: boolean) => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -41,12 +42,12 @@ export default function SchemaEditor({
   const inputBgClass = isDark ? 'bg-slate-900' : 'bg-gray-50';
   const inputBorderClass = isDark ? 'border-slate-600' : 'border-gray-300';
 
-  const handleChange = (field: string, value: any) => {
-    const newSchema = { ...schema, [field]: value };
+  const handleChange = (field: string, value: unknown) => {
+    const newSchema: Record<string, unknown> = { ...schema, [field]: value };
     if (value === '' || value === undefined) {
       delete newSchema[field];
     }
-    onChange(name, newSchema, required);
+    onChange(name, newSchema as unknown as SchemaProperty, required);
   };
 
   const handleEnumChange = (value: string) => {
@@ -156,7 +157,7 @@ export default function SchemaEditor({
                   onChange={(e) => {
                     const val = e.target.value;
                     // Try to parse numbers/booleans if type matches
-                    let parsed: any = val;
+                    let parsed: unknown = val;
                     if (schema.type === 'number' || schema.type === 'integer') parsed = Number(val);
                     if (schema.type === 'boolean') parsed = val === 'true';
                     if (val === '') parsed = undefined;

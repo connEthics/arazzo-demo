@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import type { Step } from '@/types/arazzo';
+import type { Step, OutputValue } from '@/types/arazzo';
 import { Badge } from '@/components/primitives';
 import { StepHeader, StepBody } from '@/components/arazzo';
 import { extractHttpMethod, getMethodBadgeVariant, type HttpMethod } from '@/lib/arazzo-utils';
@@ -21,7 +21,7 @@ interface UnifiedStepNodeData {
   parameters?: Array<{ name: string; in?: string }>;
 
   // Outputs for display
-  outputs?: Record<string, string>;
+  outputs?: Record<string, OutputValue>;
 
   // Computed flags (for view mode)
   hasOnSuccess?: boolean;
@@ -144,7 +144,7 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
 
         {/* Header */}
         <StepHeader
-          step={step || { stepId, operationId, description } as any}
+          step={step || ({ stepId, operationId, description } as Step)}
           variant="node"
           isDark={selected}
           className="border-b"
@@ -267,14 +267,14 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
 
       {/* Header */}
       <StepHeader
-        step={step || { stepId, operationId, description } as any}
+        step={step || ({ stepId, operationId, description } as Step)}
         variant="node"
         isDark={isActive}
       />
 
       {/* Body */}
       <StepBody
-        step={step || { stepId, operationId, description, outputs, onSuccess: hasOnSuccess, onFailure: hasOnFailure } as any}
+        step={step || ({ stepId, operationId, description, outputs, onSuccess: hasOnSuccess ? [] : undefined, onFailure: hasOnFailure ? [] : undefined } as Step)}
         variant="compact"
         isDark={isActive}
       />

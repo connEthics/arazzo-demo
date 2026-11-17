@@ -50,6 +50,13 @@ interface BuilderHeaderProps {
 
   // Export
   onExportYaml?: () => void;
+
+  // Arazzo 1.1 examples gallery
+  onOpenExamples?: () => void;
+
+  // Diagnostics (@connethics/arazzo-core)
+  problemCounts?: { error: number; warning: number; info: number };
+  onShowProblems?: () => void;
 }
 
 const VIEW_MODES = [
@@ -79,6 +86,9 @@ function BuilderHeader({
   onShowStepNamesChange,
   onShowErrorFlowChange,
   onExportYaml,
+  onOpenExamples,
+  problemCounts,
+  onShowProblems,
 }: BuilderHeaderProps) {
   const getViewModeButtonClass = (mode: ViewMode) => {
     const config = VIEW_MODES.find(m => m.id === mode);
@@ -108,10 +118,38 @@ function BuilderHeader({
       {/* Title */}
       <div className="flex items-center gap-4">
         <h1 className="font-bold text-base whitespace-nowrap text-slate-900 dark:text-white">
-          <span className="hidden sm:inline">Arazzo Builder</span>
-          <span className="sm:hidden">Builder</span>
+          <span className="hidden sm:inline">Arazzo Studio</span>
+          <span className="sm:hidden">Studio</span>
         </h1>
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
+        {onOpenExamples && (
+          <button
+            onClick={onOpenExamples}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            data-testid="open-examples"
+          >
+            <span aria-hidden>▤</span>
+            <span>Examples</span>
+          </button>
+        )}
+        {problemCounts && onShowProblems && (
+          <button
+            onClick={onShowProblems}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Show problems (@connethics/arazzo-core validation)"
+            data-testid="problem-counter"
+          >
+            {problemCounts.error + problemCounts.warning === 0 ? (
+              <span className="text-emerald-600 dark:text-emerald-400">✓ Valid</span>
+            ) : (
+              <>
+                <span className="text-red-600 dark:text-red-400">✕ {problemCounts.error}</span>
+                <span className="text-amber-600 dark:text-amber-400">! {problemCounts.warning}</span>
+              </>
+            )}
+            {problemCounts.info > 0 && <span className="text-blue-600 dark:text-blue-400">i {problemCounts.info}</span>}
+          </button>
+        )}
       </div>
 
       {/* Workflow Manager - Desktop */}

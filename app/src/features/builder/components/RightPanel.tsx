@@ -7,7 +7,7 @@ import Inspector from '@/components/Inspector';
 import ResizableInspectorPanel from '@/components/ResizableInspectorPanel';
 import type { DetailData } from '@/components/DetailDrawer';
 import type { InspectorStep } from '@/components/StepInspector';
-import type { Step, WorkflowInputs, Components } from '@/types/arazzo';
+import type { Step, WorkflowInputs, Components, OutputValue } from '@/types/arazzo';
 
 export type ViewMode = 'builder' | 'documentation' | 'flowchart' | 'sequence';
 
@@ -80,7 +80,7 @@ function RightPanel({
   }, [dispatch, workflowId]);
 
   // Handle workflow outputs update
-  const handleOutputUpdate = useCallback((outputs: Record<string, string>) => {
+  const handleOutputUpdate = useCallback((outputs: Record<string, OutputValue>) => {
     if (!workflowId) return;
     dispatch({
       type: 'UPDATE_WORKFLOW',
@@ -187,7 +187,7 @@ function RightPanel({
     }
 
     return null;
-  }, [state.selectedNodeType, state.selectedStepId, workflow, getSourceForStep, detailData, viewMode]);
+  }, [state.selectedNodeType, state.selectedStepId, state.selectedComponentKey, state.spec.components?.schemas, state.spec.components?.inputs, workflow, getSourceForStep, detailData, viewMode]);
 
   const handleClose = useCallback(() => {
     if (viewMode === 'builder') {

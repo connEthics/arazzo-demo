@@ -53,11 +53,12 @@ export default function StepCard({
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Sync with forceExpanded prop when it changes
-  useEffect(() => {
-    if (forceExpanded !== undefined) {
-      setIsExpanded(forceExpanded);
-    }
-  }, [forceExpanded]);
+  // (state adjusted during render rather than in an effect: no cascading re-render)
+  const [prevForceExpanded, setPrevForceExpanded] = useState(forceExpanded);
+  if (forceExpanded !== prevForceExpanded) {
+    setPrevForceExpanded(forceExpanded);
+    if (forceExpanded !== undefined) setIsExpanded(forceExpanded);
+  }
 
   // Find the source for this step
   const getSourceForStep = () => {

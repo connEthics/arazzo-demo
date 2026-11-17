@@ -60,6 +60,36 @@ const DEFAULT_EXPRESSION_SUGGESTIONS: ExpressionSuggestion[] = [
  * Right panel for inspecting and editing a selected step's properties.
  * Uses ActionFormEditor for actions tab and ExpressionInput for expression fields.
  */
+// Collapsible section header (declared outside the inspector: stable component identity)
+function SectionHeader({ id, title, badge, isDark, expandedSections, onToggle }: {
+  id: string;
+  title: string;
+  badge?: React.ReactNode;
+  isDark: boolean;
+  expandedSections: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onToggle(id)}
+      className={`w-full flex items-center justify-between py-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}
+    >
+      <div className="flex items-center gap-2">
+        <svg
+          className={`w-4 h-4 transition-transform ${expandedSections.has(id) ? 'rotate-90' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-sm font-semibold">{title}</span>
+      </div>
+      {badge}
+    </button>
+  );
+}
+
 export default function StepInspector({
   step,
   onStepChange,
@@ -185,25 +215,6 @@ export default function StepInspector({
     handleFieldChange('onFailure', actions);
   };
 
-  const SectionHeader = ({ id, title, badge }: { id: string; title: string; badge?: React.ReactNode }) => (
-    <button
-      onClick={() => toggleSection(id)}
-      className={`w-full flex items-center justify-between py-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}
-    >
-      <div className="flex items-center gap-2">
-        <svg
-          className={`w-4 h-4 transition-transform ${expandedSections.has(id) ? 'rotate-90' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-sm font-semibold">{title}</span>
-      </div>
-      {badge}
-    </button>
-  );
 
   return (
     <div className={`h-full flex flex-col border-l ${isDark ? 'border-slate-700 bg-slate-900' : 'border-gray-200 bg-white'}`}>
@@ -295,7 +306,7 @@ export default function StepInspector({
 
             {/* Operation */}
             <div>
-              <SectionHeader id="operation" title="Operation" />
+              <SectionHeader isDark={isDark} expandedSections={expandedSections} onToggle={toggleSection} id="operation" title="Operation" />
               {expandedSections.has('operation') && (
                 <div className={`mt-2 p-3 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-gray-50'}`}>
                   {step.operationId ? (
@@ -353,7 +364,7 @@ export default function StepInspector({
             {/* Outputs */}
             <div>
               <div className="flex items-center justify-between">
-                <SectionHeader 
+                <SectionHeader isDark={isDark} expandedSections={expandedSections} onToggle={toggleSection} 
                   id="outputs" 
                   title="Outputs" 
                   badge={step.outputs && Object.keys(step.outputs).length > 0 ? (

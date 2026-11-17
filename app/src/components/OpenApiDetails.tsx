@@ -1,8 +1,8 @@
 'use client';
 
 import { memo, useState, useMemo } from 'react';
-import type { Step, SourceDescription, Parameter } from '@/types/arazzo';
-import { isReusableObject } from '@/types/arazzo';
+import type { Step, SourceDescription, Parameter, OutputValue } from '@/types/arazzo';
+import { isReusableObject, outputValueToString } from '@/types/arazzo';
 import { extractHttpMethod, getMethodStyles, type HttpMethod } from '@/lib/arazzo-utils';
 
 interface OpenApiDetailsProps {
@@ -109,7 +109,7 @@ function OpenApiDetails({ step, source, isDark = false }: OpenApiDetailsProps) {
             'application/json': {
               schema: generateSchemaFromOutputs(step.outputs),
               example: Object.fromEntries(
-                Object.entries(step.outputs).map(([k, v]) => [k, `<${v}>`])
+                Object.entries(step.outputs).map(([k, v]) => [k, `<${outputValueToString(v)}>`])
               )
             }
           } : undefined
@@ -349,7 +349,7 @@ function generateSchemaFromPayload(payload: Record<string, unknown>): OpenApiSch
   return { type: 'object', properties };
 }
 
-function generateSchemaFromOutputs(outputs: Record<string, string>): OpenApiSchema {
+function generateSchemaFromOutputs(outputs: Record<string, OutputValue>): OpenApiSchema {
   const properties: Record<string, OpenApiSchema> = {};
   
   for (const [key, value] of Object.entries(outputs)) {

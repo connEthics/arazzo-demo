@@ -1,23 +1,50 @@
 
+import { splitOperationId } from '@/lib/arazzo-utils';
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI schemas are free-form JSON consumed by SchemaViewer */
+type JsonSchemaLike = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export interface OASParameter {
   name: string;
-  in: 'query' | 'path' | 'header' | 'cookie';
+  in: 'query' | 'querystring' | 'path' | 'header' | 'cookie';
   required?: boolean;
   description?: string;
-  schema?: any;
-  example?: any;
+  schema?: JsonSchemaLike;
+  example?: unknown;
 }
 
 export interface OASRequestBody {
   description?: string;
   required?: boolean;
-  content?: Record<string, { schema?: any; example?: any }>;
+  content?: Record<string, { schema?: JsonSchemaLike; example?: unknown }>;
 }
 
 export interface OASResponse {
   statusCode: string;
   description?: string;
-  content?: Record<string, { schema?: any; example?: any }>;
+  content?: Record<string, { schema?: JsonSchemaLike; example?: unknown }>;
+}
+
+type RawParam = { name: string; in: OASParameter['in']; required?: boolean; description?: string; schema?: JsonSchemaLike; example?: unknown };
+type RawOperation = {
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  parameters?: RawParam[];
+  requestBody?: OASRequestBody;
+  responses?: Record<string, { description?: string; content?: OASResponse['content'] }>;
+};
+type RawPathItem = Record<string, unknown> & { parameters?: RawParam[] };
+
+/** Type of a source document: OpenAPI (`openapi` / `swagger`) or, Arazzo 1.1, AsyncAPI. */
+export function detectSourceType(content: unknown): 'openapi' | 'asyncapi' | null {
+  if (!content || typeof content !== 'object') return null;
+  const c = content as Record<string, unknown>;
+  if (c.asyncapi) return 'asyncapi';
+  if (c.openapi || c.swagger) return 'openapi';
+  return null;
 }
 
 export interface OperationItem {
@@ -33,15 +60,16 @@ export interface OperationItem {
   responses: OASResponse[];
 }
 
-export function extractOperations(sources: Record<string, any>): OperationItem[] {
+export function extractOperations(sources: Record<string, unknown>): OperationItem[] {
   const operations: OperationItem[] = [];
 
-  Object.entries(sources).forEach(([sourceName, oas]) => {
+  Object.entries(sources).forEach(([sourceName, doc]) => {
+    const oas = (doc ?? {}) as { paths?: Record<string, RawPathItem> };
     if (!oas.paths) return;
 
-    Object.entries(oas.paths).forEach(([path, pathItem]: [string, any]) => {
+    Object.entries(oas.paths).forEach(([path, pathItem]) => {
       // Collect path-level parameters
-      const pathParams: OASParameter[] = (pathItem.parameters || []).map((p: any) => ({
+      const pathParams: OASParameter[] = (pathItem.parameters || []).map((p) => ({
         name: p.name,
         in: p.in,
         required: p.required,
@@ -52,10 +80,10 @@ export function extractOperations(sources: Record<string, any>): OperationItem[]
 
       ['get', 'post', 'put', 'delete', 'patch'].forEach(method => {
         if (pathItem[method]) {
-          const op = pathItem[method];
+          const op = pathItem[method] as RawOperation;
           
           // Merge path and operation parameters
-          const opParams: OASParameter[] = (op.parameters || []).map((p: any) => ({
+          const opParams: OASParameter[] = (op.parameters || []).map((p) => ({
             name: p.name,
             in: p.in,
             required: p.required,
@@ -77,7 +105,7 @@ export function extractOperations(sources: Record<string, any>): OperationItem[]
           }
           
           // Extract responses
-          const responses: OASResponse[] = Object.entries(op.responses || {}).map(([code, resp]: [string, any]) => ({
+          const responses: OASResponse[] = Object.entries(op.responses || {}).map(([code, resp]) => ({
             statusCode: code,
             description: resp.description,
             content: resp.content
@@ -103,18 +131,13 @@ export function extractOperations(sources: Record<string, any>): OperationItem[]
   return operations;
 }
 
-export function getOperationByStepId(sources: Record<string, any>, operationIdOrPath: string, sourceName?: string): OperationItem | undefined {
+export function getOperationByStepId(sources: Record<string, unknown>, operationIdOrPath: string, sourceName?: string): OperationItem | undefined {
   const operations = extractOperations(sources);
-  
-  // operationIdOrPath can be "sourceName.operationId" or just "operationId"
-  let searchSourceName = sourceName;
-  let searchOperationId = operationIdOrPath;
-  
-  if (operationIdOrPath.includes('.')) {
-    const parts = operationIdOrPath.split('.');
-    searchSourceName = parts[0];
-    searchOperationId = parts.slice(1).join('.');
-  }
+
+  // "$sourceDescriptions.<source>.<operationId>" (1.1), "<source>.<operationId>" or "<operationId>"
+  const ref = splitOperationId(operationIdOrPath);
+  const searchSourceName = ref.sourceName ?? sourceName;
+  const searchOperationId = ref.operationName ?? operationIdOrPath;
   
   return operations.find(op => 
     op.operationId === searchOperationId && (!searchSourceName || op.sourceName === searchSourceName)

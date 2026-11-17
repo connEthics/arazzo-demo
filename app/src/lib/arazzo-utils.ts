@@ -101,3 +101,27 @@ export function getSourceFromOperationId(operationId?: string): string | undefin
   if (!operationId || !operationId.includes('.')) return undefined;
   return operationId.split('.')[0];
 }
+
+/**
+ * Splits an `operationId` into its source and operation name. Handles the Arazzo 1.1 qualified
+ * form `$sourceDescriptions.<source>.<operationId>` and the legacy `<source>.<operationId>`.
+ */
+export function splitOperationId(operationId?: string): { sourceName: string | null; operationName: string | null } {
+  if (!operationId) return { sourceName: null, operationName: null };
+  const qualified = /^\$sourceDescriptions\.([^.]+)\.(.+)$/.exec(operationId);
+  if (qualified) return { sourceName: qualified[1], operationName: qualified[2] };
+  const dot = operationId.indexOf('.');
+  if (dot > 0) return { sourceName: operationId.slice(0, dot), operationName: operationId.slice(dot + 1) };
+  return { sourceName: null, operationName: operationId };
+}
+
+/**
+ * Source name and channel key of an AsyncAPI `channelPath`
+ * (`{$sourceDescriptions.events.url}#/channels/orderConfirmed`).
+ */
+export function splitChannelPath(channelPath?: string): { sourceName: string | null; channel: string | null } {
+  if (!channelPath) return { sourceName: null, channel: null };
+  const m = /^\{\$sourceDescriptions\.([^.}]+)\.url\}#\/channels\/(.+)$/.exec(channelPath);
+  if (m) return { sourceName: m[1], channel: decodeURIComponent(m[2].replace(/~1/g, '/').replace(/~0/g, '~')) };
+  return { sourceName: null, channel: channelPath };
+}

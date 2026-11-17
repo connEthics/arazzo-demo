@@ -26,13 +26,54 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'config' | 'oas'>('config');
 
-  const selectedStep = state.spec.workflows[0]?.steps.find(s => s.stepId === state.selectedStepId);
+  const selectedStep = state.spec.workflows[state.selectedWorkflowIndex]?.steps.find(s => s.stepId === state.selectedStepId);
 
   // Get OAS operation details for this step
   const oasOperation = useMemo((): OperationItem | null => {
     if (!selectedStep?.operationId) return null;
     return getOperationByStepId(state.sources, selectedStep.operationId) ?? null;
   }, [selectedStep, state.sources]);
+
+  // Build expression suggestions from previous steps and workflow inputs
+  const expressionSuggestions = useMemo((): ExpressionSuggestion[] => {
+    const suggestions: ExpressionSuggestion[] = [
+      { expression: '$statusCode', label: 'Status Code', description: 'HTTP response status code', type: 'context' },
+      { expression: '$response.body', label: 'Response Body', description: 'Full response body', type: 'response' },
+      { expression: '$url', label: 'Request URL', type: 'context' },
+    ];
+
+    // Add workflow inputs
+    const workflow = state.spec.workflows[state.selectedWorkflowIndex];
+    if (workflow?.inputs?.properties) {
+      Object.keys(workflow.inputs.properties).forEach(key => {
+        suggestions.push({
+          expression: `$inputs.${key}`,
+          label: key,
+          description: 'Workflow input',
+          type: 'input',
+        });
+      });
+    }
+
+    // Add outputs from previous steps
+    const currentStepIndex = workflow?.steps.findIndex(s => s.stepId === selectedStep?.stepId) ?? -1;
+    workflow?.steps.slice(0, currentStepIndex).forEach(step => {
+      if (step.outputs) {
+        Object.keys(step.outputs).forEach(outputKey => {
+          suggestions.push({
+            expression: `$steps.${step.stepId}.outputs.${outputKey}`,
+            label: `${step.stepId}.${outputKey}`,
+            description: `Output from step ${step.stepId}`,
+            type: 'output',
+            stepId: step.stepId,
+            outputKey,
+          });
+        });
+      }
+    });
+
+    return suggestions;
+  }, [state.spec.workflows, state.selectedWorkflowIndex, selectedStep?.stepId]);
 
   if (!selectedStep) {
     return (
@@ -52,7 +93,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
   const handleAiSuggest = async () => {
     setIsAiLoading(true);
     try {
-      const suggestion = await suggestStepMapping(selectedStep, state.spec.workflows[0].steps);
+      const suggestion = await suggestStepMapping(selectedStep, state.spec.workflows[state.selectedWorkflowIndex].steps);
       handleUpdate(suggestion);
     } catch (error) {
       console.error('AI Suggestion failed', error);
@@ -70,51 +111,11 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
     const newParam: Parameter = {
       name: param.name,
       in: param.in as Parameter['in'],
-      value: param.example ?? ''
+      value: (param.example ?? '') as Parameter['value']
     };
     handleUpdate({ parameters: [...existingParams, newParam] });
   };
 
-  // Build expression suggestions from previous steps and workflow inputs
-  const expressionSuggestions = useMemo((): ExpressionSuggestion[] => {
-    const suggestions: ExpressionSuggestion[] = [
-      { expression: '$statusCode', label: 'Status Code', description: 'HTTP response status code', type: 'context' },
-      { expression: '$response.body', label: 'Response Body', description: 'Full response body', type: 'response' },
-      { expression: '$url', label: 'Request URL', type: 'context' },
-    ];
-
-    // Add workflow inputs
-    const workflow = state.spec.workflows[0];
-    if (workflow?.inputs?.properties) {
-      Object.keys(workflow.inputs.properties).forEach(key => {
-        suggestions.push({
-          expression: `$inputs.${key}`,
-          label: key,
-          description: 'Workflow input',
-          type: 'input',
-        });
-      });
-    }
-
-    // Add outputs from previous steps
-    const currentStepIndex = workflow?.steps.findIndex(s => s.stepId === selectedStep.stepId) ?? -1;
-    workflow?.steps.slice(0, currentStepIndex).forEach(step => {
-      if (step.outputs) {
-        Object.keys(step.outputs).forEach(outputKey => {
-          suggestions.push({
-            expression: `$steps.${step.stepId}.outputs.${outputKey}`,
-            label: `${step.stepId}.${outputKey}`,
-            description: `Output from step ${step.stepId}`,
-            type: 'output',
-            stepId: step.stepId,
-            outputKey,
-          });
-        });
-      }
-    });
-
-    return suggestions;
-  }, [state.spec.workflows, selectedStep.stepId]);
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border-l border-slate-800">
@@ -200,6 +201,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
               onStepUpdate={handleUpdate}
               isDark={true}
               expressionSuggestions={expressionSuggestions}
+              availableSteps={state.spec.workflows[state.selectedWorkflowIndex]?.steps.map(s => s.stepId) ?? []}
               onStepClick={(stepId) => dispatch({ type: 'SELECT_NODE', payload: { nodeType: 'step', id: stepId } })}
             />
           </div>

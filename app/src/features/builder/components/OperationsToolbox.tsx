@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useBuilder } from '../context/BuilderContext';
 import { extractOperations, groupOperationsByTag, groupOperationsBySource, OperationItem } from '../utils/oas-helpers';
 import { Card, Badge } from '@/components/primitives';
+import type { BadgeVariant } from '@/components/primitives/Badge';
 
 type GroupBy = 'tag' | 'source' | 'none';
 
@@ -73,7 +74,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
     onOperationDragStart?.(); // Switch to canvas view on mobile
   };
 
-  const getMethodBadgeVariant = (method: string) => {
+  const getMethodBadgeVariant = (method: string): BadgeVariant => {
     switch (method) {
       case 'GET': return 'method-get';
       case 'POST': return 'method-post';
@@ -198,7 +199,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
                     <Card isDark={false} className="p-2.5 hover:border-indigo-500 hover:shadow-sm transition-all group">
                       <div className="flex items-start gap-2">
                         <Badge 
-                          variant={getMethodBadgeVariant(op.method) as any} 
+                          variant={getMethodBadgeVariant(op.method)} 
                           size="sm"
                           className="shrink-0 mt-0.5"
                         >

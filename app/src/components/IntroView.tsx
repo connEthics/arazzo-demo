@@ -2,6 +2,7 @@
 
 import { memo, useState } from 'react';
 import type { ArazzoSpec, Workflow, Step } from '@/types/arazzo';
+import { outputValueToString } from '@/types/arazzo';
 import { Card, Badge, PropertyList, CodeBlock, PageContainer, ContentCard, SectionHeader, CollapsibleSection } from './primitives';
 import { SchemaViewer, CriterionBadge, ActionList } from './arazzo';
 import { getThemeClasses } from '@/hooks/useThemeClasses';
@@ -129,7 +130,7 @@ function StepCard({ step, index, isDark, textClass, mutedClass, borderClass }: S
               <PropertyList
                 items={Object.entries(step.outputs!).map(([name, expr]) => ({
                   name,
-                  value: expr,
+                  value: outputValueToString(expr),
                 }))}
                 isDark={isDark}
                 variant="compact"
@@ -269,7 +270,7 @@ function IntroView({ spec, workflow, isDark = false }: IntroViewProps) {
           <PropertyList
             items={Object.entries(workflow.outputs).map(([name, expr]) => ({
               name,
-              value: expr,
+              value: outputValueToString(expr),
             }))}
             isDark={isDark}
             variant="compact"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { WorkflowInputs } from '@/types/arazzo';
+import type { WorkflowInputs, SchemaProperty } from '@/types/arazzo';
 import SchemaEditor from './SchemaEditor';
 import SchemaViewer from './arazzo/SchemaViewer';
 
@@ -19,13 +19,13 @@ export default function WorkflowInputsEditor({
   const [editingProp, setEditingProp] = useState<string | null>(null);
   const properties = inputs.properties ? Object.keys(inputs.properties) : [];
 
-  const handleUpdate = (oldName: string, newName: string, newSchema: any, newRequired: boolean) => {
+  const handleUpdate = (oldName: string, newName: string, newSchema: SchemaProperty, newRequired: boolean) => {
     const newProps = { ...(inputs.properties || {}) };
     
     // Handle rename
     if (newName !== oldName) {
       // Preserve order: create new object with keys in correct order
-      const orderedProps: Record<string, any> = {};
+      const orderedProps: Record<string, SchemaProperty> = {};
       properties.forEach(key => {
         if (key === oldName) {
           orderedProps[newName] = newSchema;
@@ -76,7 +76,7 @@ export default function WorkflowInputsEditor({
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= properties.length) return;
 
-    const newProps: Record<string, any> = {};
+    const newProps: Record<string, SchemaProperty> = {};
     const movedProp = properties[index];
     
     // Reconstruct object in new order

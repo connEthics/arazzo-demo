@@ -1,11 +1,12 @@
 'use client';
 
 import { memo } from 'react';
+import { outputValueToString, type OutputValue } from '@/types/arazzo';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 
 interface WorkflowOutputNodeData {
   workflowId: string;
-  outputs?: Record<string, string>;
+  outputs?: Record<string, OutputValue>;
   description?: string;
   isSelected?: boolean;
 }
@@ -63,8 +64,8 @@ function WorkflowOutputNode({ data }: NodeProps) {
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
                   <span className="font-mono">{key}</span>
-                  <span className="text-amber-200 text-[10px] truncate max-w-[100px]" title={value}>
-                    = {value}
+                  <span className="text-amber-200 text-[10px] truncate max-w-[100px]" title={outputValueToString(value)}>
+                    = {outputValueToString(value)}
                   </span>
                 </div>
               ))}

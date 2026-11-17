@@ -35,11 +35,12 @@ function PropertyList({
   const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
 
   // Sync with forceExpanded prop
-  useEffect(() => {
-    if (forceExpanded !== undefined) {
-      setIsExpanded(forceExpanded);
-    }
-  }, [forceExpanded]);
+  // (state adjusted during render rather than in an effect: no cascading re-render)
+  const [prevForceExpanded, setPrevForceExpanded] = useState(forceExpanded);
+  if (forceExpanded !== prevForceExpanded) {
+    setPrevForceExpanded(forceExpanded);
+    if (forceExpanded !== undefined) setIsExpanded(forceExpanded);
+  }
 
   const needsTruncation = items.length > maxItems;
   const displayItems = (!needsTruncation || isExpanded) ? items : items.slice(0, maxItems);

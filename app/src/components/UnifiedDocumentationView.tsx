@@ -172,12 +172,13 @@ export default function UnifiedDocumentationView({
   }, []);
 
   // Expand all workflows when searching
-  useEffect(() => {
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery);
     if (searchQuery.trim()) {
-      const workflowIds = spec.workflows.map(w => w.workflowId);
-      setExpandedWorkflows(new Set(workflowIds));
+      setExpandedWorkflows(new Set(spec.workflows.map(w => w.workflowId)));
     }
-  }, [searchQuery, spec.workflows]);
+  }
 
   // Scroll to section
   const scrollToSection = useCallback((sectionId: string) => {

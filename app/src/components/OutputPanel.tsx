@@ -5,6 +5,7 @@ import RightPanelModeToggle, { RightPanelMode } from './RightPanelModeToggle';
 import { ExpressionSuggestion } from './ExpressionInput';
 import { Card, Badge, CodeBlock } from './primitives';
 import { OutputContent } from './DetailViews';
+import type { OutputValue } from '@/types/arazzo';
 
 interface OutputEntry {
   name: string;
@@ -13,9 +14,9 @@ interface OutputEntry {
 
 interface OutputPanelProps {
   /** Current workflow outputs mapping */
-  outputs?: Record<string, string>;
+  outputs?: Record<string, OutputValue>;
   /** Handler for output updates (enables edit mode) */
-  onOutputsChange?: (outputs: Record<string, string>) => void;
+  onOutputsChange?: (outputs: Record<string, OutputValue>) => void;
   /** Initial mode */
   initialMode?: RightPanelMode;
   /** Dark mode */

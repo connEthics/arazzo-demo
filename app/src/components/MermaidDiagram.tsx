@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
-import type { Step, SourceDescription, WorkflowInputs } from '@/types/arazzo';
+import type { Step, SourceDescription, WorkflowInputs, OutputValue } from '@/types/arazzo';
+import { outputValueToString } from '@/types/arazzo';
 import type { DetailData } from './DetailDrawer';
 
 interface MermaidDiagramProps {
@@ -11,7 +12,7 @@ interface MermaidDiagramProps {
   steps?: Step[];
   sources?: SourceDescription[];
   workflowInputs?: WorkflowInputs;
-  workflowOutputs?: Record<string, string>;
+  workflowOutputs?: Record<string, OutputValue>;
   selectedStepId?: string | null;
   selectedType?: 'step' | 'input' | 'output' | 'schema' | 'reusable-input' | null;
   onDetailSelect?: (data: DetailData | null) => void;
@@ -464,7 +465,7 @@ export default function MermaidDiagram({
           e.stopPropagation();
           onDetailSelect?.({
             type: 'output',
-            output: { name: outputName, value: step.outputs[outputName], stepId: step.stepId }
+            output: { name: outputName, value: outputValueToString(step.outputs[outputName]), stepId: step.stepId }
           });
           return;
         }
@@ -474,7 +475,7 @@ export default function MermaidDiagram({
         e.stopPropagation();
         onDetailSelect?.({
           type: 'output',
-          output: { name: outputName, value: workflowOutputs[outputName] }
+          output: { name: outputName, value: outputValueToString(workflowOutputs[outputName]) }
         });
         return;
       }

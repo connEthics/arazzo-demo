@@ -8,6 +8,7 @@ import StepCard from './StepCard';
 import { MarkdownText } from './primitives';
 import { SchemaViewer, SourceDescriptionsList, ArazzoSpecHeader, WorkflowList, WorkflowHeader, WorkflowBody } from './arazzo';
 import { InputContent, OutputContent } from './DetailViews';
+import type { ExpressionSuggestion } from './ExpressionInput';
 
 const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), { ssr: false });
 
@@ -23,7 +24,7 @@ interface DocumentationViewProps {
   onReorderStep?: (workflowId: string, startIndex: number, endIndex: number) => void;
   onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
   onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
-  expressionSuggestions?: any[];
+  expressionSuggestions?: ExpressionSuggestion[];
 }
 
 
@@ -210,7 +211,7 @@ interface WorkflowSectionProps {
   onStepUpdate?: (workflowId: string, stepId: string, updates: Partial<Step>) => void;
   onReorderInput?: (workflowId: string, startIndex: number, endIndex: number) => void;
   onReorderOutput?: (workflowId: string, startIndex: number, endIndex: number) => void;
-  expressionSuggestions?: any[];
+  expressionSuggestions?: ExpressionSuggestion[];
 }
 
 function WorkflowSection({
