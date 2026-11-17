@@ -670,8 +670,9 @@ const MermaidDiagram = dynamic(() => import('@/components/MermaidDiagram'), {
 
 - **Paquets `packages/arazzo-core` et `packages/arazzo-flow`** : licence **MIT**.
 - **Composants `app/src/components/arazzo/`** : licence **MIT**. Il faut conserver un lien vers le projet d'origine et la notice MIT.
-- **Application Arazzo Studio** : aujourd'hui sous licence propriétaire ([`LICENSE.md`](../LICENSE.md)). Le passage en
-  *source-available* est décidé ; la licence proposée, FSL-1.1-MIT, reste à confirmer.
+- **Application Arazzo Studio** : *source-available* sous **Functional Source License 1.1, MIT Future License**
+  (FSL-1.1-MIT, [`LICENSE.md`](../LICENSE.md)). Tout usage est permis sauf un usage concurrent commercial ; chaque
+  version passe automatiquement sous MIT deux ans après sa publication.
 - **Schémas JSON officiels** embarqués dans core : © OpenAPI Initiative, Apache-2.0.
 
 ---

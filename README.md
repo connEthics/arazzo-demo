@@ -102,11 +102,10 @@ This repository contains code under **two different licenses**:
 |---|---|
 | `packages/arazzo-core` (`@connethics/arazzo-core`) | **MIT** © 2026 ConnEthics, see [`packages/arazzo-core/LICENSE`](packages/arazzo-core/LICENSE). The bundled JSON Schemas are the OpenAPI Initiative's (Apache-2.0). |
 | `packages/arazzo-flow` (`@connethics/arazzo-flow`) | **MIT** © 2026 ConnEthics, see [`packages/arazzo-flow/LICENSE`](packages/arazzo-flow/LICENSE). |
-| The Arazzo Studio application (`app/` and everything else) | The terms in [`LICENSE.md`](LICENSE.md), including its MIT exception for `app/src/components/arazzo/` ([conditions](app/src/components/arazzo/LICENSE)). |
+| `app/src/components/arazzo/` | **MIT**, see [`app/src/components/arazzo/LICENSE`](app/src/components/arazzo/LICENSE). |
+| The Arazzo Studio application (`app/` and everything else) | **[Functional Source License 1.1, MIT Future License](https://fsl.software/)** (`FSL-1.1-MIT`) © 2026 ConnEthics, see [`LICENSE.md`](LICENSE.md). |
 
-**Using the hosted Studio at arazzo.connethics.com is free.** The application source is published so you can read and study it, but `LICENSE.md` does not grant the right to use, copy, modify or redistribute it without written authorization from ConnEthics. It is therefore *not* open source in the OSI sense.
-
-**In progress:** ConnEthics intends to move the application to a source-available license with a defined path to open source (the Functional Source License, FSL-1.1-MIT, is under consideration). Until `LICENSE.md` is updated, it is the only text that applies to the application. For licensing questions: [connethics.com](https://www.connethics.com).
+**Using the hosted Studio at arazzo.connethics.com is free.** The application is *source-available* under FSL-1.1-MIT: you may use, copy, modify and redistribute it for any purpose **except a Competing Use** (offering it, or something substantially similar, as a commercial product or service). Internal use, non-commercial education and research, and professional services for your clients are all permitted. Each released version automatically becomes available under the **MIT license two years after its release**. It is not open source in the OSI sense until then. For licensing questions: [connethics.com](https://www.connethics.com).
 
 Third-party dependencies keep their own licenses: MIT (Next.js, React, React Flow, Mermaid, Monaco Editor, js-yaml, yaml, react-markdown, Tailwind CSS), EPL-2.0 (ELK.js), Apache-2.0 (TypeScript).
 

@@ -687,7 +687,7 @@ export default function LandingPage() {
           <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
             <div className="max-w-sm">
               <BrandLockup variant="stacked" size={40} />
-              <p className="mt-4 text-sm text-ce-muted">Free to use · MIT-licensed core packages:</p>
+              <p className="mt-4 text-sm text-ce-muted">Free to use · Studio source-available (FSL-1.1-MIT) · MIT-licensed core packages:</p>
               <ul className="mt-1.5 space-y-0.5 font-mono text-[13px] text-ce-muted">
                 <li>@connethics/arazzo-core</li>
                 <li>@connethics/arazzo-flow</li>
