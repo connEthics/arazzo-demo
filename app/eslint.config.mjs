@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored shared packages (generated, verified by VENDOR.json).
+    "vendor/**",
   ]),
 ]);
 

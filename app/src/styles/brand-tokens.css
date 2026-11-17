@@ -1,0 +1,744 @@
+/*
+ * ConnEthics x Arazzo — design tokens (lot B1, refonte Arazzo 1.1.0)
+ * Généré par brand/tools/gen_tokens.py à partir de la même source que tokens.json : ne pas éditer à la main.
+ *
+ * Thèmes :
+ *   - light par défaut (:root, [data-theme="light"], body.vscode-light) ;
+ *   - dark via [data-theme="dark"], body.vscode-dark, ou prefers-color-scheme: dark
+ *     quand aucun data-theme="light" n'est imposé ;
+ *   - section « VS Code bridge » en fin de fichier : remappe le chrome sur var(--vscode-*)
+ *     avec fallback sur la palette ConnEthics ; les couleurs sémantiques du graphe restent celles de la marque.
+ * Préfixe : --ce-*. Contrastes WCAG AA vérifiés (voir BRAND.md).
+ */
+
+:root {
+  /* ---------- Primitives : couleurs ---------- */
+  --ce-color-white: #ffffff;
+  --ce-color-black: #000000;
+  --ce-color-logo-cyan: #009cdf;
+  --ce-color-blue-50: #eff6ff;
+  --ce-color-blue-100: #dbeafe;
+  --ce-color-blue-200: #bfdbfe;
+  --ce-color-blue-300: #93c5fd;
+  --ce-color-blue-400: #60a5fa;
+  --ce-color-blue-500: #3b82f6;
+  --ce-color-blue-600: #2563eb;
+  --ce-color-blue-700: #1d4ed8;
+  --ce-color-blue-800: #1e40af;
+  --ce-color-blue-900: #1e3a8a;
+  --ce-color-blue-950: #172554;
+  --ce-color-orange-50: #fff7ed;
+  --ce-color-orange-100: #ffedd5;
+  --ce-color-orange-200: #fed7aa;
+  --ce-color-orange-300: #fdba74;
+  --ce-color-orange-400: #fb923c;
+  --ce-color-orange-500: #f97316;
+  --ce-color-orange-600: #ea580c;
+  --ce-color-orange-700: #c2410c;
+  --ce-color-orange-800: #9a3412;
+  --ce-color-orange-900: #7c2d12;
+  --ce-color-orange-950: #431407;
+  --ce-color-slate-50: #f8fafc;
+  --ce-color-slate-100: #f1f5f9;
+  --ce-color-slate-200: #e2e8f0;
+  --ce-color-slate-300: #cbd5e1;
+  --ce-color-slate-400: #94a3b8;
+  --ce-color-slate-500: #64748b;
+  --ce-color-slate-600: #475569;
+  --ce-color-slate-700: #334155;
+  --ce-color-slate-800: #1e293b;
+  --ce-color-slate-900: #0f172a;
+  --ce-color-slate-950: #020617;
+  --ce-color-green-50: #f0fdf4;
+  --ce-color-green-100: #dcfce7;
+  --ce-color-green-200: #bbf7d0;
+  --ce-color-green-300: #86efac;
+  --ce-color-green-400: #4ade80;
+  --ce-color-green-500: #22c55e;
+  --ce-color-green-600: #16a34a;
+  --ce-color-green-700: #15803d;
+  --ce-color-green-800: #166534;
+  --ce-color-green-900: #14532d;
+  --ce-color-green-950: #052e16;
+  --ce-color-red-50: #fef2f2;
+  --ce-color-red-100: #fee2e2;
+  --ce-color-red-200: #fecaca;
+  --ce-color-red-300: #fca5a5;
+  --ce-color-red-400: #f87171;
+  --ce-color-red-500: #ef4444;
+  --ce-color-red-600: #dc2626;
+  --ce-color-red-700: #b91c1c;
+  --ce-color-red-800: #991b1b;
+  --ce-color-red-900: #7f1d1d;
+  --ce-color-red-950: #450a0a;
+  --ce-color-amber-50: #fffbeb;
+  --ce-color-amber-100: #fef3c7;
+  --ce-color-amber-200: #fde68a;
+  --ce-color-amber-300: #fcd34d;
+  --ce-color-amber-400: #fbbf24;
+  --ce-color-amber-500: #f59e0b;
+  --ce-color-amber-600: #d97706;
+  --ce-color-amber-700: #b45309;
+  --ce-color-amber-800: #92400e;
+  --ce-color-amber-900: #78350f;
+  --ce-color-amber-950: #451a03;
+  --ce-color-teal-50: #f0fdfa;
+  --ce-color-teal-100: #ccfbf1;
+  --ce-color-teal-200: #99f6e4;
+  --ce-color-teal-300: #5eead4;
+  --ce-color-teal-400: #2dd4bf;
+  --ce-color-teal-500: #14b8a6;
+  --ce-color-teal-600: #0d9488;
+  --ce-color-teal-700: #0f766e;
+  --ce-color-teal-800: #115e59;
+  --ce-color-teal-900: #134e4a;
+  --ce-color-teal-950: #042f2e;
+  --ce-color-cyan-50: #ecfeff;
+  --ce-color-cyan-100: #cffafe;
+  --ce-color-cyan-200: #a5f3fc;
+  --ce-color-cyan-300: #67e8f9;
+  --ce-color-cyan-400: #22d3ee;
+  --ce-color-cyan-500: #06b6d4;
+  --ce-color-cyan-600: #0891b2;
+  --ce-color-cyan-700: #0e7490;
+  --ce-color-cyan-800: #155e75;
+  --ce-color-cyan-900: #164e63;
+  --ce-color-cyan-950: #083344;
+  --ce-color-indigo-50: #eef2ff;
+  --ce-color-indigo-100: #e0e7ff;
+  --ce-color-indigo-200: #c7d2fe;
+  --ce-color-indigo-300: #a5b4fc;
+  --ce-color-indigo-400: #818cf8;
+  --ce-color-indigo-500: #6366f1;
+  --ce-color-indigo-600: #4f46e5;
+  --ce-color-indigo-700: #4338ca;
+  --ce-color-indigo-800: #3730a3;
+  --ce-color-indigo-900: #312e81;
+  --ce-color-indigo-950: #1e1b4b;
+  --ce-color-violet-50: #f5f3ff;
+  --ce-color-violet-100: #ede9fe;
+  --ce-color-violet-200: #ddd6fe;
+  --ce-color-violet-300: #c4b5fd;
+  --ce-color-violet-400: #a78bfa;
+  --ce-color-violet-500: #8b5cf6;
+  --ce-color-violet-600: #7c3aed;
+  --ce-color-violet-700: #6d28d9;
+  --ce-color-violet-800: #5b21b6;
+  --ce-color-violet-900: #4c1d95;
+  --ce-color-violet-950: #2e1065;
+  --ce-color-fuchsia-50: #fdf4ff;
+  --ce-color-fuchsia-100: #fae8ff;
+  --ce-color-fuchsia-200: #f5d0fe;
+  --ce-color-fuchsia-300: #f0abfc;
+  --ce-color-fuchsia-400: #e879f9;
+  --ce-color-fuchsia-500: #d946ef;
+  --ce-color-fuchsia-600: #c026d3;
+  --ce-color-fuchsia-700: #a21caf;
+  --ce-color-fuchsia-800: #86198f;
+  --ce-color-fuchsia-900: #701a75;
+  --ce-color-fuchsia-950: #4a044e;
+
+  /* ---------- Typographie ---------- */
+  --ce-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ce-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --ce-font-size-2xs: 0.625rem;
+  --ce-font-size-xs: 0.75rem;
+  --ce-font-size-sm: 0.875rem;
+  --ce-font-size-base: 1rem;
+  --ce-font-size-lg: 1.125rem;
+  --ce-font-size-xl: 1.25rem;
+  --ce-font-size-2xl: 1.5rem;
+  --ce-font-size-3xl: 1.875rem;
+  --ce-font-size-4xl: 2.25rem;
+  --ce-font-size-5xl: 3rem;
+  --ce-font-size-6xl: 3.75rem;
+  --ce-font-size-graph-badge: 10px;
+  --ce-font-size-graph-meta: 11px;
+  --ce-font-size-graph-title: 13px;
+  --ce-font-weight-regular: 400;
+  --ce-font-weight-medium: 500;
+  --ce-font-weight-semibold: 600;
+  --ce-font-weight-bold: 700;
+  --ce-font-weight-extrabold: 800;
+  --ce-line-height-none: 1;
+  --ce-line-height-tight: 1.25;
+  --ce-line-height-snug: 1.375;
+  --ce-line-height-normal: 1.5;
+  --ce-line-height-relaxed: 1.625;
+  --ce-letter-spacing-tight: -0.025em;
+  --ce-letter-spacing-normal: 0em;
+  --ce-letter-spacing-wide: 0.025em;
+  --ce-letter-spacing-caps: 0.05em;
+
+  /* ---------- Espacement (grille 4 px) ---------- */
+  --ce-space-0: 0px;
+  --ce-space-px: 1px;
+  --ce-space-0-5: 2px;
+  --ce-space-1: 4px;
+  --ce-space-1-5: 6px;
+  --ce-space-2: 8px;
+  --ce-space-2-5: 10px;
+  --ce-space-3: 12px;
+  --ce-space-4: 16px;
+  --ce-space-5: 20px;
+  --ce-space-6: 24px;
+  --ce-space-8: 32px;
+  --ce-space-10: 40px;
+  --ce-space-12: 48px;
+  --ce-space-16: 64px;
+  --ce-space-20: 80px;
+  --ce-space-24: 96px;
+
+  /* ---------- Rayons ---------- */
+  --ce-radius-none: 0px;
+  --ce-radius-xs: 2px;
+  --ce-radius-sm: 4px;
+  --ce-radius-md: 6px;
+  --ce-radius-lg: 8px;
+  --ce-radius-xl: 12px;
+  --ce-radius-2xl: 16px;
+  --ce-radius-3xl: 24px;
+  --ce-radius-full: 9999px;
+
+  /* ---------- Graphe : dimensions ---------- */
+  --ce-graph-node-width: 240px;
+  --ce-graph-node-min-height: 56px;
+  --ce-graph-node-radius: 8px;
+  --ce-graph-node-padding: 12px;
+  --ce-graph-edge-width: 1.5px;
+  --ce-graph-edge-width-selected: 2.5px;
+  --ce-graph-junction-size: 10px;
+  --ce-graph-handle-size: 8px;
+  --ce-graph-focus-ring-width: 2px;
+  --ce-graph-focus-ring-offset: 2px;
+  --ce-graph-dash-failure: 6 4;
+  --ce-graph-dash-end-failure: 6 4 1 4;
+  --ce-graph-dash-implicit-failure: 1 3;
+  --ce-graph-dash-retry: 2 3 6 3;
+  --ce-graph-dash-depends-on: 0.5 4.5;
+  --ce-graph-dash-transfer: 10 4;
+  --ce-graph-dash-workflow-call: none;
+
+  /* ---------- Mouvement ---------- */
+  --ce-duration-fast: 150ms;
+  --ce-duration-normal: 200ms;
+  --ce-duration-slow: 300ms;
+  --ce-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ce-easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --ce-easing-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+body.vscode-reduce-motion {
+  --ce-duration-fast: 0ms;
+  --ce-duration-normal: 0ms;
+  --ce-duration-slow: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ce-duration-fast: 0ms;
+    --ce-duration-normal: 0ms;
+    --ce-duration-slow: 0ms;
+  }
+}
+
+/* =====================================================================
+   Thème LIGHT (défaut)
+   ===================================================================== */
+:root,
+[data-theme="light"],
+body.vscode-light,
+body.vscode-high-contrast-light {
+  color-scheme: light;
+  /* UI (chrome) */
+  --ce-bg-canvas: var(--ce-color-white);
+  --ce-bg-surface: var(--ce-color-slate-50);
+  --ce-bg-raised: var(--ce-color-white);
+  --ce-bg-sunken: var(--ce-color-slate-100);
+  --ce-bg-hover: var(--ce-color-slate-100);
+  --ce-bg-selected: var(--ce-color-blue-50);
+  --ce-border-default: var(--ce-color-slate-200);
+  --ce-border-strong: var(--ce-color-slate-500);
+  --ce-text-default: var(--ce-color-slate-900);
+  --ce-text-muted: var(--ce-color-slate-600);
+  --ce-text-subtle: var(--ce-color-slate-500);
+  --ce-text-link: var(--ce-color-blue-700);
+  --ce-primary: var(--ce-color-blue-600);
+  --ce-primary-solid: var(--ce-color-blue-600);
+  --ce-primary-solid-hover: var(--ce-color-blue-700);
+  --ce-on-primary: var(--ce-color-white);
+  --ce-primary-subtle: var(--ce-color-blue-50);
+  --ce-primary-subtle-text: var(--ce-color-blue-800);
+  --ce-accent: var(--ce-color-orange-600);
+  --ce-accent-brand: var(--ce-color-orange-500);
+  --ce-accent-text: var(--ce-color-orange-700);
+  --ce-accent-solid: var(--ce-color-orange-700);
+  --ce-on-accent: var(--ce-color-white);
+  --ce-accent-subtle: var(--ce-color-orange-50);
+  --ce-accent-subtle-text: var(--ce-color-orange-800);
+  --ce-focus-ring: var(--ce-color-blue-600);
+  /* Statuts */
+  --ce-status-success-fg: var(--ce-color-green-700);
+  --ce-status-success-bg: var(--ce-color-green-50);
+  --ce-status-success-text: var(--ce-color-green-800);
+  --ce-status-warning-fg: var(--ce-color-amber-700);
+  --ce-status-warning-bg: var(--ce-color-amber-50);
+  --ce-status-warning-text: var(--ce-color-amber-800);
+  --ce-status-danger-fg: var(--ce-color-red-600);
+  --ce-status-danger-bg: var(--ce-color-red-50);
+  --ce-status-danger-text: var(--ce-color-red-800);
+  --ce-status-info-fg: var(--ce-color-blue-600);
+  --ce-status-info-bg: var(--ce-color-blue-50);
+  --ce-status-info-text: var(--ce-color-blue-800);
+  /* Graphe */
+  --ce-graph-input-fg: var(--ce-color-cyan-600);
+  --ce-graph-input-bg: var(--ce-color-cyan-50);
+  --ce-graph-input-text: var(--ce-color-cyan-800);
+  --ce-graph-input-border: var(--ce-color-cyan-600);
+  --ce-graph-output-fg: var(--ce-color-violet-600);
+  --ce-graph-output-bg: var(--ce-color-violet-50);
+  --ce-graph-output-text: var(--ce-color-violet-800);
+  --ce-graph-output-border: var(--ce-color-violet-600);
+  --ce-graph-step-http-fg: var(--ce-color-blue-600);
+  --ce-graph-step-http-bg: var(--ce-color-blue-50);
+  --ce-graph-step-http-text: var(--ce-color-blue-800);
+  --ce-graph-step-http-border: var(--ce-color-blue-600);
+  --ce-graph-async-send-fg: var(--ce-color-orange-600);
+  --ce-graph-async-send-bg: var(--ce-color-orange-50);
+  --ce-graph-async-send-text: var(--ce-color-orange-800);
+  --ce-graph-async-send-border: var(--ce-color-orange-600);
+  --ce-graph-async-receive-fg: var(--ce-color-teal-600);
+  --ce-graph-async-receive-bg: var(--ce-color-teal-50);
+  --ce-graph-async-receive-text: var(--ce-color-teal-800);
+  --ce-graph-async-receive-border: var(--ce-color-teal-600);
+  --ce-graph-workflow-call-fg: var(--ce-color-fuchsia-600);
+  --ce-graph-workflow-call-bg: var(--ce-color-fuchsia-50);
+  --ce-graph-workflow-call-text: var(--ce-color-fuchsia-800);
+  --ce-graph-workflow-call-border: var(--ce-color-fuchsia-600);
+  --ce-graph-success-fg: var(--ce-color-green-700);
+  --ce-graph-success-bg: var(--ce-color-green-50);
+  --ce-graph-success-text: var(--ce-color-green-800);
+  --ce-graph-success-border: var(--ce-color-green-700);
+  --ce-graph-failure-fg: var(--ce-color-red-600);
+  --ce-graph-failure-bg: var(--ce-color-red-50);
+  --ce-graph-failure-text: var(--ce-color-red-800);
+  --ce-graph-failure-border: var(--ce-color-red-600);
+  --ce-graph-retry-fg: var(--ce-color-amber-700);
+  --ce-graph-retry-bg: var(--ce-color-amber-50);
+  --ce-graph-retry-text: var(--ce-color-amber-800);
+  --ce-graph-retry-border: var(--ce-color-amber-700);
+  --ce-graph-end-fg: var(--ce-color-slate-700);
+  --ce-graph-end-bg: var(--ce-color-slate-100);
+  --ce-graph-end-text: var(--ce-color-slate-800);
+  --ce-graph-end-border: var(--ce-color-slate-700);
+  --ce-graph-depends-on-fg: var(--ce-color-indigo-600);
+  --ce-graph-depends-on-bg: var(--ce-color-indigo-50);
+  --ce-graph-depends-on-text: var(--ce-color-indigo-800);
+  --ce-graph-depends-on-border: var(--ce-color-indigo-600);
+  --ce-graph-sequence-fg: var(--ce-color-slate-500);
+  --ce-graph-sequence-bg: var(--ce-color-slate-50);
+  --ce-graph-sequence-text: var(--ce-color-slate-600);
+  --ce-graph-sequence-border: var(--ce-color-slate-500);
+  /* Méthodes HTTP */
+  --ce-method-get-bg: var(--ce-color-green-100);
+  --ce-method-get-text: var(--ce-color-green-800);
+  --ce-method-get-solid: var(--ce-color-green-700);
+  --ce-method-get-on-solid: var(--ce-color-white);
+  --ce-method-post-bg: var(--ce-color-blue-100);
+  --ce-method-post-text: var(--ce-color-blue-800);
+  --ce-method-post-solid: var(--ce-color-blue-700);
+  --ce-method-post-on-solid: var(--ce-color-white);
+  --ce-method-put-bg: var(--ce-color-amber-100);
+  --ce-method-put-text: var(--ce-color-amber-800);
+  --ce-method-put-solid: var(--ce-color-amber-700);
+  --ce-method-put-on-solid: var(--ce-color-white);
+  --ce-method-patch-bg: var(--ce-color-teal-100);
+  --ce-method-patch-text: var(--ce-color-teal-800);
+  --ce-method-patch-solid: var(--ce-color-teal-700);
+  --ce-method-patch-on-solid: var(--ce-color-white);
+  --ce-method-delete-bg: var(--ce-color-red-100);
+  --ce-method-delete-text: var(--ce-color-red-800);
+  --ce-method-delete-solid: var(--ce-color-red-700);
+  --ce-method-delete-on-solid: var(--ce-color-white);
+  /* Graphe */
+  --ce-graph-canvas: var(--ce-color-white);
+  --ce-graph-grid: var(--ce-color-slate-200);
+  --ce-graph-node-bg: var(--ce-color-white);
+  --ce-graph-node-border: var(--ce-color-slate-300);
+  --ce-graph-node-selected: var(--ce-color-blue-600);
+  --ce-graph-minimap-mask: #0f172a14;
+  --ce-shadow-xs: 0px 1px 2px 0px rgb(15 23 42 / 0.05);
+  --ce-shadow-sm: 0px 1px 3px 0px rgb(15 23 42 / 0.1), 0px 1px 2px -1px rgb(15 23 42 / 0.1);
+  --ce-shadow-md: 0px 4px 6px -1px rgb(15 23 42 / 0.1), 0px 2px 4px -2px rgb(15 23 42 / 0.1);
+  --ce-shadow-lg: 0px 10px 15px -3px rgb(15 23 42 / 0.1), 0px 4px 6px -4px rgb(15 23 42 / 0.1);
+  --ce-shadow-xl: 0px 20px 25px -5px rgb(15 23 42 / 0.1), 0px 8px 10px -6px rgb(15 23 42 / 0.1);
+  --ce-shadow-node: var(--ce-shadow-sm);
+  --ce-shadow-node-hover: var(--ce-shadow-md);
+  --ce-shadow-overlay: var(--ce-shadow-lg);
+  --ce-shadow-dialog: var(--ce-shadow-xl);
+}
+
+/* =====================================================================
+   Thème DARK — préférence système (sauf data-theme="light" explicite)
+   ===================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* UI (chrome) */
+    --ce-bg-canvas: var(--ce-color-slate-900);
+    --ce-bg-surface: var(--ce-color-slate-800);
+    --ce-bg-raised: var(--ce-color-slate-800);
+    --ce-bg-sunken: var(--ce-color-slate-950);
+    --ce-bg-hover: var(--ce-color-slate-700);
+    --ce-bg-selected: #192f57;
+    --ce-border-default: var(--ce-color-slate-700);
+    --ce-border-strong: var(--ce-color-slate-500);
+    --ce-text-default: var(--ce-color-slate-100);
+    --ce-text-muted: var(--ce-color-slate-300);
+    --ce-text-subtle: var(--ce-color-slate-400);
+    --ce-text-link: var(--ce-color-blue-400);
+    --ce-primary: var(--ce-color-blue-400);
+    --ce-primary-solid: var(--ce-color-blue-600);
+    --ce-primary-solid-hover: var(--ce-color-blue-700);
+    --ce-on-primary: var(--ce-color-white);
+    --ce-primary-subtle: #172a4f;
+    --ce-primary-subtle-text: var(--ce-color-blue-200);
+    --ce-accent: var(--ce-color-orange-400);
+    --ce-accent-brand: var(--ce-color-orange-500);
+    --ce-accent-text: var(--ce-color-orange-300);
+    --ce-accent-solid: var(--ce-color-orange-500);
+    --ce-on-accent: var(--ce-color-slate-950);
+    --ce-accent-subtle: #342627;
+    --ce-accent-subtle-text: var(--ce-color-orange-200);
+    --ce-focus-ring: var(--ce-color-blue-400);
+    /* Statuts */
+    --ce-status-success-fg: var(--ce-color-green-400);
+    --ce-status-success-bg: #123332;
+    --ce-status-success-text: var(--ce-color-green-200);
+    --ce-status-warning-fg: var(--ce-color-amber-400);
+    --ce-status-warning-bg: #342d25;
+    --ce-status-warning-text: var(--ce-color-amber-200);
+    --ce-status-danger-fg: var(--ce-color-red-400);
+    --ce-status-danger-bg: #331e2e;
+    --ce-status-danger-text: var(--ce-color-red-200);
+    --ce-status-info-fg: var(--ce-color-blue-400);
+    --ce-status-info-bg: #16284b;
+    --ce-status-info-text: var(--ce-color-blue-200);
+    /* Graphe */
+    --ce-graph-input-fg: var(--ce-color-cyan-400);
+    --ce-graph-input-bg: #0e3045;
+    --ce-graph-input-text: var(--ce-color-cyan-200);
+    --ce-graph-input-border: var(--ce-color-cyan-400);
+    --ce-graph-output-fg: var(--ce-color-violet-400);
+    --ce-graph-output-bg: #23224b;
+    --ce-graph-output-text: var(--ce-color-violet-200);
+    --ce-graph-output-border: var(--ce-color-violet-400);
+    --ce-graph-step-http-fg: var(--ce-color-blue-400);
+    --ce-graph-step-http-bg: #16284b;
+    --ce-graph-step-http-text: var(--ce-color-blue-200);
+    --ce-graph-step-http-border: var(--ce-color-blue-400);
+    --ce-graph-async-send-fg: var(--ce-color-orange-400);
+    --ce-graph-async-send-bg: #342627;
+    --ce-graph-async-send-text: var(--ce-color-orange-200);
+    --ce-graph-async-send-border: var(--ce-color-orange-400);
+    --ce-graph-async-receive-fg: var(--ce-color-teal-400);
+    --ce-graph-async-receive-bg: #10313e;
+    --ce-graph-async-receive-text: var(--ce-color-teal-200);
+    --ce-graph-async-receive-border: var(--ce-color-teal-400);
+    --ce-graph-workflow-call-fg: var(--ce-color-fuchsia-400);
+    --ce-graph-workflow-call-bg: #2f1f4a;
+    --ce-graph-workflow-call-text: var(--ce-color-fuchsia-200);
+    --ce-graph-workflow-call-border: var(--ce-color-fuchsia-400);
+    --ce-graph-success-fg: var(--ce-color-green-400);
+    --ce-graph-success-bg: #123332;
+    --ce-graph-success-text: var(--ce-color-green-200);
+    --ce-graph-success-border: var(--ce-color-green-400);
+    --ce-graph-failure-fg: var(--ce-color-red-400);
+    --ce-graph-failure-bg: #331e2e;
+    --ce-graph-failure-text: var(--ce-color-red-200);
+    --ce-graph-failure-border: var(--ce-color-red-400);
+    --ce-graph-retry-fg: var(--ce-color-amber-400);
+    --ce-graph-retry-bg: #342d25;
+    --ce-graph-retry-text: var(--ce-color-amber-200);
+    --ce-graph-retry-border: var(--ce-color-amber-400);
+    --ce-graph-end-fg: var(--ce-color-slate-300);
+    --ce-graph-end-bg: #1d263a;
+    --ce-graph-end-text: var(--ce-color-slate-200);
+    --ce-graph-end-border: var(--ce-color-slate-300);
+    --ce-graph-depends-on-fg: var(--ce-color-indigo-400);
+    --ce-graph-depends-on-bg: #1c244a;
+    --ce-graph-depends-on-text: var(--ce-color-indigo-200);
+    --ce-graph-depends-on-border: var(--ce-color-indigo-400);
+    --ce-graph-sequence-fg: var(--ce-color-slate-400);
+    --ce-graph-sequence-bg: #1d263a;
+    --ce-graph-sequence-text: var(--ce-color-slate-300);
+    --ce-graph-sequence-border: var(--ce-color-slate-400);
+    /* Méthodes HTTP */
+    --ce-method-get-bg: #1f4b43;
+    --ce-method-get-text: var(--ce-color-green-300);
+    --ce-method-get-solid: var(--ce-color-green-400);
+    --ce-method-get-on-solid: var(--ce-color-slate-950);
+    --ce-method-post-bg: #243d64;
+    --ce-method-post-text: var(--ce-color-blue-300);
+    --ce-method-post-solid: var(--ce-color-blue-400);
+    --ce-method-post-on-solid: var(--ce-color-slate-950);
+    --ce-method-put-bg: #4d4330;
+    --ce-method-put-text: var(--ce-color-amber-300);
+    --ce-method-put-solid: var(--ce-color-amber-400);
+    --ce-method-put-on-solid: var(--ce-color-slate-950);
+    --ce-method-patch-bg: #1c4853;
+    --ce-method-patch-text: var(--ce-color-teal-300);
+    --ce-method-patch-solid: var(--ce-color-teal-400);
+    --ce-method-patch-on-solid: var(--ce-color-slate-950);
+    --ce-method-delete-bg: #4c2f3d;
+    --ce-method-delete-text: var(--ce-color-red-300);
+    --ce-method-delete-solid: var(--ce-color-red-400);
+    --ce-method-delete-on-solid: var(--ce-color-slate-950);
+    /* Graphe */
+    --ce-graph-canvas: var(--ce-color-slate-900);
+    --ce-graph-grid: var(--ce-color-slate-700);
+    --ce-graph-node-bg: var(--ce-color-slate-800);
+    --ce-graph-node-border: var(--ce-color-slate-600);
+    --ce-graph-node-selected: var(--ce-color-blue-400);
+    --ce-graph-minimap-mask: #0206178c;
+    --ce-shadow-xs: 0px 1px 2px 0px rgb(0 0 0 / 0.4);
+    --ce-shadow-sm: 0px 1px 3px 0px rgb(0 0 0 / 0.5), 0px 1px 2px -1px rgb(0 0 0 / 0.5);
+    --ce-shadow-md: 0px 4px 6px -1px rgb(0 0 0 / 0.5), 0px 2px 4px -2px rgb(0 0 0 / 0.5);
+    --ce-shadow-lg: 0px 10px 15px -3px rgb(0 0 0 / 0.6), 0px 4px 6px -4px rgb(0 0 0 / 0.6);
+    --ce-shadow-xl: 0px 20px 25px -5px rgb(0 0 0 / 0.7), 0px 8px 10px -6px rgb(0 0 0 / 0.7);
+    --ce-shadow-node: var(--ce-shadow-sm);
+    --ce-shadow-node-hover: var(--ce-shadow-md);
+    --ce-shadow-overlay: var(--ce-shadow-lg);
+    --ce-shadow-dialog: var(--ce-shadow-xl);
+  }
+}
+
+/* =====================================================================
+   Thème DARK — explicite (data-theme ou thème VS Code sombre)
+   ===================================================================== */
+[data-theme="dark"],
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+  color-scheme: dark;
+  /* UI (chrome) */
+  --ce-bg-canvas: var(--ce-color-slate-900);
+  --ce-bg-surface: var(--ce-color-slate-800);
+  --ce-bg-raised: var(--ce-color-slate-800);
+  --ce-bg-sunken: var(--ce-color-slate-950);
+  --ce-bg-hover: var(--ce-color-slate-700);
+  --ce-bg-selected: #192f57;
+  --ce-border-default: var(--ce-color-slate-700);
+  --ce-border-strong: var(--ce-color-slate-500);
+  --ce-text-default: var(--ce-color-slate-100);
+  --ce-text-muted: var(--ce-color-slate-300);
+  --ce-text-subtle: var(--ce-color-slate-400);
+  --ce-text-link: var(--ce-color-blue-400);
+  --ce-primary: var(--ce-color-blue-400);
+  --ce-primary-solid: var(--ce-color-blue-600);
+  --ce-primary-solid-hover: var(--ce-color-blue-700);
+  --ce-on-primary: var(--ce-color-white);
+  --ce-primary-subtle: #172a4f;
+  --ce-primary-subtle-text: var(--ce-color-blue-200);
+  --ce-accent: var(--ce-color-orange-400);
+  --ce-accent-brand: var(--ce-color-orange-500);
+  --ce-accent-text: var(--ce-color-orange-300);
+  --ce-accent-solid: var(--ce-color-orange-500);
+  --ce-on-accent: var(--ce-color-slate-950);
+  --ce-accent-subtle: #342627;
+  --ce-accent-subtle-text: var(--ce-color-orange-200);
+  --ce-focus-ring: var(--ce-color-blue-400);
+  /* Statuts */
+  --ce-status-success-fg: var(--ce-color-green-400);
+  --ce-status-success-bg: #123332;
+  --ce-status-success-text: var(--ce-color-green-200);
+  --ce-status-warning-fg: var(--ce-color-amber-400);
+  --ce-status-warning-bg: #342d25;
+  --ce-status-warning-text: var(--ce-color-amber-200);
+  --ce-status-danger-fg: var(--ce-color-red-400);
+  --ce-status-danger-bg: #331e2e;
+  --ce-status-danger-text: var(--ce-color-red-200);
+  --ce-status-info-fg: var(--ce-color-blue-400);
+  --ce-status-info-bg: #16284b;
+  --ce-status-info-text: var(--ce-color-blue-200);
+  /* Graphe */
+  --ce-graph-input-fg: var(--ce-color-cyan-400);
+  --ce-graph-input-bg: #0e3045;
+  --ce-graph-input-text: var(--ce-color-cyan-200);
+  --ce-graph-input-border: var(--ce-color-cyan-400);
+  --ce-graph-output-fg: var(--ce-color-violet-400);
+  --ce-graph-output-bg: #23224b;
+  --ce-graph-output-text: var(--ce-color-violet-200);
+  --ce-graph-output-border: var(--ce-color-violet-400);
+  --ce-graph-step-http-fg: var(--ce-color-blue-400);
+  --ce-graph-step-http-bg: #16284b;
+  --ce-graph-step-http-text: var(--ce-color-blue-200);
+  --ce-graph-step-http-border: var(--ce-color-blue-400);
+  --ce-graph-async-send-fg: var(--ce-color-orange-400);
+  --ce-graph-async-send-bg: #342627;
+  --ce-graph-async-send-text: var(--ce-color-orange-200);
+  --ce-graph-async-send-border: var(--ce-color-orange-400);
+  --ce-graph-async-receive-fg: var(--ce-color-teal-400);
+  --ce-graph-async-receive-bg: #10313e;
+  --ce-graph-async-receive-text: var(--ce-color-teal-200);
+  --ce-graph-async-receive-border: var(--ce-color-teal-400);
+  --ce-graph-workflow-call-fg: var(--ce-color-fuchsia-400);
+  --ce-graph-workflow-call-bg: #2f1f4a;
+  --ce-graph-workflow-call-text: var(--ce-color-fuchsia-200);
+  --ce-graph-workflow-call-border: var(--ce-color-fuchsia-400);
+  --ce-graph-success-fg: var(--ce-color-green-400);
+  --ce-graph-success-bg: #123332;
+  --ce-graph-success-text: var(--ce-color-green-200);
+  --ce-graph-success-border: var(--ce-color-green-400);
+  --ce-graph-failure-fg: var(--ce-color-red-400);
+  --ce-graph-failure-bg: #331e2e;
+  --ce-graph-failure-text: var(--ce-color-red-200);
+  --ce-graph-failure-border: var(--ce-color-red-400);
+  --ce-graph-retry-fg: var(--ce-color-amber-400);
+  --ce-graph-retry-bg: #342d25;
+  --ce-graph-retry-text: var(--ce-color-amber-200);
+  --ce-graph-retry-border: var(--ce-color-amber-400);
+  --ce-graph-end-fg: var(--ce-color-slate-300);
+  --ce-graph-end-bg: #1d263a;
+  --ce-graph-end-text: var(--ce-color-slate-200);
+  --ce-graph-end-border: var(--ce-color-slate-300);
+  --ce-graph-depends-on-fg: var(--ce-color-indigo-400);
+  --ce-graph-depends-on-bg: #1c244a;
+  --ce-graph-depends-on-text: var(--ce-color-indigo-200);
+  --ce-graph-depends-on-border: var(--ce-color-indigo-400);
+  --ce-graph-sequence-fg: var(--ce-color-slate-400);
+  --ce-graph-sequence-bg: #1d263a;
+  --ce-graph-sequence-text: var(--ce-color-slate-300);
+  --ce-graph-sequence-border: var(--ce-color-slate-400);
+  /* Méthodes HTTP */
+  --ce-method-get-bg: #1f4b43;
+  --ce-method-get-text: var(--ce-color-green-300);
+  --ce-method-get-solid: var(--ce-color-green-400);
+  --ce-method-get-on-solid: var(--ce-color-slate-950);
+  --ce-method-post-bg: #243d64;
+  --ce-method-post-text: var(--ce-color-blue-300);
+  --ce-method-post-solid: var(--ce-color-blue-400);
+  --ce-method-post-on-solid: var(--ce-color-slate-950);
+  --ce-method-put-bg: #4d4330;
+  --ce-method-put-text: var(--ce-color-amber-300);
+  --ce-method-put-solid: var(--ce-color-amber-400);
+  --ce-method-put-on-solid: var(--ce-color-slate-950);
+  --ce-method-patch-bg: #1c4853;
+  --ce-method-patch-text: var(--ce-color-teal-300);
+  --ce-method-patch-solid: var(--ce-color-teal-400);
+  --ce-method-patch-on-solid: var(--ce-color-slate-950);
+  --ce-method-delete-bg: #4c2f3d;
+  --ce-method-delete-text: var(--ce-color-red-300);
+  --ce-method-delete-solid: var(--ce-color-red-400);
+  --ce-method-delete-on-solid: var(--ce-color-slate-950);
+  /* Graphe */
+  --ce-graph-canvas: var(--ce-color-slate-900);
+  --ce-graph-grid: var(--ce-color-slate-700);
+  --ce-graph-node-bg: var(--ce-color-slate-800);
+  --ce-graph-node-border: var(--ce-color-slate-600);
+  --ce-graph-node-selected: var(--ce-color-blue-400);
+  --ce-graph-minimap-mask: #0206178c;
+  --ce-shadow-xs: 0px 1px 2px 0px rgb(0 0 0 / 0.4);
+  --ce-shadow-sm: 0px 1px 3px 0px rgb(0 0 0 / 0.5), 0px 1px 2px -1px rgb(0 0 0 / 0.5);
+  --ce-shadow-md: 0px 4px 6px -1px rgb(0 0 0 / 0.5), 0px 2px 4px -2px rgb(0 0 0 / 0.5);
+  --ce-shadow-lg: 0px 10px 15px -3px rgb(0 0 0 / 0.6), 0px 4px 6px -4px rgb(0 0 0 / 0.6);
+  --ce-shadow-xl: 0px 20px 25px -5px rgb(0 0 0 / 0.7), 0px 8px 10px -6px rgb(0 0 0 / 0.7);
+  --ce-shadow-node: var(--ce-shadow-sm);
+  --ce-shadow-node-hover: var(--ce-shadow-md);
+  --ce-shadow-overlay: var(--ce-shadow-lg);
+  --ce-shadow-dialog: var(--ce-shadow-xl);
+}
+
+/* =====================================================================
+   VS Code bridge
+   Dans un webview VS Code, <body> porte vscode-light | vscode-dark | vscode-high-contrast
+   (+ vscode-high-contrast-light). Le chrome (fonds, textes, bordures, boutons, focus,
+   sévérités) suit le thème de l'utilisateur ; le fallback est la valeur ConnEthics.
+   Les couleurs sémantiques du graphe (--ce-graph-<kind>-*) et des méthodes restent
+   celles de la marque : elles portent du sens et sont validées AA sur les fonds ci-dessus
+   en thèmes Light+/Dark+ par défaut. Ne pas référencer --ce-X dans la redéfinition de --ce-X
+   (cycle) : les fallbacks pointent donc sur les primitives.
+   ===================================================================== */
+body.vscode-light,
+body.vscode-high-contrast-light {
+  --ce-font-sans: var(--vscode-font-family, "Inter", ui-sans-serif, system-ui, sans-serif);
+  --ce-font-mono: var(--vscode-editor-font-family, "JetBrains Mono", ui-monospace, monospace);
+  --ce-font-size-base: var(--vscode-font-size, 13px);
+  --ce-bg-canvas: var(--vscode-editor-background, var(--ce-color-white));
+  --ce-bg-surface: var(--vscode-sideBar-background, var(--ce-color-slate-50));
+  --ce-bg-raised: var(--vscode-editorWidget-background, var(--ce-color-white));
+  --ce-bg-sunken: var(--vscode-textCodeBlock-background, var(--ce-color-slate-100));
+  --ce-bg-hover: var(--vscode-list-hoverBackground, var(--ce-color-slate-100));
+  --ce-bg-selected: var(--vscode-list-activeSelectionBackground, var(--ce-color-blue-50));
+  --ce-border-default: var(--vscode-panel-border, var(--ce-color-slate-200));
+  --ce-border-strong: var(--vscode-input-border, var(--ce-color-slate-500));
+  --ce-text-default: var(--vscode-foreground, var(--ce-color-slate-900));
+  --ce-text-muted: var(--vscode-descriptionForeground, var(--ce-color-slate-600));
+  --ce-text-subtle: var(--vscode-disabledForeground, var(--ce-color-slate-500));
+  --ce-text-link: var(--vscode-textLink-foreground, var(--ce-color-blue-700));
+  --ce-primary-solid: var(--vscode-button-background, var(--ce-color-blue-600));
+  --ce-primary-solid-hover: var(--vscode-button-hoverBackground, var(--ce-color-blue-700));
+  --ce-on-primary: var(--vscode-button-foreground, var(--ce-color-white));
+  --ce-focus-ring: var(--vscode-focusBorder, var(--ce-color-blue-600));
+  --ce-status-danger-fg: var(--vscode-editorError-foreground, var(--ce-color-red-600));
+  --ce-status-warning-fg: var(--vscode-editorWarning-foreground, var(--ce-color-amber-700));
+  --ce-status-info-fg: var(--vscode-editorInfo-foreground, var(--ce-color-blue-600));
+  --ce-status-success-fg: var(--vscode-testing-iconPassed, var(--ce-color-green-700));
+  --ce-graph-canvas: var(--vscode-editor-background, var(--ce-color-white));
+  --ce-graph-node-bg: var(--vscode-editorWidget-background, var(--ce-color-white));
+  --ce-graph-node-border: var(--vscode-editorWidget-border, var(--ce-color-slate-300));
+  --ce-graph-grid: var(--vscode-editorIndentGuide-background1, var(--ce-color-slate-200));
+  --ce-graph-node-selected: var(--vscode-focusBorder, var(--ce-color-blue-600));
+}
+
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+  --ce-font-sans: var(--vscode-font-family, "Inter", ui-sans-serif, system-ui, sans-serif);
+  --ce-font-mono: var(--vscode-editor-font-family, "JetBrains Mono", ui-monospace, monospace);
+  --ce-font-size-base: var(--vscode-font-size, 13px);
+  --ce-bg-canvas: var(--vscode-editor-background, var(--ce-color-slate-900));
+  --ce-bg-surface: var(--vscode-sideBar-background, var(--ce-color-slate-800));
+  --ce-bg-raised: var(--vscode-editorWidget-background, var(--ce-color-slate-800));
+  --ce-bg-sunken: var(--vscode-textCodeBlock-background, var(--ce-color-slate-950));
+  --ce-bg-hover: var(--vscode-list-hoverBackground, var(--ce-color-slate-700));
+  --ce-bg-selected: var(--vscode-list-activeSelectionBackground, #192f57);
+  --ce-border-default: var(--vscode-panel-border, var(--ce-color-slate-700));
+  --ce-border-strong: var(--vscode-input-border, var(--ce-color-slate-500));
+  --ce-text-default: var(--vscode-foreground, var(--ce-color-slate-100));
+  --ce-text-muted: var(--vscode-descriptionForeground, var(--ce-color-slate-300));
+  --ce-text-subtle: var(--vscode-disabledForeground, var(--ce-color-slate-400));
+  --ce-text-link: var(--vscode-textLink-foreground, var(--ce-color-blue-400));
+  --ce-primary-solid: var(--vscode-button-background, var(--ce-color-blue-600));
+  --ce-primary-solid-hover: var(--vscode-button-hoverBackground, var(--ce-color-blue-700));
+  --ce-on-primary: var(--vscode-button-foreground, var(--ce-color-white));
+  --ce-focus-ring: var(--vscode-focusBorder, var(--ce-color-blue-400));
+  --ce-status-danger-fg: var(--vscode-editorError-foreground, var(--ce-color-red-400));
+  --ce-status-warning-fg: var(--vscode-editorWarning-foreground, var(--ce-color-amber-400));
+  --ce-status-info-fg: var(--vscode-editorInfo-foreground, var(--ce-color-blue-400));
+  --ce-status-success-fg: var(--vscode-testing-iconPassed, var(--ce-color-green-400));
+  --ce-graph-canvas: var(--vscode-editor-background, var(--ce-color-slate-900));
+  --ce-graph-node-bg: var(--vscode-editorWidget-background, var(--ce-color-slate-800));
+  --ce-graph-node-border: var(--vscode-editorWidget-border, var(--ce-color-slate-600));
+  --ce-graph-grid: var(--vscode-editorIndentGuide-background1, var(--ce-color-slate-700));
+  --ce-graph-node-selected: var(--vscode-focusBorder, var(--ce-color-blue-400));
+}
+
+/* High contrast : bordures et focus imposés par le thème, traits du graphe renforcés */
+/* :not(.ce-hc-off) porte la spécificité à (0,2,1) pour passer devant le bloc dark HC ci-dessus. */
+body.vscode-high-contrast:not(.ce-hc-off) {
+  --ce-border-default: var(--vscode-contrastBorder, CanvasText);
+  --ce-border-strong: var(--vscode-contrastBorder, CanvasText);
+  --ce-graph-node-border: var(--vscode-contrastBorder, CanvasText);
+  --ce-focus-ring: var(--vscode-contrastActiveBorder, Highlight);
+  --ce-graph-node-selected: var(--vscode-contrastActiveBorder, Highlight);
+  --ce-graph-edge-width: 2px;
+  --ce-shadow-node: none;
+  --ce-shadow-node-hover: none;
+}
+
+@media (forced-colors: active) {
+  :root {
+    --ce-graph-node-border: CanvasText;
+    --ce-focus-ring: Highlight;
+    --ce-graph-node-selected: Highlight;
+  }
+}

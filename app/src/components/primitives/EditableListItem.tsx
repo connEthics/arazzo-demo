@@ -28,7 +28,7 @@ const DownIcon = () => (
   </svg>
 );
 
-export type ParameterIn = 'query' | 'path' | 'header' | 'cookie';
+export type ParameterIn = 'query' | 'querystring' | 'path' | 'header' | 'cookie' | 'channel';
 
 export interface ParameterItem {
   name: string;

@@ -19,7 +19,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@connethics/arazzo-core": ["./vendor/@connethics/arazzo-core"],
+      "@connethics/arazzo-flow": ["./vendor/@connethics/arazzo-flow"],
+      "@connethics/arazzo-flow/style.css": ["./vendor/@connethics/arazzo-flow/dist/style.css"]
     }
   },
   "include": [
@@ -30,5 +33,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "vendor"]
 }

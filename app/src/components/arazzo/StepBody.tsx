@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import type { Step, SourceDescription, Parameter, Criterion, FailureAction, SuccessAction, RequestBodyPayload } from '@/types/arazzo';
-import { isReusableObject } from '@/types/arazzo';
+import { isReusableObject, outputValueToString } from '@/types/arazzo';
 import { extractHttpMethod, getMethodBadgeVariant } from '@/lib/arazzo-utils';
 
 // Import internal components
@@ -11,6 +11,8 @@ import { Card, Badge, CodeBlock, PropertyList, MarkdownText, EditableField, Edit
 import type { ParameterItem, ParameterIn } from '../primitives/EditableListItem';
 import type { ExpressionSuggestion } from '../ExpressionInput';
 import ActionFormEditor, { Action } from '../ActionFormEditor';
+import OutputsEditor from './OutputsEditor';
+import StepTargetEditor from './StepTargetEditor';
 
 export type StepBodyVariant = 'full' | 'compact';
 
@@ -95,7 +97,7 @@ export default function StepBody({
     const outputItems = useMemo(() => step.outputs
         ? Object.entries(step.outputs).map(([key, value]) => ({
             name: key,
-            value: typeof value === 'string' ? value : JSON.stringify(value),
+            value: outputValueToString(value),
         }))
         : [], [step.outputs]);
 
@@ -144,6 +146,16 @@ export default function StepBody({
     // --- FULL VARIANT (Inspector/Cards) ---
     return (
         <div className="space-y-4">
+            {/* Target, AsyncAPI fields, timeout, dependsOn (Arazzo 1.1) */}
+            <StepTargetEditor
+                step={step}
+                isDark={isDark}
+                editable={canEdit}
+                onUpdate={handleUpdate}
+                availableSteps={availableSteps}
+                onStepClick={onStepClick}
+            />
+
             {/* Parameters */}
             {(step.parameters && step.parameters.length > 0) || canEdit ? (
                 <Card
@@ -548,49 +560,15 @@ export default function StepBody({
                     title="Extracted Outputs"
                     isDark={isDark}
                     className={canEdit ? 'focus-within:z-20' : ''}
-                    actions={canEdit && (
-                        <button
-                            onClick={() => {
-                                const newOutputs = { ...(step.outputs || {}), '': '' };
-                                handleUpdate({ outputs: newOutputs });
-                                setNewlyAddedKey(`output-${Object.keys(newOutputs).length - 1}`);
-                            }}
-                            className="text-xs text-amber-500 hover:text-amber-400"
-                        >
-                            + Add
-                        </button>
-                    )}
                 >
                     {canEdit ? (
-                        <div className="space-y-2">
-                            {Object.entries(step.outputs || {}).map(([key, value], idx) => {
-                                const itemKey = `output-${idx}`;
-                                return (
-                                    <EditableListItem
-                                        key={itemKey}
-                                        type="output"
-                                        item={{ key, value: typeof value === 'string' ? value : JSON.stringify(value) }}
-                                        isNew={newlyAddedKey === itemKey}
-                                        onChange={(updated) => {
-                                            const newOutputs = { ...step.outputs };
-                                            // If key changed, we need to handle it carefully
-                                            if (updated.key !== key) {
-                                                delete newOutputs[key];
-                                            }
-                                            newOutputs[updated.key] = updated.value;
-                                            handleUpdate({ outputs: newOutputs });
-                                        }}
-                                        onDelete={() => {
-                                            const newOutputs = { ...step.outputs };
-                                            delete newOutputs[key];
-                                            handleUpdate({ outputs: newOutputs });
-                                        }}
-                                        isDark={isDark}
-                                        expressionSuggestions={expressionSuggestions}
-                                    />
-                                );
-                            })}
-                        </div>
+                        <OutputsEditor
+                            outputs={step.outputs || {}}
+                            onChange={(outputs) => handleUpdate({ outputs: Object.keys(outputs).length ? outputs : undefined })}
+                            isDark={isDark}
+                            expressionSuggestions={expressionSuggestions}
+                            defaultContext={step.channelPath ? '$message.payload' : '$response.body'}
+                        />
                     ) : (
                         <PropertyList items={outputItems} isDark={isDark} variant="compact" />
                     )}

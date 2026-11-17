@@ -1,26 +1,49 @@
 @import "tailwindcss";
+/* ConnEthics design tokens (--ce-*), copied from arazzo-vscode specs/002-arazzo-1-1-refonte/brand/tokens.css. */
+@import "../styles/brand-tokens.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand-level aliases: light/dark values come from the --ce-* tokens (prefers-color-scheme). */
+  --background: var(--ce-bg-canvas);
+  --foreground: var(--ce-text-default);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Inter / JetBrains Mono (next/font in layout.tsx), with the ConnEthics fallback stacks. */
+  --font-sans: var(--font-inter), var(--ce-font-sans);
+  --font-mono: var(--font-jetbrains-mono), var(--ce-font-mono);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* ConnEthics semantic colors as Tailwind utilities (bg-ce-canvas, text-ce-muted, …). */
+  --color-ce-canvas: var(--ce-bg-canvas);
+  --color-ce-surface: var(--ce-bg-surface);
+  --color-ce-raised: var(--ce-bg-raised);
+  --color-ce-sunken: var(--ce-bg-sunken);
+  --color-ce-hover: var(--ce-bg-hover);
+  --color-ce-border: var(--ce-border-default);
+  --color-ce-border-strong: var(--ce-border-strong);
+  --color-ce-text: var(--ce-text-default);
+  --color-ce-muted: var(--ce-text-muted);
+  --color-ce-subtle: var(--ce-text-subtle);
+  --color-ce-link: var(--ce-text-link);
+  --color-ce-primary: var(--ce-primary);
+  --color-ce-primary-solid: var(--ce-primary-solid);
+  --color-ce-primary-solid-hover: var(--ce-primary-solid-hover);
+  --color-ce-on-primary: var(--ce-on-primary);
+  --color-ce-primary-subtle: var(--ce-primary-subtle);
+  --color-ce-primary-subtle-text: var(--ce-primary-subtle-text);
+  --color-ce-accent: var(--ce-accent);
+  --color-ce-accent-brand: var(--ce-accent-brand);
+  --color-ce-accent-text: var(--ce-accent-text);
+  --color-ce-accent-subtle: var(--ce-accent-subtle);
+  --color-ce-accent-subtle-text: var(--ce-accent-subtle-text);
+  --color-ce-focus: var(--ce-focus-ring);
+  --color-ce-success: var(--ce-status-success-fg);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }

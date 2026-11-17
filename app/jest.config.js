@@ -9,8 +9,11 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/vendor/', '<rootDir>/.next/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Vendored shared packages (see docs/SHARED_PACKAGES.md). Core ships a CommonJS build for Jest.
+    '^@connethics/arazzo-core$': '<rootDir>/vendor/@connethics/arazzo-core/dist/index.cjs',
   },
 }
 

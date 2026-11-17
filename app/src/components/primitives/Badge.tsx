@@ -14,6 +14,7 @@ export type BadgeVariant =
   | 'warning'
   | 'info'
   | 'openapi' 
+  | 'asyncapi'
   | 'arazzo'
   | 'required'
   | 'reference'
@@ -83,6 +84,10 @@ const variantStyles: Record<BadgeVariant, { light: string; dark: string }> = {
   openapi: { 
     light: 'bg-blue-100 text-blue-700 border-blue-200', 
     dark: 'bg-blue-900/50 text-blue-300 border-blue-700' 
+  },
+  asyncapi: {
+    light: 'bg-teal-100 text-teal-700 border-teal-200',
+    dark: 'bg-teal-900/50 text-teal-300 border-teal-700'
   },
   arazzo: { 
     light: 'bg-purple-100 text-purple-700 border-purple-200', 
