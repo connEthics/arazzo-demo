@@ -29,10 +29,10 @@ interface MobileMenuProps {
 }
 
 const VIEW_MODES = [
-  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon, color: 'bg-blue-600', shadow: 'shadow-blue-900/20' },
-  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon, color: 'bg-emerald-600', shadow: 'shadow-emerald-900/20' },
-  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon, color: 'bg-purple-600', shadow: 'shadow-purple-900/20' },
-  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon, color: 'bg-indigo-600', shadow: 'shadow-indigo-900/20' },
+  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
 ];
 
 function MobileMenu({

@@ -62,7 +62,7 @@ export default function SourceManager({
             onClick={() => setActiveTab(activeTab === 'add' ? 'sources' : 'add')}
             className={`p-1.5 rounded-lg transition-colors ${
               activeTab === 'add'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'hover:bg-slate-800 text-slate-400 hover:text-white'
                   : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
@@ -118,7 +118,7 @@ export default function SourceManager({
                   {onLoadMainSpec && (
                     <button
                       onClick={onLoadMainSpec}
-                      className="mt-2 text-xs text-indigo-500 hover:text-indigo-400 underline"
+                      className="mt-2 text-xs text-blue-500 hover:text-blue-400 underline"
                     >
                       Load sample
                     </button>
@@ -155,7 +155,7 @@ export default function SourceManager({
                   <p className="text-xs">No OpenAPI sources</p>
                   <button
                     onClick={() => setActiveTab('add')}
-                    className="mt-1 text-xs text-indigo-500 hover:text-indigo-400 underline"
+                    className="mt-1 text-xs text-blue-500 hover:text-blue-400 underline"
                   >
                     Add source
                   </button>
@@ -195,8 +195,8 @@ function SourceItem({ source, isSelected, onSelect, onRemove, isDark }: SourceIt
       className={`group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all ${
         isSelected
           ? isDark
-            ? 'bg-indigo-600/20 border border-indigo-500/50'
-            : 'bg-indigo-50 border border-indigo-200'
+            ? 'bg-blue-600/20 border border-blue-500/50'
+            : 'bg-blue-50 border border-blue-200'
           : isDark
             ? 'hover:bg-slate-800 border border-transparent'
             : 'hover:bg-gray-50 border border-transparent'

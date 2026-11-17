@@ -186,7 +186,7 @@ export default function BuilderHeaderShowcase({ isDark: initialDark }: BuilderHe
         
         <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
           <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" />
             </svg>
             Canvas Toolbar
@@ -210,16 +210,16 @@ export default function BuilderHeaderShowcase({ isDark: initialDark }: BuilderHe
       </div>
 
       {/* Integration Note */}
-      <div className={`p-4 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+      <div className={`p-4 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h4 className={`font-semibold mb-1 ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+            <h4 className={`font-semibold mb-1 ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>
               Header + Canvas Toolbar
             </h4>
-            <p className={`text-sm ${isDark ? 'text-indigo-200/80' : 'text-indigo-700'}`}>
+            <p className={`text-sm ${isDark ? 'text-blue-200/80' : 'text-blue-700'}`}>
               This header component handles navigation, workflow selection, and view mode switching.
               Display options have been moved to the CanvasToolbar component for better context - 
               they only apply in Builder mode and should be easily accessible while working on the canvas.

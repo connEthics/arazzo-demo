@@ -103,7 +103,7 @@ export default function StepInspectorShowcase({ isDark }: StepInspectorShowcaseP
             onClick={() => { setSelectedStep(SAMPLE_STEP); addLog('Selected: API Step'); }}
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
               selectedStep?.stepId === 'find-available-pets'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -115,7 +115,7 @@ export default function StepInspectorShowcase({ isDark }: StepInspectorShowcaseP
             onClick={() => { setSelectedStep(WORKFLOW_STEP); addLog('Selected: Workflow Step'); }}
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
               selectedStep?.stepId === 'run-authentication'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -127,7 +127,7 @@ export default function StepInspectorShowcase({ isDark }: StepInspectorShowcaseP
             onClick={() => { setSelectedStep(null); addLog('Cleared selection'); }}
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
               selectedStep === null
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -144,7 +144,7 @@ export default function StepInspectorShowcase({ isDark }: StepInspectorShowcaseP
             type="checkbox"
             checked={readOnly}
             onChange={(e) => { setReadOnly(e.target.checked); addLog(`Mode: ${e.target.checked ? 'Read Only' : 'Edit'}`); }}
-            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
             Read Only {readOnly ? '(uses StepContent)' : '(edit forms)'}
@@ -241,15 +241,15 @@ export default function StepInspectorShowcase({ isDark }: StepInspectorShowcaseP
           </h4>
           <ul className={`text-sm space-y-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             <li className="flex items-start gap-2">
-              <span className="text-indigo-500">⚙️</span>
+              <span className="text-blue-500">⚙️</span>
               Parameters with ExpressionInput autocomplete
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-indigo-500">✓</span>
+              <span className="text-blue-500">✓</span>
               Criteria with ExpressionInput + quick suggestions
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-indigo-500">🔀</span>
+              <span className="text-blue-500">🔀</span>
               Actions using ActionFormEditor (CRUD)
             </li>
           </ul>

@@ -1,7 +1,7 @@
 import { memo, type ReactElement } from 'react';
 import { EdgeLabelRenderer, getSmoothStepPath, Position, type Edge, type EdgeProps } from '@xyflow/react';
 import type { ViewEdge as GraphEdge } from '../model';
-import type { PlacedEdge } from '../layout/layout';
+import type { PlacedEdge, Side } from '../layout/layout';
 import { isDimmed, useUi } from '../store';
 
 export interface AfEdgeData extends Record<string, unknown> {
@@ -38,6 +38,8 @@ const DIR: Record<Position, Pt> = {
   [Position.Left]: { x: 1, y: 0 },
   [Position.Right]: { x: -1, y: 0 },
 };
+
+const SIDE_POSITION: Record<Side, Position> = { NORTH: Position.Top, SOUTH: Position.Bottom, EAST: Position.Right, WEST: Position.Left };
 
 function arrowHead(tip: Pt, dir: Pt, open: boolean, size = 8): ReactElement {
   const len = Math.hypot(dir.x, dir.y) || 1;
@@ -120,11 +122,15 @@ export const AfEdge = memo(function AfEdge(props: EdgeProps<AfRFEdge>) {
     startDir = { x: pts[1].x - pts[0].x, y: pts[1].y - pts[0].y };
     label = horizontal ? { x: sourceX + off + 4, y: (sourceY + targetY - off) / 2 } : { x: (sourceX + targetX - off) / 2, y: sourceY + off + 4 };
   } else {
-    const [p, lx, ly] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 6, offset: 18 });
+    // Entrée dans un sous-workflow déplié : on s'arrête sur le bord du cadre (port du groupe).
+    const tx = placed.entry ? placed.entry.x : targetX;
+    const ty = placed.entry ? placed.entry.y : targetY;
+    const tpos = placed.entry ? SIDE_POSITION[placed.entry.side] : targetPosition;
+    const [p, lx, ly] = getSmoothStepPath({ sourceX, sourceY, targetX: tx, targetY: ty, sourcePosition, targetPosition: tpos, borderRadius: 6, offset: 18 });
     d = p;
     label = { x: lx, y: ly };
-    tip = { x: targetX, y: targetY };
-    tipDir = DIR[targetPosition];
+    tip = { x: tx, y: ty };
+    tipDir = DIR[tpos];
     start = { x: sourceX, y: sourceY };
     startDir = { x: -DIR[sourcePosition].x, y: -DIR[sourcePosition].y };
   }

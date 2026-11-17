@@ -117,7 +117,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
           <span className="text-sm font-medium">Import Sources</span>
           <div className="flex items-center gap-2">
             {sourceCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
                 {sourceCount}
               </span>
             )}
@@ -131,7 +131,7 @@ export default function SourceManager({ onStepAdded, compact = false }: SourceMa
             {!hasWorkflow && (
               <button
                 onClick={handleLoadSample}
-                className="w-full px-3 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-500 hover:to-purple-500 text-sm flex items-center justify-center gap-2 shadow-md transition-all"
+                className="w-full px-3 py-2.5 bg-ce-primary-solid text-ce-on-primary rounded-lg hover:bg-ce-primary-solid-hover text-sm flex items-center justify-center gap-2 shadow-md transition-all"
               >
                 <span>✨</span>
                 <span>Load Sample Workflow</span>

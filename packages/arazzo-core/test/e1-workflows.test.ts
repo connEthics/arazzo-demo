@@ -36,3 +36,24 @@ describe.skipIf(files.length === 0)('E1 workflows (arazzo 1.1)', () => {
     });
   }
 });
+
+// Fan-out / join of the e2e order-to-cash example (UI-SPEC M3): createInvoice and
+// createShipment both depend on capturePayment and must stay parallel.
+const orderToCash = join(root, 'e2e-order-to-cash', 'e2e-order-to-cash.arazzo.yaml');
+describe.skipIf(!existsSync(orderToCash))('E1 e2e-order-to-cash graph', () => {
+  it('draws createInvoice and createShipment in parallel before the join', () => {
+    const r = validateText(readFileSync(orderToCash, 'utf8'));
+    const g = workflowToGraph(r.doc, 'orderToCash');
+    const pairs = (kind: string) => g.edges.filter((e) => e.kind === kind).map((e) => `${e.source}->${e.target}`);
+    expect(pairs('sequence')).toEqual(['input->step:createOrder', 'step:closeOrder->output']);
+    expect(pairs('depends-on')).toEqual([
+      'step:createOrder->step:awaitOrderConfirmation',
+      'step:awaitOrderConfirmation->step:capturePayment',
+      'step:capturePayment->step:createInvoice',
+      'step:capturePayment->step:createShipment',
+      'step:createInvoice->join:closeOrder',
+      'step:createShipment->join:closeOrder',
+      'join:closeOrder->step:closeOrder',
+    ]);
+  });
+});

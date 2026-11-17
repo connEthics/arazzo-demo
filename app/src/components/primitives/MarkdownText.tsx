@@ -13,7 +13,7 @@ interface MarkdownTextProps {
 
 function MarkdownText({ content, isDark, className = '', variant = 'default' }: MarkdownTextProps) {
   const textClass = isDark ? 'text-slate-300' : 'text-gray-600';
-  const linkClass = isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500';
+  const linkClass = isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500';
   const codeClass = isDark ? 'bg-slate-700 text-slate-200' : 'bg-gray-100 text-gray-800';
   const tableClass = isDark ? 'border-slate-600' : 'border-gray-300';
   const tableHeaderClass = isDark ? 'bg-slate-700/50' : 'bg-gray-100';

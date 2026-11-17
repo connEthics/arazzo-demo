@@ -194,9 +194,9 @@ export default function UnifiedDocumentationView({
     const element = document.getElementById(`step-${workflowId}-${stepId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      element.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2');
+      element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
       setTimeout(() => {
-        element.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+        element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
       }, 2000);
     }
   }, []);
@@ -228,9 +228,9 @@ export default function UnifiedDocumentationView({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full px-3 py-1.5 pl-8 text-xs rounded border ${isDark
-                ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500 focus:border-indigo-500'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
-                } focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors`}
+                ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500 focus:border-blue-500'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
+                } focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors`}
             />
             <svg
               className={`absolute left-2.5 top-2 w-3.5 h-3.5 ${mutedClass}`}
@@ -278,7 +278,7 @@ export default function UnifiedDocumentationView({
                     }
                   }}
                   className={`w-full flex items-center gap-1.5 text-left px-3 py-1.5 rounded text-sm transition-colors ${activeSection === entry.id
-                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
                     : `${mutedClass} hover:bg-slate-100 dark:hover:bg-slate-800`
                     } ${entry.type === 'step' ? 'pl-10 text-xs' :
                       entry.type === 'workflow' ? 'pl-4' : ''
@@ -298,7 +298,7 @@ export default function UnifiedDocumentationView({
                     <span className="w-3 h-3 flex-shrink-0" />
                   )}
                   {entry.type === 'step' && (
-                    <span className="mr-1 text-indigo-400">•</span>
+                    <span className="mr-1 text-blue-400">•</span>
                   )}
                   <span className="truncate">{entry.label}</span>
                 </button>
@@ -395,8 +395,8 @@ export default function UnifiedDocumentationView({
                                 <button
                                   onClick={() => toggleComponentEdit(`input:${name}`)}
                                   className={`p-1 rounded transition-colors ${isEditing 
-                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
-                                    : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                    ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                                    : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                   title={isEditing ? "Done Editing" : "Edit Input"}
                                 >
                                   {isEditing ? (
@@ -519,8 +519,8 @@ export default function UnifiedDocumentationView({
                                 <button
                                   onClick={() => toggleComponentEdit(`schema:${name}`)}
                                   className={`p-1 rounded transition-colors ${isEditing 
-                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
-                                    : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                    ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                                    : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                   title={isEditing ? "Done Editing" : "Edit Schema"}
                                 >
                                   {isEditing ? (
@@ -574,7 +574,7 @@ export default function UnifiedDocumentationView({
                               schemas: { 'User': { type: 'object', properties: {} } }
                             });
                           }}
-                          className="mt-2 text-xs font-medium text-violet-600 hover:underline"
+                          className="mt-2 text-xs font-medium text-blue-600 hover:underline"
                         >
                           Add your first reusable schema
                         </button>
@@ -615,7 +615,7 @@ export default function UnifiedDocumentationView({
           <footer className={`mt-12 pt-6 border-t text-center text-sm ${mutedClass} print:mt-8`} style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
             <p>Generated with Arazzo Builder</p>
             <p className="mt-1">
-              Made with ❤️ by <a href="https://connethics.com" className="text-indigo-600 hover:underline print:text-indigo-600">connethics.com</a>
+              Made with ❤️ by <a href="https://connethics.com" className="text-blue-600 hover:underline print:text-blue-600">connethics.com</a>
             </p>
           </footer>
         </div>
@@ -776,8 +776,8 @@ function WorkflowSection({
                 <button
                   onClick={() => onViewFlowchart(workflow.workflowId)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
-                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white'
                     }`}
                   title="Open flowchart view"
                 >
@@ -809,8 +809,8 @@ function WorkflowSection({
                 <button
                   onClick={() => onViewSequence(workflow.workflowId)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${isDark
-                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
-                    : 'bg-violet-600 hover:bg-violet-500 text-white'
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white'
                     }`}
                   title="Open sequence view"
                 >

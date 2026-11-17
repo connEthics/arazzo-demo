@@ -8,7 +8,7 @@ import { ArazzoGraphFromDocument } from '../src/ArazzoGraphFromDocument';
 import { resetElk } from '../src/layout/elk-client';
 import { EDGE_KINDS } from '../src/model';
 import { en } from '../src/messages';
-import { CATALOGUE, PET, SESSION, load } from './fixtures';
+import { CATALOGUE, O2C, PET, SESSION, load } from './fixtures';
 import { mockElk } from './mock-elk';
 
 const catalogue = workflowToGraph(CATALOGUE, 'main', { includeImplicitFailures: true });
@@ -210,6 +210,28 @@ describe('<ArazzoGraphFromDocument>', () => {
     expect(node('group:renewSession/step:renew')).not.toBeNull();
     expect(document.querySelector('.af-frame--workflow .af-frame__title')!.textContent).toBe('renewSession');
     expect(screen.getByRole('application', { name: 'Graphe du workflow listUnpaidInvoices' })).toBeTruthy();
+  });
+
+  it('node lines: description, else METHOD /path, else short operationId, never the raw $sourceDescriptions id', async () => {
+    const onLayout = vi.fn();
+    render(
+      <div style={{ width: 1000, height: 700 }}>
+        <ArazzoGraphFromDocument
+          doc={load(O2C)}
+          workflowId="orderToCash"
+          resolveOperation={(step) => (step.operationId?.endsWith('.createInvoice') ? { method: 'post', path: '/invoices' } : undefined)}
+          elk={{ engine: mockElk() }}
+          onLayout={onLayout}
+        />
+      </div>,
+    );
+    await laidOut(onLayout);
+    const lines = (id: string) => [...node(id).querySelectorAll('.af-card__line')].map((l) => l.textContent?.trim());
+    // No description, operation resolved: METHOD /path on the main line, no repeated secondary line.
+    expect(lines('step:createInvoice')).toEqual(['POST /invoices', '']);
+    // No description, unresolved: operationId without its source prefix.
+    expect(lines('step:createShipment')).toEqual(['createShipment', '']);
+    expect(document.body.textContent).not.toContain('$sourceDescriptions.commerce.');
   });
 
   it('uses resolveOperation for the HTTP badge and renders a fallback for unknown workflows', async () => {

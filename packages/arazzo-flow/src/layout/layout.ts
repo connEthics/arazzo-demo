@@ -2,7 +2,7 @@ import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs/lib/elk-api';
 import type { ViewNode as GraphNode, PortId, ViewGraph as WorkflowGraph } from '../model';
 import { STEP_PORTS } from '../model';
 import { edgeLabelText, measureLabel, nodeSize, type Density, type Direction } from '../format';
-import { ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, thoroughnessFor } from './elk-options';
+import { ELK_GROUP_ENTRY_OPTIONS, ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, thoroughnessFor } from './elk-options';
 import { runElk, type ElkConfig, type ElkMode } from './elk-client';
 
 export type LanesMode = 'off' | 'clusters' | 'lanes';
@@ -37,6 +37,11 @@ export interface PlacedNode {
 export interface PlacedEdge {
   /** Polyligne ELK (absolue). Absente en mode couloirs : routage de repli côté rendu. */
   points?: { x: number; y: number }[];
+  /**
+   * Arête qui entre dans un sous-workflow déplié : elle se termine sur le port d'entrée du
+   * groupe (bord du cadre, hors de l'en-tête) et non sur la première étape. Point absolu.
+   */
+  entry?: { groupId: string; x: number; y: number; side: Side };
   label?: { text: string; x: number; y: number; width: number; height: number };
   labelText: string;
 }
@@ -72,6 +77,8 @@ export const PORT_SIDES: Record<Direction, Record<PortId, Side>> = {
 };
 
 const WORKFLOW_LANE = '__workflow';
+/** Hauteur réservée à l'en-tête d'un sous-workflow déplié (padding haut ELK du groupe). */
+const GROUP_HEADER = 44;
 
 /** Clé de cache : structure seulement (pas les descriptions) — R5 §4.8. */
 export function structureKey(g: WorkflowGraph, o: LayoutOptions): string {
@@ -98,7 +105,10 @@ function laneOf(n: GraphNode, g: WorkflowGraph): string {
 }
 
 /** Build the ELK input graph (exported for tests and for server-side layout). */
-export function buildElkGraph(g: WorkflowGraph, o: LayoutOptions): { root: ElkNode; containers: Set<string>; labelTexts: Record<string, string> } {
+export function buildElkGraph(
+  g: WorkflowGraph,
+  o: LayoutOptions,
+): { root: ElkNode; containers: Set<string>; labelTexts: Record<string, string>; entries: Record<string, string> } {
   const sides = PORT_SIDES[o.direction];
 
   // Ports réellement utilisés par nœud (ordre fixe → déterminisme).
@@ -125,6 +135,17 @@ export function buildElkGraph(g: WorkflowGraph, o: LayoutOptions): { root: ElkNo
     return { id: n.id, width: s.width, height: s.height, ports, layoutOptions: { ...ELK_NODE_OPTIONS } };
   };
 
+  // Arêtes qui entrent dans un sous-workflow déplié depuis l'extérieur : elles visent le port
+  // d'entrée du groupe (`<groupId>::in`), jamais la première étape, pour ne pas traverser l'en-tête.
+  const expanded = new Set(g.groups.filter((x) => x.kind === 'workflow' && !x.collapsed).map((x) => x.id));
+  const groupOf = new Map(g.nodes.map((n) => [n.id, n.groupId && expanded.has(n.groupId) ? n.groupId : undefined]));
+  const entries: Record<string, string> = {};
+  for (const e of g.edges) {
+    const tg = groupOf.get(e.target);
+    if (tg && groupOf.get(e.source) !== tg) entries[e.id] = tg;
+  }
+  const entered = new Set(Object.values(entries));
+
   // Hiérarchie : sous-workflows dépliés ; en mode « clusters », un groupe par source.
   const root: ElkNode = { id: '__root', children: [], edges: [] };
   const containers = new Map<string, ElkNode>();
@@ -132,6 +153,10 @@ export function buildElkGraph(g: WorkflowGraph, o: LayoutOptions): { root: ElkNo
     let c = containers.get(id);
     if (!c) {
       c = { id, children: [], layoutOptions: { ...ELK_GROUP_OPTIONS }, labels: [{ text: label }] };
+      if (entered.has(id)) {
+        c.layoutOptions = { ...c.layoutOptions, ...ELK_GROUP_ENTRY_OPTIONS };
+        c.ports = [{ id: `${id}::in`, width: 1, height: 1, layoutOptions: { 'org.eclipse.elk.port.side': sides.in } }];
+      }
       containers.set(id, c);
       root.children!.push(c);
     }
@@ -152,7 +177,7 @@ export function buildElkGraph(g: WorkflowGraph, o: LayoutOptions): { root: ElkNo
     return {
       id: e.id,
       sources: [`${e.source}::${e.sourcePort}`],
-      targets: [`${e.target}::${e.targetPort}`],
+      targets: [entries[e.id] ? `${entries[e.id]}::in` : `${e.target}::${e.targetPort}`],
       labels: text ? [{ id: `${e.id}::label`, text, width: m.width, height: m.height }] : [],
     };
   });
@@ -162,13 +187,13 @@ export function buildElkGraph(g: WorkflowGraph, o: LayoutOptions): { root: ElkNo
     'org.eclipse.elk.direction': o.direction === 'TB' ? 'DOWN' : 'RIGHT',
     'org.eclipse.elk.layered.thoroughness': thoroughnessFor(g.nodes.length),
   };
-  return { root, containers: new Set(containers.keys()), labelTexts };
+  return { root, containers: new Set(containers.keys()), labelTexts, entries };
 }
 
 export async function computeLayout(g: WorkflowGraph, o: LayoutOptions, elk: ElkConfig = {}): Promise<LayoutResult> {
   const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const sides = PORT_SIDES[o.direction];
-  const { root, containers, labelTexts } = buildElkGraph(g, o);
+  const { root, containers, labelTexts, entries } = buildElkGraph(g, o);
   const { result, mode } = await runElk(root, elk);
 
   const nodes: Record<string, PlacedNode> = {};
@@ -246,6 +271,17 @@ export async function computeLayout(g: WorkflowGraph, o: LayoutOptions, elk: Elk
     for (const id of Object.keys(edges)) edges[id] = { labelText: edges[id].labelText };
     width = r.width;
     height = r.height;
+  }
+
+  // Point d'entrée des arêtes vers un sous-workflow : milieu du bord d'entrée du cadre,
+  // sous l'en-tête en LR (le port ELK quand il existe, sinon calculé sur le cadre).
+  for (const [id, groupId] of Object.entries(entries)) {
+    const f = frames.find((x) => x.id === groupId);
+    const pe = edges[id];
+    if (!f || !pe) continue;
+    const last = pe.points?.[pe.points.length - 1];
+    const fallback = o.direction === 'TB' ? { x: f.x + f.width / 2, y: f.y } : { x: f.x, y: f.y + GROUP_HEADER + (f.height - GROUP_HEADER) / 2 };
+    pe.entry = { groupId, side: sides.in, ...(last ?? fallback) };
   }
 
   return {

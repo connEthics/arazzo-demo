@@ -51,7 +51,7 @@ export default function ActionFormEditorShowcase({ isDark }: ActionFormEditorSho
             type="checkbox"
             checked={readOnly}
             onChange={(e) => { setReadOnly(e.target.checked); addLog(`Mode: ${e.target.checked ? 'Read Only' : 'Edit'}`); }}
-            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
             Read Only
@@ -140,8 +140,8 @@ export default function ActionFormEditorShowcase({ isDark }: ActionFormEditorSho
       <div className="grid md:grid-cols-3 gap-4">
         <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
           <div className="flex items-center gap-2 mb-2">
-            <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
-              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </span>

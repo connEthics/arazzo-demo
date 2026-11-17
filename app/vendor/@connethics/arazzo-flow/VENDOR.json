@@ -5,18 +5,18 @@
   "source": {
     "repository": "arazzo-demo",
     "path": "packages/arazzo-flow",
-    "commit": "3113388a171b0b0963b2dc1d2cc171790b22ffb3"
+    "commit": "14abc36d8aa9560399269047f3431ec8c292c482"
   },
-  "sha256": "431f5ad20f377bda86620f7341bd271bdf4a2b0b0854bb3b4f3035b506c0032e",
+  "sha256": "2c7edd191a49a6730f17594cfba03524d82cbfb11b62453c1959c68e2ef62b22",
   "files": {
     "LICENSE": "0c67814aea3dc53acbf4212c4a78d0ce8bf6f48ab1da6c87ff1b2f2e17b7a41e",
-    "README.md": "d8409ab4ddfb9bc74bf7566c0d8624b3a92c894f7350b27f12c85112985f10aa",
+    "README.md": "ade1f1190849d4804c3b8e496d021998eaec67623e1ed1bcf20b314686b84b83",
     "dist/elk-worker.LICENSE.md": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617",
     "dist/elk-worker.d.ts": "2b9342e9beedace36b69a84c812ef346d08c9b3fcecc56c872b07d27bff5ba13",
     "dist/elk-worker.js": "458fbe927f19d11d8d054e34b7587011b9a4d1ecbdfb688b60e491fbdfb2a8d7",
-    "dist/index.d.ts": "2dd4447a9dbe55b4b7a6e04d57fea5b4f9d79dab47d77fa6c19290b4d3a95976",
-    "dist/index.js": "c61102421fe98742ddcb589c5685727391ce5716289ba116b4768f61e9bba405",
-    "dist/index.js.map": "baa2b36987a41ade341842248750a25f9e5877980054eb9c9292b681f727609f",
+    "dist/index.d.ts": "60d780c7be948f9b47aa2dc55858736d0b2191019ae3cb1eec58b7eb5c5194e2",
+    "dist/index.js": "680f8f303fa006a7affa71ab403cd8bc9c70ab0f0ef3d85c43b55dbae469e83f",
+    "dist/index.js.map": "6a16642828977af4b25fd59f1a885edabff3092627de10356077018c8c21ecdf",
     "dist/style.css": "8d7b7d833f82c830df1f6b488a9a56f661afea0a27c50444794b37f936e858ec",
     "package.json": "027370b7f0626b01ccc2f9dc81baa8491b04ec57cd60e4735c5b1c025ee0091d"
   },

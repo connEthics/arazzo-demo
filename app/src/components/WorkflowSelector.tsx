@@ -96,7 +96,7 @@ export default function WorkflowSelector({
             onChange={(e) => setRenameValue(e.target.value)}
             onBlur={handleFinishRename}
             onKeyDown={handleRenameKeyDown}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               isDark
                 ? 'bg-slate-800 border-slate-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
@@ -187,8 +187,8 @@ export default function WorkflowSelector({
                 className={`group flex items-center justify-between px-3 py-2.5 cursor-pointer transition-colors ${
                   workflow.id === selectedWorkflowId
                     ? isDark
-                      ? 'bg-indigo-600/20 text-indigo-300'
-                      : 'bg-indigo-50 text-indigo-700'
+                      ? 'bg-blue-600/20 text-blue-300'
+                      : 'bg-blue-50 text-blue-700'
                     : isDark
                       ? 'hover:bg-slate-700 text-white'
                       : 'hover:bg-gray-50 text-gray-900'

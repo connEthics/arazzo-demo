@@ -17,6 +17,9 @@ export function mockElk(): LayoutEngine & { calls: number } {
             y += 44;
             place(c);
             Object.assign(c, { x: 0, y: y0, width: 300, height: y - y0 });
+            // Container (expanded sub-workflow): its entry port sits on the top border.
+            pos.set(c.id, { x: 0, y: y0, w: 300, h: y - y0 });
+            for (const p of c.ports ?? []) Object.assign(p, { x: 150, y: y0 });
             continue;
           }
           Object.assign(c, { x: 20, y });

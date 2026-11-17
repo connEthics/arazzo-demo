@@ -131,15 +131,15 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
       <div className={`
         min-w-[200px] max-w-[260px] bg-white dark:bg-slate-800 rounded-lg border-2 shadow-sm transition-all
         ${isActive
-          ? 'border-indigo-500 shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20'
-          : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300'}
+          ? 'border-blue-500 shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20'
+          : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'}
       `}>
         {/* Main flow handle - top */}
         <Handle
           type="target"
           position={Position.Top}
           id="flow-in"
-          className="!bg-indigo-400 !w-3 !h-3"
+          className="!bg-blue-400 !w-3 !h-3"
         />
 
         {/* Header */}
@@ -238,7 +238,7 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
           type="source"
           position={Position.Bottom}
           id="flow-out"
-          className="!bg-indigo-400 !w-3 !h-3"
+          className="!bg-blue-400 !w-3 !h-3"
         />
       </div>
     );
@@ -256,13 +256,13 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
   return (
     <div className={`
       bg-white border border-gray-200 rounded-lg shadow-sm min-w-[240px] max-w-[280px] overflow-hidden
-      ${isActive ? 'ring-2 ring-indigo-500 shadow-lg' : ''}
+      ${isActive ? 'ring-2 ring-blue-500 shadow-lg' : ''}
     `}>
       {/* Handle top/left */}
       <Handle
         type="target"
         position={targetPosition}
-        className="!w-2.5 !h-2.5 !bg-indigo-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-white"
       />
 
       {/* Header */}
@@ -283,7 +283,7 @@ function UnifiedStepNode({ data, selected }: UnifiedStepNodeProps) {
       <Handle
         type="source"
         position={sourcePosition}
-        className="!w-2.5 !h-2.5 !bg-indigo-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-white"
       />
     </div>
   );

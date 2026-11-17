@@ -143,8 +143,8 @@ export default function WorkflowSelectorShowcase({ isDark }: WorkflowSelectorSho
                   className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
                     w.id === selectedId
                       ? isDark
-                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/50'
-                        : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                        ? 'bg-blue-600/20 text-blue-300 border border-blue-500/50'
+                        : 'bg-blue-100 text-blue-700 border border-blue-200'
                       : isDark
                         ? 'bg-slate-800 text-slate-300'
                         : 'bg-gray-100 text-gray-600'
@@ -201,7 +201,7 @@ export default function WorkflowSelectorShowcase({ isDark }: WorkflowSelectorSho
         
         <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
           <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Inline Rename
@@ -225,16 +225,16 @@ export default function WorkflowSelectorShowcase({ isDark }: WorkflowSelectorSho
       </div>
 
       {/* Integration Note */}
-      <div className={`p-4 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+      <div className={`p-4 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h4 className={`font-semibold mb-1 ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+            <h4 className={`font-semibold mb-1 ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>
               Header Integration
             </h4>
-            <p className={`text-sm ${isDark ? 'text-indigo-200/80' : 'text-indigo-700'}`}>
+            <p className={`text-sm ${isDark ? 'text-blue-200/80' : 'text-blue-700'}`}>
               This selector is placed in the Builder header next to the title. 
               When a workflow is selected, the canvas and inspector update to show 
               that workflow&apos;s steps. Changes are synced to the BuilderContext state.

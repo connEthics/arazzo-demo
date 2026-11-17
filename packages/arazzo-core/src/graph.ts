@@ -181,6 +181,9 @@ export function operationFromPath(operationPath: string): OperationInfo | undefi
 
 const noCriteria = (c: unknown): boolean => !Array.isArray(c) || c.length === 0;
 
+const STEP_DEP_WORKFLOW = /^\$workflows\.([^.]+)\.steps\.([^.]+)$/;
+const STEP_DEP_EXTERNAL = /^\$sourceDescriptions\.([^.]+)\.([^.]+)\.steps\.([^.]+)$/;
+
 /**
  * Build the graph of one workflow. Throws when the workflow does not exist.
  */
@@ -306,6 +309,12 @@ export function workflowToGraph(doc: unknown, workflowId: string, opts: GraphOpt
   if (steps.length === 0) addEdge({ kind: 'sequence', source: 'input', target: successTerminal(), conditional: false });
   else addEdge({ kind: 'sequence', source: 'input', target: ids[0]!, conditional: false });
 
+  // A step whose `dependsOn` yields at least one edge (local step, or step of another workflow).
+  // Unresolvable entries alone (reported by validation) keep the implicit sequence, so the
+  // step is never left without an incoming edge.
+  const hasDependencyEdges = (step: Step): boolean =>
+    asArray(step.dependsOn).some((d) => typeof d === 'string' && (STEP_DEP_WORKFLOW.test(d) || STEP_DEP_EXTERNAL.test(d) || stepNodeId.has(d)));
+
   const wfActionsDeclared = asArray(wf.successActions).length + asArray(wf.failureActions).length > 0;
 
   steps.forEach((step, i) => {
@@ -393,14 +402,15 @@ export function workflowToGraph(doc: unknown, workflowId: string, opts: GraphOpt
       addEdge({ kind: 'workflow-call', source: id, target: workflowRef(step.workflowId), conditional: false, label: `⇢ ${step.workflowId}` });
     }
 
-    // Implicit sequence (suppressed only by an unconditional success action)
+    // Implicit sequence (UI-SPEC M1 / M3):
+    // - suppressed by an unconditional success action (goto / end);
+    // - never drawn into a next step that declares `dependsOn`: its explicit
+    //   dependencies replace the incoming sequence, whether or not they reference
+    //   this step (fan-out: siblings depending on the same step stay parallel).
     if (!unconditional) {
       const next = steps[i + 1];
       if (!next) addEdge({ kind: 'sequence', source: id, target: successTerminal(), conditional: false });
-      else {
-        const nextDeps = asArray(next.dependsOn);
-        if (!nextDeps.includes(step.stepId)) addEdge({ kind: 'sequence', source: id, target: ids[i + 1]!, conditional: false });
-      }
+      else if (!hasDependencyEdges(next)) addEdge({ kind: 'sequence', source: id, target: ids[i + 1]!, conditional: false });
     }
   });
 
@@ -412,8 +422,8 @@ export function workflowToGraph(doc: unknown, workflowId: string, opts: GraphOpt
     const depIds: string[] = [];
     for (const d of deps) {
       let m: RegExpExecArray | null;
-      if ((m = /^\$workflows\.([^.]+)\.steps\.([^.]+)$/.exec(d))) depIds.push(workflowRef(m[1]!, m[2]!));
-      else if ((m = /^\$sourceDescriptions\.([^.]+)\.([^.]+)\.steps\.([^.]+)$/.exec(d))) depIds.push(workflowRef(`$sourceDescriptions.${m[1]}.${m[2]}`, m[3]!));
+      if ((m = STEP_DEP_WORKFLOW.exec(d))) depIds.push(workflowRef(m[1]!, m[2]!));
+      else if ((m = STEP_DEP_EXTERNAL.exec(d))) depIds.push(workflowRef(`$sourceDescriptions.${m[1]}.${m[2]}`, m[3]!));
       else if (stepNodeId.has(d)) depIds.push(stepNodeId.get(d)!);
     }
     if (depIds.length >= 2) {

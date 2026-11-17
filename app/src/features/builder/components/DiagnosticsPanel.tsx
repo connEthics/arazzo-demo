@@ -106,7 +106,7 @@ function DiagnosticsPanel({ onRevealStep }: DiagnosticsPanelProps) {
                           <code className="font-mono">{d.code}</code>
                           {d.path.length > 0 && <code className="font-mono truncate max-w-full">{formatPath(d.path)}</code>}
                           {target?.stepId && (
-                            <span className="px-1.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 font-mono">
+                            <span className="px-1.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-mono">
                               {target.stepId}
                             </span>
                           )}

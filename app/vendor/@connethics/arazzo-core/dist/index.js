@@ -12086,6 +12086,8 @@ function operationFromPath(operationPath) {
   return { method: method.toUpperCase(), path: segs[0] === "paths" ? segs.slice(1, -1).join("/") : void 0 };
 }
 var noCriteria = (c) => !Array.isArray(c) || c.length === 0;
+var STEP_DEP_WORKFLOW = /^\$workflows\.([^.]+)\.steps\.([^.]+)$/;
+var STEP_DEP_EXTERNAL = /^\$sourceDescriptions\.([^.]+)\.([^.]+)\.steps\.([^.]+)$/;
 function workflowToGraph(doc, workflowId, opts = {}) {
   const wf = findWorkflow(doc, workflowId);
   if (!wf) throw new Error(`Workflow not found: ${workflowId}`);
@@ -12192,6 +12194,7 @@ function workflowToGraph(doc, workflowId, opts = {}) {
   };
   if (steps.length === 0) addEdge({ kind: "sequence", source: "input", target: successTerminal(), conditional: false });
   else addEdge({ kind: "sequence", source: "input", target: ids[0], conditional: false });
+  const hasDependencyEdges = (step) => asArray(step.dependsOn).some((d) => typeof d === "string" && (STEP_DEP_WORKFLOW.test(d) || STEP_DEP_EXTERNAL.test(d) || stepNodeId.has(d)));
   const wfActionsDeclared = asArray(wf.successActions).length + asArray(wf.failureActions).length > 0;
   steps.forEach((step, i) => {
     const id = ids[i];
@@ -12267,10 +12270,7 @@ function workflowToGraph(doc, workflowId, opts = {}) {
     if (!unconditional) {
       const next = steps[i + 1];
       if (!next) addEdge({ kind: "sequence", source: id, target: successTerminal(), conditional: false });
-      else {
-        const nextDeps = asArray(next.dependsOn);
-        if (!nextDeps.includes(step.stepId)) addEdge({ kind: "sequence", source: id, target: ids[i + 1], conditional: false });
-      }
+      else if (!hasDependencyEdges(next)) addEdge({ kind: "sequence", source: id, target: ids[i + 1], conditional: false });
     }
   });
   steps.forEach((step, i) => {
@@ -12280,8 +12280,8 @@ function workflowToGraph(doc, workflowId, opts = {}) {
     const depIds = [];
     for (const d of deps) {
       let m;
-      if (m = /^\$workflows\.([^.]+)\.steps\.([^.]+)$/.exec(d)) depIds.push(workflowRef(m[1], m[2]));
-      else if (m = /^\$sourceDescriptions\.([^.]+)\.([^.]+)\.steps\.([^.]+)$/.exec(d)) depIds.push(workflowRef(`$sourceDescriptions.${m[1]}.${m[2]}`, m[3]));
+      if (m = STEP_DEP_WORKFLOW.exec(d)) depIds.push(workflowRef(m[1], m[2]));
+      else if (m = STEP_DEP_EXTERNAL.exec(d)) depIds.push(workflowRef(`$sourceDescriptions.${m[1]}.${m[2]}`, m[3]));
       else if (stepNodeId.has(d)) depIds.push(stepNodeId.get(d));
     }
     if (depIds.length >= 2) {

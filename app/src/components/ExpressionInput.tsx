@@ -253,7 +253,7 @@ export default function ExpressionInput({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${inputSizeClasses[variant]} ${isDark
+          className={`w-full rounded-lg border font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${inputSizeClasses[variant]} ${isDark
             ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500'
             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
             } ${error ? 'border-red-500 focus:ring-red-500' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
@@ -261,7 +261,7 @@ export default function ExpressionInput({
 
         {/* Expression indicator */}
         {value.startsWith('$') && (
-          <div className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
+          <div className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
             }`}>
             expr
           </div>
@@ -287,7 +287,7 @@ export default function ExpressionInput({
               type="button"
               onClick={() => { onChange(expr); inputRef.current?.focus(); }}
               className={`px-2 py-1 text-xs font-mono rounded-md transition-colors ${value === expr
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -316,8 +316,8 @@ export default function ExpressionInput({
               className={`px-3 py-2.5 cursor-pointer flex items-start gap-2 text-sm border-b last:border-b-0 ${isDark ? 'border-slate-700' : 'border-gray-100'
                 } ${idx === selectedIndex
                   ? isDark
-                    ? 'bg-indigo-900/30 text-indigo-300'
-                    : 'bg-indigo-50 text-indigo-700'
+                    ? 'bg-blue-900/30 text-blue-300'
+                    : 'bg-blue-50 text-blue-700'
                   : isDark
                     ? 'hover:bg-slate-700'
                     : 'hover:bg-gray-50'

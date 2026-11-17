@@ -80,13 +80,20 @@ Le conteneur doit avoir une hauteur. Avec un graphe déjà calculé : `<ArazzoGr
 
 `ref` (`forwardRef`, React 18 et 19) → `ArazzoGraphApi` : `fitView()`, `focusStep(id)`, `centerOn(id, zoom?)`, `search(query)`, `select(id | null)`, `exportImage('svg' | 'png'): Promise<Blob>`, `toMermaid(): string`.
 
+### Lecture des nœuds et des sous-workflows
+
+- **Étape HTTP** : titre `stepId` ; ligne principale = première ligne de la `description`, sinon l'opération lisible (`operationLabel` : `POST /invoices`, ou `createInvoice` sans préfixe de source), sinon rien. Avec une description, l'opération passe sur la ligne secondaire ; sans description, elle n'est pas répétée. L'`operationId` brut n'est jamais affiché (il reste dans la recherche et dans le `title`).
+- **Étape AsyncAPI** : ligne secondaire = `channelPath`, sinon (sous une description) l'`operationId` sans préfixe.
+- **Sous-workflow déplié** : les arêtes venues de l'extérieur (appel, `↻ via`, transfert) arrivent sur le port d'entrée du groupe (`<groupId>::in`, bord haut en TB, bord gauche sous l'en-tête en LR), jamais sur la première étape : elles ne traversent pas l'en-tête. `PlacedEdge.entry` donne ce point, y compris en mode couloirs.
+- **Séquence implicite** : règle de core (README de `@connethics/arazzo-core`) ; deux étapes qui dépendent de la même étape sont dessinées en parallèle.
+
 ### `<ArazzoGraphFromDocument>`
 
 Mêmes props que `<ArazzoGraph>` sauf `graph` / `subgraphs`, plus : `doc` (document parsé), `workflowId`, `resolveOperation?` (passé à `workflowToGraph`), `includeImplicitFailures` (défaut `true` : construites, masquées par le bouton `∅`), `expandSubworkflows` (défaut `true` : `retry`/`goto`/étape vers un workflow **local** → groupe dépliable), `fallback` (workflow introuvable).
 
 ### Utilitaires exportés
 
-`createOpenApiResolver(sources)` (méthode et chemin depuis les OpenAPI chargés, `operationId` qualifiés ou non) · `toViewGraph`, `diagnosticsByNode`, `visibleGraph` (modèle de rendu) · `computeLayout`, `buildElkGraph`, `structureKey`, `ELK_*_OPTIONS` · `runElk`, `prewarmElk`, `resetElk` · `exportImage`, `toMermaid` (= `graphToMermaid` de core), `downloadBlob`, `dataUrlToBlob` · `resolveTheme`, `readVsCodeThemeKind` · `fr`, `en`.
+`createOpenApiResolver(sources)` (méthode et chemin depuis les OpenAPI chargés, `operationId` qualifiés ou non) · `operationLabel(step)` (`METHOD /path` si l'opération est résolue, sinon l'`operationId` sans le préfixe `$sourceDescriptions.<source>.`, sinon rien) et `shortOperationId` · `toViewGraph`, `diagnosticsByNode`, `visibleGraph` (modèle de rendu) · `computeLayout`, `buildElkGraph`, `structureKey`, `ELK_*_OPTIONS` · `runElk`, `prewarmElk`, `resetElk` · `exportImage`, `toMermaid` (= `graphToMermaid` de core), `downloadBlob`, `dataUrlToBlob` · `resolveTheme`, `readVsCodeThemeKind` · `fr`, `en`.
 
 ## Thèmes
 
@@ -220,7 +227,7 @@ npm run demo:build && npm run shots           # captures Playwright → demo/scr
 npm run size
 ```
 
-Tests (`test/`) : `adapt` (core → modèle de rendu, tous les types de nœuds et d'arêtes, ports, actions de workflow, sous-workflows, diagnostics), `layout` (ELK réel en Node sur pet-adoption : placement sans chevauchement, routage, déterminisme, LR, couloirs ; layout de tous les exemples E1), `render` (jsdom, ELK mocké : rendu de chaque type, sélection, clavier, recherche, barre d'outils, thèmes, `ArazzoGraphFromDocument`), `elk-client` (worker par URL, fabrique, défaut, replis erreur / délai / sans Worker), `css-export` (pas de Tailwind, classes `af-`, motifs distincts, mapping VS Code, Mermaid, résolveur OpenAPI).
+Tests (`test/`) : `format` (libellé d'opération), `adapt` (core → modèle de rendu, tous les types de nœuds et d'arêtes, ports, actions de workflow, sous-workflows, diagnostics), `layout` (ELK réel en Node sur pet-adoption : placement sans chevauchement, routage, déterminisme, LR, couloirs ; layout de tous les exemples E1), `render` (jsdom, ELK mocké : rendu de chaque type, sélection, clavier, recherche, barre d'outils, thèmes, `ArazzoGraphFromDocument`), `elk-client` (worker par URL, fabrique, défaut, replis erreur / délai / sans Worker), `css-export` (pas de Tailwind, classes `af-`, motifs distincts, mapping VS Code, Mermaid, résolveur OpenAPI).
 
 Démo : `?example=e2e-order-to-cash&theme=light|dark|vscode-light|vscode-dark|vscode-hc&lang=en&lanes=lanes&dir=LR&density=detailed&select=<stepId>&legend=1&list=1`, plus `example=large-100`. Les thèmes `vscode-*` posent les classes `body.vscode-*` et des variables `--vscode-*` simulées (valeurs Light+, Dark+, High Contrast).
 

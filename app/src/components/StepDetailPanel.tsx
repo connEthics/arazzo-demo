@@ -21,7 +21,7 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
       {/* Header */}
       <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700 bg-slate-900/50' : 'border-gray-100 bg-gray-50'}`}>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase bg-indigo-500 text-white px-1.5 py-0.5 rounded">
+          <span className="text-[10px] font-semibold uppercase bg-blue-500 text-white px-1.5 py-0.5 rounded">
             Step
           </span>
           <h3 className={`font-medium text-sm ${textClass}`}>{step.stepId}</h3>
@@ -70,7 +70,7 @@ function StepDetailPanel({ step, isDark = false, onClose }: StepDetailPanelProps
                 }
                 const p = param as Parameter;
                 return (
-                  <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 border-indigo-400`}>
+                  <div key={idx} className={`${codeBgClass} rounded p-2 border-l-2 border-blue-400`}>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-medium ${textClass}`}>{p.name}</span>
                       {p.in && (

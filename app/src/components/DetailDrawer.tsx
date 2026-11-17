@@ -80,8 +80,8 @@ function DetailDrawer({ data, isDark = false, onClose, workflowInputs, workflowO
             <button
               onClick={() => onNavigateToDoc(workflowId, data.step!.stepId)}
               className={`flex-shrink-0 p-1.5 rounded text-xs font-medium transition-colors ${isDark
-                ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                 }`}
               title="View in Documentation"
             >

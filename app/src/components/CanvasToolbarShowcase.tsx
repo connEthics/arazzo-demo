@@ -114,7 +114,7 @@ export default function CanvasToolbarShowcase({ isDark }: CanvasToolbarShowcaseP
               onClick={() => setSelectedCount(prev => prev === 0 ? 3 : 0)}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                 selectedCount > 0
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : isDark
                     ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -167,8 +167,8 @@ export default function CanvasToolbarShowcase({ isDark }: CanvasToolbarShowcaseP
                   className={`px-6 py-3 rounded-lg border-2 transition-colors ${
                     selectedCount > 0 && idx < selectedCount
                       ? isDark
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                        : 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                        ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                        : 'bg-blue-50 border-blue-500 text-blue-700'
                       : isDark
                         ? 'bg-slate-800 border-slate-600 text-white'
                         : 'bg-white border-gray-300 text-gray-900'

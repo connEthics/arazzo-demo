@@ -45,7 +45,7 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
   // Remote / cross-workflow dependencies ($workflows.x.steps.y) are kept as-is.
   const externalDeps = dependsOn.filter((d) => !candidates.includes(d));
 
-  const inputClass = `w-full px-2 py-1 rounded border text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 ${
+  const inputClass = `w-full px-2 py-1 rounded border text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 ${
     isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
   }`;
   const labelClass = `text-[10px] uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
@@ -103,7 +103,7 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
               <dt className={mutedClass}>dependsOn</dt>
               <dd className="flex flex-wrap gap-1">
                 {dependsOn.map((d) => (
-                  <button key={d} type="button" onClick={() => onStepClick?.(d)} className="font-mono text-indigo-500 hover:underline">
+                  <button key={d} type="button" onClick={() => onStepClick?.(d)} className="font-mono text-blue-500 hover:underline">
                     {d}
                   </button>
                 ))}
@@ -231,10 +231,10 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
                     onClick={() => toggleDep(id)}
                     className={`px-2 py-0.5 rounded-full border text-[11px] font-mono transition-colors ${
                       active
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                        ? 'bg-blue-600 border-blue-600 text-white'
                         : isDark
-                          ? 'border-slate-700 text-slate-300 hover:border-indigo-500'
-                          : 'border-gray-200 text-gray-600 hover:border-indigo-400'
+                          ? 'border-slate-700 text-slate-300 hover:border-blue-500'
+                          : 'border-gray-200 text-gray-600 hover:border-blue-400'
                     }`}
                   >
                     {active ? '✓ ' : ''}
@@ -249,7 +249,7 @@ export default function StepTargetEditor({ step, isDark = false, editable = fals
                   aria-pressed
                   onClick={() => toggleDep(d)}
                   title="Remove this dependency"
-                  className="px-2 py-0.5 rounded-full border border-dashed border-indigo-400 text-[11px] font-mono text-indigo-500"
+                  className="px-2 py-0.5 rounded-full border border-dashed border-blue-400 text-[11px] font-mono text-blue-500"
                 >
                   {d} ✕
                 </button>

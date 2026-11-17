@@ -52,7 +52,7 @@ function ModeToggle({
         onClick={() => onChange('edit')}
         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
           mode === 'edit'
-            ? isDark ? 'bg-indigo-600 text-white shadow' : 'bg-indigo-600 text-white shadow'
+            ? isDark ? 'bg-blue-600 text-white shadow' : 'bg-blue-600 text-white shadow'
             : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
         }`}
       >
@@ -108,8 +108,8 @@ function EditableSection({
               onClick={onAdd}
               className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                 isDark 
-                  ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' 
-                  : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                  ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
               }`}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@ function EditableSection({
               onClick={() => setMobileEditActive(!mobileEditActive)}
               className={`md:hidden px-2 py-1 text-xs rounded transition-colors ${
                 mobileEditActive
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -289,7 +289,7 @@ export default function EditableDetailViewShowcase({ isDark }: EditableDetailVie
         {/* Comparison Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* === MODE 1: Toggle (External Control) === */}
-          <div className={`rounded-xl border-2 ${isDark ? 'border-indigo-500/30 bg-slate-800' : 'border-indigo-200 bg-white'} p-4`}>
+          <div className={`rounded-xl border-2 ${isDark ? 'border-blue-500/30 bg-slate-800' : 'border-blue-200 bg-white'} p-4`}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className={`text-lg font-semibold ${textClass}`}>Mode: Toggle</h2>
@@ -303,7 +303,7 @@ export default function EditableDetailViewShowcase({ isDark }: EditableDetailVie
             {/* Hint */}
             <div className={`mb-4 p-2 rounded text-xs ${
               editMode === 'edit' 
-                ? isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-700'
+                ? isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-50 text-blue-700'
                 : isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-600'
             }`}>
               {editMode === 'edit' 

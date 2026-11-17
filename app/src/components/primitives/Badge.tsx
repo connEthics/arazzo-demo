@@ -46,12 +46,12 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, { light: string; dark: string }> = {
   step: { 
-    light: 'bg-indigo-100 text-indigo-700 border-indigo-200', 
-    dark: 'bg-indigo-900/50 text-indigo-300 border-indigo-700' 
+    light: 'bg-blue-100 text-blue-700 border-blue-200', 
+    dark: 'bg-blue-900/50 text-blue-300 border-blue-700' 
   },
   source: { 
-    light: 'bg-purple-100 text-purple-700 border-purple-200', 
-    dark: 'bg-purple-900/50 text-purple-300 border-purple-700' 
+    light: 'bg-blue-100 text-blue-700 border-blue-200', 
+    dark: 'bg-blue-900/50 text-blue-300 border-blue-700' 
   },
   input: { 
     light: 'bg-emerald-100 text-emerald-700 border-emerald-200', 

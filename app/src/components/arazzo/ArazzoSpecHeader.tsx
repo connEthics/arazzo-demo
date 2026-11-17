@@ -61,7 +61,7 @@ function ArazzoSpecHeader({
     return (
       <div className="text-center">
         {showIcon && (
-          <div className={`${styles.icon} mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center print:hidden`}>
+          <div className={`${styles.icon} mx-auto mb-6 bg-ce-primary-solid rounded-2xl flex items-center justify-center print:hidden`}>
             <svg className={`${styles.iconSvg} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
@@ -114,7 +114,7 @@ function ArazzoSpecHeader({
       
       {/* Icon - hidden on mobile, visible on sm+ */}
       {showIcon && (
-        <div className={`hidden sm:flex flex-shrink-0 ${styles.icon} rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 items-center justify-center shadow-lg`}>
+        <div className={`hidden sm:flex flex-shrink-0 ${styles.icon} rounded-xl bg-ce-primary-solid items-center justify-center shadow-lg`}>
           <svg className={`${styles.iconSvg} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>

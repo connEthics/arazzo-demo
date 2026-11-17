@@ -84,8 +84,10 @@ function getTopologicalInfo(steps: Step[]): {
       if (a.type === 'goto' && a.stepId) link(step.stepId, a.stepId);
     });
     const next = steps[index + 1];
-    // A dependsOn on the previous step replaces the implicit sequence (as in the core graph model)
-    if (!unconditional && next && !next.dependsOn?.includes(step.stepId)) {
+    // As in the core graph model (UI-SPEC M3): a next step that declares dependsOn gets no
+    // implicit sequence; its explicit dependencies replace it (fan-out siblings stay parallel).
+    const nextHasDeps = !!next?.dependsOn?.some(dep => predecessors.has(dep) || dep.startsWith('$'));
+    if (!unconditional && next && !nextHasDeps) {
       sequenceEdges.push([step.stepId, next.stepId]);
       link(step.stepId, next.stepId);
     }

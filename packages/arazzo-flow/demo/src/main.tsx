@@ -9,6 +9,7 @@ import { parse as parseYaml } from 'yaml';
 import { parseArazzo, validate, type GraphNode } from '@connethics/arazzo-core';
 import {
   ArazzoGraphFromDocument,
+  operationLabel,
   createOpenApiResolver,
   type ArazzoGraphOptions,
   type DensityProp,
@@ -189,19 +190,12 @@ function App() {
                 </dd>
                 <dt>Workflow</dt>
                 <dd>{selected.info.workflowId}</dd>
-                {selected.node.step?.operationId ? (
+                {selected.node.step && operationLabel(selected.node.step) ? (
                   <>
-                    <dt>operationId</dt>
-                    <dd>
-                      <code>{selected.node.step.operationId}</code>
-                    </dd>
-                  </>
-                ) : null}
-                {selected.node.step?.method ? (
-                  <>
-                    <dt>Méthode</dt>
-                    <dd>
-                      {selected.node.step.method} <code>{selected.node.step.path}</code> ({selected.node.step.methodSource})
+                    <dt>Opération</dt>
+                    <dd title={selected.node.step.operationId ?? selected.node.step.operationPath}>
+                      <code>{operationLabel(selected.node.step)}</code>
+                      {selected.node.step.methodSource ? <span className="demo__muted"> ({selected.node.step.methodSource})</span> : null}
                     </dd>
                   </>
                 ) : null}

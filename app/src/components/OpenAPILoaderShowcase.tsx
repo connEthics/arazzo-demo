@@ -77,7 +77,7 @@ export default function OpenAPILoaderShowcase({ isDark }: OpenAPILoaderShowcaseP
           <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Loaded Specifications
             {loadedSpecs.length > 0 && (
-              <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
+              <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
                 {loadedSpecs.length}
               </span>
             )}
@@ -151,7 +151,7 @@ export default function OpenAPILoaderShowcase({ isDark }: OpenAPILoaderShowcaseP
       <div className="grid md:grid-cols-3 gap-4">
         <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
           <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             File Upload
@@ -187,16 +187,16 @@ export default function OpenAPILoaderShowcase({ isDark }: OpenAPILoaderShowcaseP
       </div>
 
       {/* Usage Note */}
-      <div className={`p-4 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+      <div className={`p-4 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h4 className={`font-semibold mb-1 ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+            <h4 className={`font-semibold mb-1 ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>
               Integration with Builder
             </h4>
-            <p className={`text-sm ${isDark ? 'text-indigo-200/80' : 'text-indigo-700'}`}>
+            <p className={`text-sm ${isDark ? 'text-blue-200/80' : 'text-blue-700'}`}>
               When integrated with the Builder, loaded specs become source descriptions 
               in the Arazzo spec. Operations from the OpenAPI spec can then be referenced 
               by steps in workflows.

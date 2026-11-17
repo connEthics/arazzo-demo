@@ -2,7 +2,7 @@ import { memo, type ReactNode } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import type { ViewEdge as GraphEdge, ViewNode as GraphNode } from '../model';
 import type { PlacedFrame, PlacedNode, Side } from '../layout/layout';
-import { badgeClass, formatTimeout, methodText, shortWorkflow, truncate, type Density } from '../format';
+import { badgeClass, formatTimeout, methodText, operationLabel, shortOperationId, shortWorkflow, truncate, type Density } from '../format';
 import type { Messages } from '../messages';
 import { isDimmed, useUi } from '../store';
 import {
@@ -187,8 +187,11 @@ function stepChips(n: GraphNode, out: GraphEdge[], m: Messages): ReactNode[] {
 function secondLine(n: GraphNode): ReactNode {
   switch (n.stepKind) {
     case 'async-send':
-    case 'async-receive':
-      return <span className="af-mono">{n.channel}</span>;
+    case 'async-receive': {
+      // Channel when known; otherwise, below a description, the operationId without its source prefix.
+      const text = n.channel ?? (n.summary && n.operationId ? shortOperationId(n.operationId) : undefined);
+      return text ? <span className="af-mono" title={n.channel ?? n.operationId}>{text}</span> : null;
+    }
     case 'workflow':
       return (
         <span className="af-mono">
@@ -198,13 +201,21 @@ function secondLine(n: GraphNode): ReactNode {
           ) : null}
         </span>
       );
-    default:
-      return n.path ? (
-        <span className="af-mono">{n.path}</span>
-      ) : (
-        <span className="af-mono af-muted">{n.operationId ? shortWorkflow(n.operationId) : ''}</span>
-      );
+    default: {
+      // With a description, the operation goes on the sub line; without one, it is already
+      // the main line (see `mainLine`) and is not repeated.
+      const op = n.summary ? operationLabel(n) : undefined;
+      return op ? <span className="af-mono" title={op}>{op}</span> : null;
+    }
   }
+}
+
+/** Main line: the description, otherwise the readable operation (`METHOD /path` or short operationId), otherwise nothing. */
+function mainLine(n: GraphNode): ReactNode {
+  if (n.summary) return n.summary;
+  if (n.stepKind === 'workflow') return null;
+  const op = operationLabel(n);
+  return op ? <span className="af-mono" title={op}>{op}</span> : null;
 }
 
 const accentOf = (n: GraphNode) =>
@@ -231,7 +242,7 @@ export const StepNode = memo(function StepNode({ id, data }: NodeProps<AfNode>) 
       </div>
       {density !== 'compact' && (
         <>
-          <div className="af-card__line">{n.summary ?? (n.operationId ? shortWorkflow(n.operationId) : ' ')}</div>
+          <div className="af-card__line">{mainLine(n) ?? ' '}</div>
           <div className="af-card__line af-card__line--sub">{secondLine(n)}</div>
           <div className="af-card__chips">{stepChips(n, outEdges, m)}</div>
         </>

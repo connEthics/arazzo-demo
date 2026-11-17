@@ -81,17 +81,7 @@ export default function ViewModeSelector({
             onMouseLeave={() => setShowTooltip(null)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
               mode === viewMode.id
-                ? viewMode.id === 'builder'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : viewMode.id === 'documentation'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : viewMode.id === 'flowchart'
-                      ? 'bg-sky-600 text-white shadow-sm'
-                      : viewMode.id === 'sequence'
-                        ? 'bg-violet-600 text-white shadow-sm'
-                        : isDark
-                          ? 'bg-slate-600 text-white shadow-sm'
-                          : 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-ce-primary-solid text-white shadow-sm'
                 : isDark
                   ? 'text-slate-400 hover:text-slate-300'
                   : 'text-slate-500 hover:text-slate-700'

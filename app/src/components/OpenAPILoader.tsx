@@ -169,8 +169,8 @@ export default function OpenAPILoader({
     flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-lg border-b-2 transition-all
     ${loadMethod === method
       ? isDark
-        ? 'border-indigo-500 text-indigo-400 bg-slate-800/50'
-        : 'border-indigo-500 text-indigo-600 bg-indigo-50'
+        ? 'border-blue-500 text-blue-400 bg-slate-800/50'
+        : 'border-blue-500 text-blue-600 bg-blue-50'
       : isDark
         ? 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -212,8 +212,8 @@ export default function OpenAPILoader({
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all ${
               dragActive
                 ? isDark
-                  ? 'border-indigo-500 bg-indigo-500/10'
-                  : 'border-indigo-400 bg-indigo-50'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-blue-400 bg-blue-50'
                 : isDark
                   ? 'border-slate-600 hover:border-slate-500'
                   : 'border-gray-300 hover:border-gray-400'
@@ -263,7 +263,7 @@ export default function OpenAPILoader({
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/openapi.yaml"
-                className={`flex-1 px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                className={`flex-1 px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   isDark
                     ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -275,7 +275,7 @@ export default function OpenAPILoader({
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   loading || !url.trim()
                     ? 'bg-slate-500 text-slate-300 cursor-not-allowed'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 {loading ? 'Loading...' : 'Load'}
@@ -303,15 +303,15 @@ export default function OpenAPILoader({
                       ? 'bg-slate-900/50 border-slate-700 text-slate-500'
                       : 'bg-gray-50 border-gray-200 text-gray-400'
                     : isDark
-                      ? 'bg-slate-900/50 border-slate-700 hover:border-indigo-500/50 text-white hover:bg-slate-900'
-                      : 'bg-gray-50 border-gray-200 hover:border-indigo-300 text-gray-900 hover:bg-indigo-50'
+                      ? 'bg-slate-900/50 border-slate-700 hover:border-blue-500/50 text-white hover:bg-slate-900'
+                      : 'bg-gray-50 border-gray-200 hover:border-blue-300 text-gray-900 hover:bg-blue-50'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'
+                    isDark ? 'bg-blue-500/20' : 'bg-blue-100'
                   }`}>
-                    <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>

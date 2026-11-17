@@ -122,10 +122,12 @@ Ce panneau est **redimensionnable** (320-600px via `ResizableInspectorPanel`) et
 
 Cohérence visuelle stricte maintenue à travers toutes les vues.
 
+**Accents d'interface** (bouton ou onglet actif, sélection, anneau de focus, liens, boutons principaux) : primaire ConnEthics uniquement, `bg-ce-primary-solid` / `text-ce-primary` (`--ce-primary`, bleu `#2563eb`) ou l'échelle `blue-*` quand le composant gère lui-même le clair et le sombre. Le violet, le pourpre et l'indigo sont réservés aux usages sémantiques de ce tableau et des palettes catégorielles : sorties, sous-workflows et sources `arazzo`, flux de données et `dependsOn`, méthode PATCH, emplacement `path`, catégorie MCP, types d'expressions.
+
 | Type | Couleur | Code Tailwind | Badge Variant | Signification |
 |:-----|:--------|:--------------|:--------------|:--------------|
 | **Input** | Vert Émeraude | `emerald-500` | `input` | Entrées du workflow |
-| **Step** | Bleu Indigo | `indigo-500` | `step` | Étape d'exécution |
+| **Step** | Bleu ConnEthics | `blue-500` / `--ce-primary` | `step` | Étape d'exécution |
 | **Output** | Violet | `violet-500` | `output` | Sorties finales |
 | **Success** | Vert | `green-500` | `success` | Action onSuccess |
 | **Failure** | Rouge | `red-500` | `failure` | Action onFailure |
@@ -328,7 +330,7 @@ L'`ExpressionInput` fournit :
 
 - **Types** :
   - `WorkflowInput` : Point d'entrée du workflow (vert émeraude).
-  - `StepNode` (`UnifiedStepNode`) : Représente une étape d'opération (bleu indigo).
+  - `StepNode` (`UnifiedStepNode`) : Représente une étape d'opération (bleu ConnEthics).
   - `WorkflowOutput` : Sorties finales du workflow (violet).
 - **États** : Sélectionné, Erreur (lien invalide), Étendu/Réduit (détails des ports).
 

@@ -109,7 +109,11 @@ workflowToGraph(doc, workflowId, {
 
 - **Nœuds** : `input`, `step-http`, `step-async-send`, `step-async-receive`, `step-workflow`, `join` (`dependsOn` à ≥ 2 dépendances), `output` (terminal de succès quand le workflow a des `outputs`), `end-success`, `end-failure`, `workflow-ref` (cible d'un `goto workflowId`, d'une étape workflow ou d'un `dependsOn` inter-workflow).
 - **Arêtes** : `sequence`, `success-goto`, `failure-goto`, `retry` (boucle avec `retryLimit`, défaut 1, et `retryAfter` ; plus une arête `via: true` vers l'étape ou le workflow exécuté avant de rejouer), `end` (`outcome` succès/échec), `depends-on`, `workflow-call`. Chaque arête porte `criteria`, `conditional` et l'action d'origine (nom, `origin: 'step' | 'workflow'`, `component` si elle vient de `$components`).
-- **Séquence implicite** : supprimée seulement par une action de succès **inconditionnelle**. Vers une étape qui dépend (`dependsOn`) de la précédente, c'est l'arête `depends-on` qui remplace la séquence.
+- **Séquence implicite** (arête `sequence` d'une étape vers la suivante du tableau, ou vers le terminal de succès après la dernière) :
+  - une étape **sans** `dependsOn` la reçoit de l'étape précédente ;
+  - une action de succès **inconditionnelle** (`goto` ou `end`) la supprime ; une action conditionnelle la laisse en place ;
+  - dès qu'une étape déclare `dependsOn`, ses dépendances explicites (arêtes `depends-on`, avec jonction à partir de deux) **remplacent** la séquence entrante, que l'étape précédente soit l'une d'elles ou non. Côté sortant, une étape n'émet donc pas de séquence vers une étape suivante qui déclare `dependsOn` sans la référencer. Deux étapes qui dépendent de la même étape restent ainsi **en parallèle** (éventail facture / expédition de l'exemple order-to-cash) ;
+  - exception : si aucune entrée de `dependsOn` n'est résolue (document invalide, signalé par la validation), la séquence est conservée pour ne pas isoler l'étape.
 - **Groupes** : un couloir par `sourceDescription` utilisée (ordre du document), un couloir neutre `lane:workflow` (entrées, sorties, fins, jonctions) et `lane:unknown` si la source d'une étape est indéterminable.
 - **Méthode HTTP** : lue dans `operationPath` (`…/paths/~1pets/get` → `GET /pets`) ou fournie par `resolveOperation`. Elle n'est **jamais devinée** depuis l'`operationId`.
 

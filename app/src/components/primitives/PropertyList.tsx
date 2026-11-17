@@ -24,7 +24,7 @@ function PropertyList({
   items, 
   isDark, 
   variant = 'compact',
-  borderColor = 'border-indigo-400',
+  borderColor = 'border-blue-400',
   maxItems = 5,
   className = '',
   forceExpanded

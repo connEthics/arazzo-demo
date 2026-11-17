@@ -93,7 +93,7 @@ export default function SchemaEditor({
                     e.currentTarget.blur();
                   }
                 }}
-                className={`w-full px-2 py-1.5 text-sm rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                className={`w-full px-2 py-1.5 text-sm rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                 placeholder="property_name"
               />
             </div>
@@ -103,7 +103,7 @@ export default function SchemaEditor({
               <select
                 value={schema.type || 'string'}
                 onChange={(e) => handleChange('type', e.target.value)}
-                className={`w-full px-2 py-1.5 text-sm rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                className={`w-full px-2 py-1.5 text-sm rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
               >
                 {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -115,7 +115,7 @@ export default function SchemaEditor({
                   type="checkbox"
                   checked={required}
                   onChange={(e) => onChange(name, schema, e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className={`text-sm font-medium ${textClass}`}>Required</span>
               </label>
@@ -128,7 +128,7 @@ export default function SchemaEditor({
               type="text"
               value={schema.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
-              className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} placeholder-opacity-50 focus:ring-1 focus:ring-indigo-500 outline-none`}
+              className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} placeholder-opacity-50 focus:ring-1 focus:ring-blue-500 outline-none`}
               placeholder="Description..."
             />
           </div>
@@ -136,7 +136,7 @@ export default function SchemaEditor({
           {/* Advanced Details Toggle */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className={`flex items-center gap-1 text-xs font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'} hover:underline`}
+            className={`flex items-center gap-1 text-xs font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'} hover:underline`}
           >
             {isExpanded ? 'Hide Details' : 'Show Details (Default, Enum, Validation)'}
             <svg className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +163,7 @@ export default function SchemaEditor({
                     if (val === '') parsed = undefined;
                     handleChange('default', parsed);
                   }}
-                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                   placeholder="Default value"
                 />
               </div>
@@ -175,7 +175,7 @@ export default function SchemaEditor({
                   type="text"
                   value={schema.example !== undefined ? String(schema.example) : ''}
                   onChange={(e) => handleChange('example', e.target.value)}
-                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                   placeholder="Example value"
                 />
               </div>
@@ -187,7 +187,7 @@ export default function SchemaEditor({
                   type="text"
                   value={schema.enum ? schema.enum.join(', ') : ''}
                   onChange={(e) => handleEnumChange(e.target.value)}
-                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                  className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                   placeholder="available, pending, sold"
                 />
               </div>
@@ -201,7 +201,7 @@ export default function SchemaEditor({
                       type="number"
                       value={schema.minimum ?? ''}
                       onChange={(e) => handleChange('minimum', e.target.value ? Number(e.target.value) : undefined)}
-                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                     />
                   </div>
                   <div>
@@ -210,7 +210,7 @@ export default function SchemaEditor({
                       type="number"
                       value={schema.maximum ?? ''}
                       onChange={(e) => handleChange('maximum', e.target.value ? Number(e.target.value) : undefined)}
-                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                     />
                   </div>
                 </>
@@ -225,7 +225,7 @@ export default function SchemaEditor({
                       type="number"
                       value={schema.minLength ?? ''}
                       onChange={(e) => handleChange('minLength', e.target.value ? Number(e.target.value) : undefined)}
-                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                     />
                   </div>
                   <div>
@@ -234,7 +234,7 @@ export default function SchemaEditor({
                       type="number"
                       value={schema.maxLength ?? ''}
                       onChange={(e) => handleChange('maxLength', e.target.value ? Number(e.target.value) : undefined)}
-                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500 outline-none`}
+                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500 outline-none`}
                     />
                   </div>
                   <div className="col-span-full">
@@ -243,7 +243,7 @@ export default function SchemaEditor({
                       type="text"
                       value={schema.pattern ?? ''}
                       onChange={(e) => handleChange('pattern', e.target.value)}
-                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} font-mono focus:ring-1 focus:ring-indigo-500 outline-none`}
+                      className={`w-full px-2 py-1.5 text-xs rounded border ${inputBgClass} ${inputBorderClass} ${textClass} font-mono focus:ring-1 focus:ring-blue-500 outline-none`}
                       placeholder="^[a-z]+$"
                     />
                   </div>

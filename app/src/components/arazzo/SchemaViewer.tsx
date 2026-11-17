@@ -174,7 +174,7 @@ export default function SchemaViewer({
 
             {/* Nested Properties (Object) */}
             {isObject && (
-              <div className="mt-3 pl-3 border-l-2 border-indigo-400/30 space-y-3">
+              <div className="mt-3 pl-3 border-l-2 border-blue-400/30 space-y-3">
                 <span className={`text-xs font-semibold uppercase ${mutedClass} tracking-wider`}>Properties</span>
                 {Object.entries(schema.properties ?? {}).map(([propName, propSchema]) => (
                   <SchemaViewer

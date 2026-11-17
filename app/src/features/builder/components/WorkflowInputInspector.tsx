@@ -163,7 +163,7 @@ export default function WorkflowInputInspector({ readOnly = false }: WorkflowInp
                         onClick={() => handleToggleRequired(input.name)}
                         className={`p-1 rounded text-xs transition-colors ${
                           input.required 
-                            ? 'text-indigo-600 hover:bg-indigo-50' 
+                            ? 'text-blue-600 hover:bg-blue-50' 
                             : 'text-slate-400 hover:bg-slate-100'
                         }`}
                         title={input.required ? 'Make optional' : 'Make required'}

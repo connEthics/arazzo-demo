@@ -120,7 +120,7 @@ export default function WorkflowOutputInspector({ readOnly = false }: WorkflowOu
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-indigo-500 to-indigo-600">
+      <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-ce-primary-solid">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +129,7 @@ export default function WorkflowOutputInspector({ readOnly = false }: WorkflowOu
           </div>
           <div>
             <h2 className="font-semibold text-white text-sm">Workflow Outputs</h2>
-            <p className="text-indigo-100 text-xs">{workflow?.workflowId}</p>
+            <p className="text-blue-100 text-xs">{workflow?.workflowId}</p>
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function WorkflowOutputInspector({ readOnly = false }: WorkflowOu
               <button
                 onClick={handleAddOutput}
                 disabled={!newOutputName.trim() || !newOutputValue.trim()}
-                className="w-full px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Output
               </button>
@@ -248,7 +248,7 @@ export default function WorkflowOutputInspector({ readOnly = false }: WorkflowOu
                     className={`w-full text-left px-2 py-1.5 text-xs rounded border transition-colors ${
                       isAlreadyUsed
                         ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                     }`}
                   >
                     <div className="flex items-center justify-between">

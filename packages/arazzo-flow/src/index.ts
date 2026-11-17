@@ -21,7 +21,7 @@ export { resolveTheme, readVsCodeThemeKind } from './theme';
 export type { ThemeProp, ResolvedTheme, VsCodeThemeKind } from './theme';
 export { fr, en } from './messages';
 export type { Messages } from './messages';
-export { formatTimeout, nodeSize, edgeLabelText, ariaLabelFor, NODE_WIDTH, HEIGHTS } from './format';
+export { formatTimeout, nodeSize, edgeLabelText, ariaLabelFor, operationLabel, shortOperationId, NODE_WIDTH, HEIGHTS } from './format';
 export type { Density, Direction } from './format';
 export { EDGE_KINDS } from './model';
 export type { ViewGraph, ViewNode, ViewEdge, ViewGroup, EdgeKind, NodeKind, StepKind, PortId } from './model';

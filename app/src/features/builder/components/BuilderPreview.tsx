@@ -79,7 +79,7 @@ export default function BuilderPreview() {
             onClick={() => setViewMode('flowchart')}
             className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               viewMode === 'flowchart'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -89,7 +89,7 @@ export default function BuilderPreview() {
             onClick={() => setViewMode('sequence')}
             className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               viewMode === 'sequence'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -99,7 +99,7 @@ export default function BuilderPreview() {
             onClick={() => setViewMode('yaml')}
             className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               viewMode === 'yaml'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >

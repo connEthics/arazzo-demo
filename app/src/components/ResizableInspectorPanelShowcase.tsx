@@ -60,7 +60,7 @@ export default function ResizableInspectorPanelShowcase({ isDark }: ResizableIns
           onClick={() => { setIsOpen(!isOpen); addLog(`Panel ${!isOpen ? 'opened' : 'closed'}`); }}
           className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
             isOpen
-              ? 'bg-indigo-600 text-white'
+              ? 'bg-blue-600 text-white'
               : isDark
                 ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -76,7 +76,7 @@ export default function ResizableInspectorPanelShowcase({ isDark }: ResizableIns
             onClick={() => { setPosition('left'); addLog('Position: left'); }}
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
               position === 'left'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -88,7 +88,7 @@ export default function ResizableInspectorPanelShowcase({ isDark }: ResizableIns
             onClick={() => { setPosition('right'); addLog('Position: right'); }}
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
               position === 'right'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -214,19 +214,19 @@ export default function ResizableInspectorPanelShowcase({ isDark }: ResizableIns
             <tbody className="font-mono text-xs">
               <tr className={`border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                 <td className="py-2 pr-4">defaultWidth</td>
-                <td className="py-2 pr-4 text-indigo-400">number</td>
+                <td className="py-2 pr-4 text-blue-400">number</td>
                 <td className="py-2 pr-4">384</td>
                 <td className="py-2 font-sans">Initial width in pixels</td>
               </tr>
               <tr className={`border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                 <td className="py-2 pr-4">minWidth</td>
-                <td className="py-2 pr-4 text-indigo-400">number</td>
+                <td className="py-2 pr-4 text-blue-400">number</td>
                 <td className="py-2 pr-4">280</td>
                 <td className="py-2 font-sans">Minimum allowed width</td>
               </tr>
               <tr className={`border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                 <td className="py-2 pr-4">maxWidth</td>
-                <td className="py-2 pr-4 text-indigo-400">number</td>
+                <td className="py-2 pr-4 text-blue-400">number</td>
                 <td className="py-2 pr-4">600</td>
                 <td className="py-2 font-sans">Maximum allowed width</td>
               </tr>

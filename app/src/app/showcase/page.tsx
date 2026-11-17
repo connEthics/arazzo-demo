@@ -194,7 +194,7 @@ function ComponentShowcase({ title, description, children, code, isDark }: Compo
             <button
               onClick={() => setShowCode(!showCode)}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showCode
-                ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
+                ? (isDark ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700')
                 : (isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
                 }`}
             >
@@ -224,7 +224,7 @@ function ComponentShowcase({ title, description, children, code, isDark }: Compo
 // Badge variants showcase
 function BadgeShowcase({ isDark }: { isDark: boolean }) {
   const variants = [
-    { label: 'Step', bg: 'bg-indigo-100', text: 'text-indigo-700', darkBg: 'bg-indigo-900/50', darkText: 'text-indigo-300' },
+    { label: 'Step', bg: 'bg-blue-100', text: 'text-blue-700', darkBg: 'bg-blue-900/50', darkText: 'text-blue-300' },
     { label: 'Source', bg: 'bg-blue-100', text: 'text-blue-700', darkBg: 'bg-blue-900/50', darkText: 'text-blue-300' },
     { label: 'Input', bg: 'bg-emerald-100', text: 'text-emerald-700', darkBg: 'bg-emerald-900/50', darkText: 'text-emerald-300' },
     { label: 'Output', bg: 'bg-amber-100', text: 'text-amber-700', darkBg: 'bg-amber-900/50', darkText: 'text-amber-300' },
@@ -253,7 +253,7 @@ function ButtonShowcase({ isDark }: { isDark: boolean }) {
     <div className="space-y-4">
       {/* Primary buttons */}
       <div className="flex flex-wrap gap-2">
-        <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
           Primary
         </button>
         <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors">
@@ -314,7 +314,7 @@ function InputShowcase({ isDark }: { isDark: boolean }) {
         <input
           type="text"
           placeholder="Enter value..."
-          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark
+          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark
             ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500'
             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
             }`}
@@ -327,7 +327,7 @@ function InputShowcase({ isDark }: { isDark: boolean }) {
           Select
         </label>
         <select
-          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark
+          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark
             ? 'bg-slate-800 border-slate-600 text-white'
             : 'bg-white border-gray-300 text-gray-900'
             }`}
@@ -343,7 +343,7 @@ function InputShowcase({ isDark }: { isDark: boolean }) {
         <input
           type="checkbox"
           id="checkbox-demo"
-          className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
         <label htmlFor="checkbox-demo" className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
           Checkbox option
@@ -377,7 +377,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
       </div>
 
       {/* Card with border accent */}
-      <div className={`p-4 rounded-lg border-l-4 border-l-indigo-500 ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`p-4 rounded-lg border-l-4 border-l-blue-500 ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
         <h4 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Accent Border</h4>
         <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           Card with a colored left border accent.
@@ -385,7 +385,7 @@ function CardShowcase({ isDark }: { isDark: boolean }) {
       </div>
 
       {/* Interactive card */}
-      <div className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-lg ${isDark ? 'border-slate-700 bg-slate-800 hover:border-indigo-500' : 'border-gray-200 bg-white hover:border-indigo-300'}`}>
+      <div className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-lg ${isDark ? 'border-slate-700 bg-slate-800 hover:border-blue-500' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
         <h4 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Interactive Card</h4>
         <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           Hover over me for effect.
@@ -558,7 +558,7 @@ function ShowcaseContent() {
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
-                    ? (isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700')
+                    ? (isDark ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700')
                     : (isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
                     }`}
                 >
@@ -685,8 +685,8 @@ function ShowcaseContent() {
 
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'}`}>
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mb-3">
-                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mb-3">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                       </svg>
                     </div>
@@ -822,7 +822,7 @@ function ShowcaseContent() {
                       isDark={isDark}
                       collapsible={true}
                       icon={
-                        <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                       }
@@ -1239,7 +1239,7 @@ function ShowcaseContent() {
                 title="Badges"
                 description="Status indicators and labels used throughout the application"
                 isDark={isDark}
-                code={`<span className="px-2 py-1 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
+                code={`<span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-700">
   Step
 </span>`}
               >
@@ -1253,7 +1253,7 @@ function ShowcaseContent() {
                 title="Buttons"
                 description="Various button styles and variants"
                 isDark={isDark}
-                code={`<button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+                code={`<button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
   Primary Button
 </button>`}
               >
@@ -1338,7 +1338,7 @@ function ShowcaseContent() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setDetailData({ type: 'step', step: sampleStep, sourceForStep: sampleSource })}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium transition-colors"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors"
                     >
                       Show Step Details
                     </button>
@@ -1501,7 +1501,7 @@ function ShowcaseContent() {
       {/* Footer */}
       <footer className={`flex-shrink-0 py-3 px-6 text-center text-xs border-t ${isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'}`}>
         Arazzo Builder Component Showcase • Made with ❤️ by{' '}
-        <a href="https://connethics.com" className="text-indigo-500 hover:underline">connethics.com</a>
+        <a href="https://connethics.com" className="text-blue-500 hover:underline">connethics.com</a>
       </footer>
     </div>
   );

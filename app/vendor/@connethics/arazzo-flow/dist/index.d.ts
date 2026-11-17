@@ -272,6 +272,19 @@ type Density = 'compact' | 'standard' | 'detailed';
 type Direction = 'TB' | 'LR';
 /** 6000 → « 6 s », 1500 → « 1,5 s », 250 → « 250 ms ». */
 declare function formatTimeout(ms: number, lang?: 'fr' | 'en'): string;
+/** `$sourceDescriptions.commerce.createInvoice` → `createInvoice` (the source is shown elsewhere). */
+declare function shortOperationId(id: string): string;
+/**
+ * Readable operation of a step, for the node's secondary line and detail panels:
+ * `METHOD /path` when the operation is resolved (operationPath or OpenAPI), otherwise the
+ * operationId without its `$sourceDescriptions.<source>.` prefix, otherwise nothing.
+ */
+declare function operationLabel(n: {
+    method?: string;
+    methodSource?: string;
+    path?: string;
+    operationId?: string;
+}): string | undefined;
 /** Edge label (chip). Runtime expressions are kept verbatim. */
 declare function edgeLabelText(e: ViewEdge, density: Density, lang?: 'fr' | 'en'): string;
 declare const NODE_WIDTH: {
@@ -347,6 +360,16 @@ interface PlacedEdge {
         x: number;
         y: number;
     }[];
+    /**
+     * Arête qui entre dans un sous-workflow déplié : elle se termine sur le port d'entrée du
+     * groupe (bord du cadre, hors de l'en-tête) et non sur la première étape. Point absolu.
+     */
+    entry?: {
+        groupId: string;
+        x: number;
+        y: number;
+        side: Side;
+    };
     label?: {
         text: string;
         x: number;
@@ -387,6 +410,7 @@ declare function buildElkGraph(g: ViewGraph, o: LayoutOptions): {
     root: ElkNode;
     containers: Set<string>;
     labelTexts: Record<string, string>;
+    entries: Record<string, string>;
 };
 declare function computeLayout(g: ViewGraph, o: LayoutOptions, elk?: ElkConfig): Promise<LayoutResult>;
 
@@ -643,4 +667,4 @@ declare function visibleGraph(g: ViewGraph, o: VisibilityOptions): ViewGraph;
  */
 declare function createOpenApiResolver(sources: Record<string, unknown>): (step: Step, source: SourceDescription | undefined) => OperationInfo | undefined;
 
-export { type AdaptOptions, ArazzoGraph, type ArazzoGraphApi, ArazzoGraphFromDocument, type ArazzoGraphFromDocumentProps, type ArazzoGraphOptions, type ArazzoGraphProps, type Density, type DensityProp, type Direction, EDGE_KINDS, ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, type EdgeKind, type ElkConfig, type ElkMode, type ExportEvent, type ExportFormat, HEIGHTS, type LanesMode, type LayoutEngine, type LayoutOptions, type LayoutResult, type LayoutStats, type MermaidExportOptions, type Messages, NODE_WIDTH, type NodeKind, PORT_SIDES, type PlacedEdge, type PlacedFrame, type PlacedNode, type PortId, type ResolvedTheme, type SelectionInfo, type StepKind, type ThemeProp, type ViewEdge, type ViewGraph, type ViewGroup, type ViewNode, type VsCodeThemeKind, ariaLabelFor, buildElkGraph, computeLayout, createOpenApiResolver, dataUrlToBlob, diagnosticsByNode, downloadBlob, edgeLabelText, elkMode, en, exportImage, formatTimeout, fr, nodeSize, prewarmElk, readVsCodeThemeKind, resetElk, resolveTheme, runElk, structureKey, thoroughnessFor, toMermaid, toViewGraph, visibleGraph };
+export { type AdaptOptions, ArazzoGraph, type ArazzoGraphApi, ArazzoGraphFromDocument, type ArazzoGraphFromDocumentProps, type ArazzoGraphOptions, type ArazzoGraphProps, type Density, type DensityProp, type Direction, EDGE_KINDS, ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, type EdgeKind, type ElkConfig, type ElkMode, type ExportEvent, type ExportFormat, HEIGHTS, type LanesMode, type LayoutEngine, type LayoutOptions, type LayoutResult, type LayoutStats, type MermaidExportOptions, type Messages, NODE_WIDTH, type NodeKind, PORT_SIDES, type PlacedEdge, type PlacedFrame, type PlacedNode, type PortId, type ResolvedTheme, type SelectionInfo, type StepKind, type ThemeProp, type ViewEdge, type ViewGraph, type ViewGroup, type ViewNode, type VsCodeThemeKind, ariaLabelFor, buildElkGraph, computeLayout, createOpenApiResolver, dataUrlToBlob, diagnosticsByNode, downloadBlob, edgeLabelText, elkMode, en, exportImage, formatTimeout, fr, nodeSize, operationLabel, prewarmElk, readVsCodeThemeKind, resetElk, resolveTheme, runElk, shortOperationId, structureKey, thoroughnessFor, toMermaid, toViewGraph, visibleGraph };

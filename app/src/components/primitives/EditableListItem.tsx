@@ -166,7 +166,7 @@ export default function EditableListItem(props: EditableListItemProps) {
               type="checkbox"
               checked={item.required || false}
               onChange={(e) => onChange({ ...item, required: e.target.checked })}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               title="Required"
             />
           </div>
@@ -195,7 +195,7 @@ export default function EditableListItem(props: EditableListItemProps) {
                   setEditingField(null);
                 }
               }}
-              className={`w-full px-1.5 py-0.5 text-xs font-medium rounded border outline-none ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500`}
+              className={`w-full px-1.5 py-0.5 text-xs font-medium rounded border outline-none ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500`}
               autoFocus
             />
           ) : (
@@ -301,7 +301,7 @@ export default function EditableListItem(props: EditableListItemProps) {
                   setEditingField(null);
                 }
               }}
-              className={`w-full px-1.5 py-0.5 text-xs font-medium rounded border outline-none ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-indigo-500`}
+              className={`w-full px-1.5 py-0.5 text-xs font-medium rounded border outline-none ${inputBgClass} ${inputBorderClass} ${textClass} focus:ring-1 focus:ring-blue-500`}
               autoFocus
             />
           ) : (

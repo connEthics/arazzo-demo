@@ -48,7 +48,7 @@ export default function Inspector({ readOnly = false }: InspectorProps) {
               <span>STEP - API operations</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-indigo-500" />
+              <div className="w-3 h-3 rounded bg-blue-500" />
               <span>OUTPUT - Workflow outputs</span>
             </div>
           </div>

@@ -117,7 +117,7 @@ export default function ActionFormEditor({
         headerActions={!readOnly && !showAddForm && (
           <button
             onClick={handleAdd}
-            className={`text-xs font-medium ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+            className={`text-xs font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
           >
             + Add Action
           </button>
@@ -126,8 +126,8 @@ export default function ActionFormEditor({
 
       {/* Add/Edit Form */}
       {showAddForm && (
-        <div className={`p-4 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
-          <h5 className={`text-xs font-semibold uppercase mb-3 ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>
+        <div className={`p-4 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
+          <h5 className={`text-xs font-semibold uppercase mb-3 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
             {editingIndex !== null ? 'Edit Action' : 'Add Action'}
           </h5>
 
@@ -143,7 +143,7 @@ export default function ActionFormEditor({
                   onClick={() => setFormData({ ...formData, type, stepId: undefined, workflowId: undefined, retryAfter: undefined, retryLimit: undefined })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     formData.type === type
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-blue-600 text-white'
                       : isDark
                         ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                         : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'
@@ -264,7 +264,7 @@ export default function ActionFormEditor({
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                 formData.type === 'goto' && !formData.stepId && !formData.workflowId
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
               }`}
             >
               {editingIndex !== null ? 'Update' : 'Add'}

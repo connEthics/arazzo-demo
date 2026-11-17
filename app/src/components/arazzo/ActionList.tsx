@@ -83,8 +83,8 @@ function ActionList({
                     className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                       onStepClick 
                         ? isDark 
-                          ? 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-800/50 cursor-pointer' 
-                          : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer'
+                          ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50 cursor-pointer' 
+                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
                         : isDark
                           ? 'bg-slate-700 text-slate-300'
                           : 'bg-gray-200 text-gray-600'

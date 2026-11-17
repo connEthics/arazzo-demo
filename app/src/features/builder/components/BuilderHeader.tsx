@@ -60,10 +60,10 @@ interface BuilderHeaderProps {
 }
 
 const VIEW_MODES = [
-  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon, color: 'bg-blue-600', shadow: 'shadow-blue-900/20' },
-  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon, color: 'bg-emerald-600', shadow: 'shadow-emerald-900/20' },
-  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon, color: 'bg-purple-600', shadow: 'shadow-purple-900/20' },
-  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon, color: 'bg-indigo-600', shadow: 'shadow-indigo-900/20' },
+  { id: 'documentation' as const, label: 'Documentation', icon: DocumentationIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'flowchart' as const, label: 'Flowchart', icon: FlowchartIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'sequence' as const, label: 'Sequence', icon: SequenceIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
+  { id: 'builder' as const, label: 'Builder', icon: BuilderIcon, color: 'bg-ce-primary-solid', shadow: 'shadow-blue-900/20' },
 ];
 
 function BuilderHeader({
@@ -185,7 +185,7 @@ function BuilderHeader({
                 type="checkbox"
                 checked={hideOutputs}
                 onChange={(e) => onHideOutputsChange(e.target.checked)}
-                className="w-3 h-3 rounded border-gray-300 text-indigo-600"
+                className="w-3 h-3 rounded border-gray-300 text-blue-600"
               />
               Hide outputs
             </label>
@@ -194,7 +194,7 @@ function BuilderHeader({
                 type="checkbox"
                 checked={showStepNames}
                 onChange={(e) => onShowStepNamesChange(e.target.checked)}
-                className="w-3 h-3 rounded border-gray-300 text-indigo-600"
+                className="w-3 h-3 rounded border-gray-300 text-blue-600"
               />
               Show steps
             </label>
@@ -206,7 +206,7 @@ function BuilderHeader({
               type="checkbox"
               checked={!showErrorFlow}
               onChange={(e) => onShowErrorFlowChange(!e.target.checked)}
-              className="w-3 h-3 rounded border-gray-300 text-indigo-600"
+              className="w-3 h-3 rounded border-gray-300 text-blue-600"
             />
             Hide errors
           </label>
@@ -229,7 +229,7 @@ function BuilderHeader({
           <button
             onClick={onToggleLeftPanel}
             className={`p-1.5 rounded-lg text-xs transition-colors ${showLeftPanel
-              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300'
               : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
               }`}
             title={showLeftPanel ? 'Hide left panel' : 'Show left panel'}
@@ -239,7 +239,7 @@ function BuilderHeader({
           <button
             onClick={onToggleRightPanel}
             className={`p-1.5 rounded-lg text-xs transition-colors ${showRightPanel
-              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300'
               : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'
               }`}
             title={showRightPanel ? 'Hide inspector' : 'Show inspector'}
@@ -254,21 +254,21 @@ function BuilderHeader({
         <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800/50">
           <button
             onClick={() => onMobilePanelChange('left')}
-            className={`p-2 ${mobilePanel === 'left' ? 'bg-indigo-600 text-white' : ''}`}
+            className={`p-2 ${mobilePanel === 'left' ? 'bg-blue-600 text-white' : ''}`}
             aria-label="Left panel"
           >
             <OperationsIcon />
           </button>
           <button
             onClick={() => onMobilePanelChange('center')}
-            className={`p-2 ${mobilePanel === 'center' ? 'bg-indigo-600 text-white' : ''}`}
+            className={`p-2 ${mobilePanel === 'center' ? 'bg-blue-600 text-white' : ''}`}
             aria-label="Center panel"
           >
             {getMobileIcon()}
           </button>
           <button
             onClick={() => onMobilePanelChange('right')}
-            className={`p-2 ${mobilePanel === 'right' ? 'bg-indigo-600 text-white' : ''}`}
+            className={`p-2 ${mobilePanel === 'right' ? 'bg-blue-600 text-white' : ''}`}
             aria-label="Right panel"
           >
             <InspectorIcon />

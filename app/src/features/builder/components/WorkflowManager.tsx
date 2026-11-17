@@ -81,7 +81,7 @@ export default function WorkflowManager({ selectedWorkflowIndex, onWorkflowChang
         {/* Main Selector / Input Area */}
         <div
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isCreating || isRenaming
-            ? 'border-indigo-500 ring-1 ring-indigo-500 bg-white dark:bg-slate-800'
+            ? 'border-blue-500 ring-1 ring-blue-500 bg-white dark:bg-slate-800'
             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           style={{ minWidth: '200px' }}
@@ -196,7 +196,7 @@ export default function WorkflowManager({ selectedWorkflowIndex, onWorkflowChang
                 <div
                   key={wf.workflowId}
                   className={`w-full flex items-center justify-between p-1 rounded-lg transition-colors group/item ${selectedWorkflowIndex === idx
-                    ? 'bg-indigo-50 dark:bg-indigo-900/40'
+                    ? 'bg-blue-50 dark:bg-blue-900/40'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                 >
@@ -206,7 +206,7 @@ export default function WorkflowManager({ selectedWorkflowIndex, onWorkflowChang
                       setIsOpen(false);
                     }}
                     className={`flex-1 flex items-center justify-between px-2 py-1.5 text-sm transition-colors min-w-0 ${selectedWorkflowIndex === idx
-                      ? 'text-indigo-600 dark:text-indigo-400 font-medium'
+                      ? 'text-blue-600 dark:text-blue-400 font-medium'
                       : 'text-slate-600 dark:text-slate-400'
                       }`}
                   >

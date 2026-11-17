@@ -24,6 +24,22 @@ export function shortWorkflow(id: string): string {
   return m ? m[2]! : id;
 }
 
+/** `$sourceDescriptions.commerce.createInvoice` → `createInvoice` (the source is shown elsewhere). */
+export function shortOperationId(id: string): string {
+  return id.replace(/^\$sourceDescriptions\.[^.]+\./, '');
+}
+
+/**
+ * Readable operation of a step, for the node's secondary line and detail panels:
+ * `METHOD /path` when the operation is resolved (operationPath or OpenAPI), otherwise the
+ * operationId without its `$sourceDescriptions.<source>.` prefix, otherwise nothing.
+ */
+export function operationLabel(n: { method?: string; methodSource?: string; path?: string; operationId?: string }): string | undefined {
+  if (n.method && n.path && n.methodSource !== 'unresolved') return `${n.method} ${n.path}`;
+  if (n.operationId) return shortOperationId(n.operationId) || undefined;
+  return undefined;
+}
+
 /** Edge label (chip). Runtime expressions are kept verbatim. */
 export function edgeLabelText(e: ViewEdge, density: Density, lang: 'fr' | 'en' = 'fr'): string {
   const crit = e.criteria?.[0]?.condition;

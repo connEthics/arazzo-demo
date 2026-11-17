@@ -222,8 +222,8 @@ export default function StepInspector({
       <div className={`flex-shrink-0 px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-100'}`}>
-              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-blue-600/20' : 'bg-blue-100'}`}>
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -258,8 +258,8 @@ export default function StepInspector({
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? isDark
-                      ? 'bg-indigo-600/20 text-indigo-300'
-                      : 'bg-indigo-100 text-indigo-700'
+                      ? 'bg-blue-600/20 text-blue-300'
+                      : 'bg-blue-100 text-blue-700'
                     : isDark
                       ? 'text-slate-400 hover:text-white hover:bg-slate-800'
                       : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -269,7 +269,7 @@ export default function StepInspector({
                 {tab.count !== undefined && tab.count > 0 && (
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${
                     activeTab === tab.id
-                      ? isDark ? 'bg-indigo-500/30' : 'bg-indigo-200'
+                      ? isDark ? 'bg-blue-500/30' : 'bg-blue-200'
                       : isDark ? 'bg-slate-700' : 'bg-gray-200'
                   }`}>
                     {tab.count}
@@ -376,7 +376,7 @@ export default function StepInspector({
                 {!readOnly && !showAddOutput && expandedSections.has('outputs') && (
                   <button
                     onClick={() => setShowAddOutput(true)}
-                    className={`text-xs ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+                    className={`text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                   >
                     + Add
                   </button>
@@ -425,7 +425,7 @@ export default function StepInspector({
                   
                   {/* Add output form */}
                   {showAddOutput && (
-                    <div className={`p-3 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+                    <div className={`p-3 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
                       <div className="space-y-3">
                         <input
                           type="text"
@@ -448,7 +448,7 @@ export default function StepInspector({
                           <button
                             onClick={handleAddOutput}
                             disabled={!newOutput.name || !newOutput.value}
-                            className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white disabled:opacity-50"
+                            className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white disabled:opacity-50"
                           >
                             Add Output
                           </button>
@@ -484,7 +484,7 @@ export default function StepInspector({
               {!readOnly && !showAddParam && (
                 <button
                   onClick={() => setShowAddParam(true)}
-                  className={`text-xs ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+                  className={`text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                 >
                   + Add
                 </button>
@@ -493,7 +493,7 @@ export default function StepInspector({
 
             {/* Add parameter form */}
             {showAddParam && (
-              <div className={`p-3 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+              <div className={`p-3 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -530,7 +530,7 @@ export default function StepInspector({
                     <button
                       onClick={handleAddParameter}
                       disabled={!newParam.name}
-                      className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white disabled:opacity-50"
+                      className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white disabled:opacity-50"
                     >
                       Add Parameter
                     </button>
@@ -622,7 +622,7 @@ export default function StepInspector({
               {!readOnly && !showAddCriterion && (
                 <button
                   onClick={() => setShowAddCriterion(true)}
-                  className={`text-xs ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+                  className={`text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                 >
                   + Add
                 </button>
@@ -631,7 +631,7 @@ export default function StepInspector({
 
             {/* Add criterion form */}
             {showAddCriterion && (
-              <div className={`p-3 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+              <div className={`p-3 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
                 <div className="space-y-3">
                   <ExpressionInput
                     value={newCriterion}
@@ -646,7 +646,7 @@ export default function StepInspector({
                     <button
                       onClick={handleAddCriterion}
                       disabled={!newCriterion}
-                      className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white disabled:opacity-50"
+                      className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white disabled:opacity-50"
                     >
                       Add Criterion
                     </button>
@@ -750,7 +750,7 @@ export default function StepInspector({
       {!readOnly && (
         <div className={`flex-shrink-0 px-4 py-3 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <button
-            className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-indigo-600 hover:bg-indigo-500 text-white"
+            className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white"
           >
             Apply Changes
           </button>

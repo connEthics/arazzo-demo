@@ -54,8 +54,8 @@ export default function RightPanelModeToggle({
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
           mode === 'edit'
             ? isDark
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-blue-600 text-white shadow-sm'
             : isDark
               ? 'text-slate-400 hover:text-slate-300'
               : 'text-slate-500 hover:text-slate-700'

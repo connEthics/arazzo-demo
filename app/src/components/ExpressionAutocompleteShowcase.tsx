@@ -152,13 +152,13 @@ export default function ExpressionAutocompleteShowcase({ isDark }: ExpressionAut
         
         <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
           <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <span className="text-indigo-500">⚡</span>
+            <span className="text-blue-500">⚡</span>
             Context Values
           </h4>
           <p className={`text-sm mb-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             Runtime context from the current step
           </p>
-          <code className={`text-xs px-2 py-1 rounded block ${isDark ? 'bg-slate-900 text-indigo-400' : 'bg-gray-100 text-indigo-600'}`}>
+          <code className={`text-xs px-2 py-1 rounded block ${isDark ? 'bg-slate-900 text-blue-400' : 'bg-gray-100 text-blue-600'}`}>
             $statusCode, $response.body
           </code>
         </div>
@@ -190,16 +190,16 @@ export default function ExpressionAutocompleteShowcase({ isDark }: ExpressionAut
       </div>
 
       {/* Integration Note */}
-      <div className={`p-4 rounded-lg border ${isDark ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50'}`}>
+      <div className={`p-4 rounded-lg border ${isDark ? 'border-blue-500/30 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h4 className={`font-semibold mb-1 ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+            <h4 className={`font-semibold mb-1 ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>
               Inspector Integration
             </h4>
-            <p className={`text-sm ${isDark ? 'text-indigo-200/80' : 'text-indigo-700'}`}>
+            <p className={`text-sm ${isDark ? 'text-blue-200/80' : 'text-blue-700'}`}>
               This autocomplete is used in the Step Inspector for configuring parameters 
               and output mappings. It reads available expressions from the BuilderContext 
               to provide context-aware suggestions based on the current workflow.

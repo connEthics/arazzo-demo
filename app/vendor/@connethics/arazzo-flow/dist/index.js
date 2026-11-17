@@ -323,6 +323,14 @@ function shortWorkflow(id) {
   const m = /^\$sourceDescriptions\.([^.]+)\.(.+)$/.exec(id);
   return m ? m[2] : id;
 }
+function shortOperationId(id) {
+  return id.replace(/^\$sourceDescriptions\.[^.]+\./, "");
+}
+function operationLabel(n) {
+  if (n.method && n.path && n.methodSource !== "unresolved") return `${n.method} ${n.path}`;
+  if (n.operationId) return shortOperationId(n.operationId) || void 0;
+  return void 0;
+}
 function edgeLabelText(e, density, lang = "fr") {
   const crit = e.criteria?.[0]?.condition;
   const withCrit = (base) => density === "detailed" && crit ? `${base} \xB7 ${truncate(crit, 24)}` : base;
@@ -550,6 +558,10 @@ var ELK_GROUP_OPTIONS = {
   "org.eclipse.elk.nodeSize.constraints": "MINIMUM_SIZE",
   "org.eclipse.elk.portConstraints": "FREE"
 };
+var ELK_GROUP_ENTRY_OPTIONS = {
+  "org.eclipse.elk.portConstraints": "FIXED_SIDE",
+  "org.eclipse.elk.portAlignment.default": "CENTER"
+};
 function thoroughnessFor(nodeCount) {
   return nodeCount <= 30 ? "7" : "4";
 }
@@ -685,6 +697,7 @@ var PORT_SIDES = {
   LR: { in: "WEST", "in-deps": "WEST", "out-next": "EAST", "out-success": "EAST", "out-failure": "SOUTH", "out-retry": "SOUTH", "out-call": "NORTH" }
 };
 var WORKFLOW_LANE = "__workflow";
+var GROUP_HEADER = 44;
 function structureKey(g, o) {
   return JSON.stringify([
     g.workflowId,
@@ -729,12 +742,24 @@ function buildElkGraph(g, o) {
     }));
     return { id: n.id, width: s.width, height: s.height, ports, layoutOptions: { ...ELK_NODE_OPTIONS } };
   };
+  const expanded = new Set(g.groups.filter((x) => x.kind === "workflow" && !x.collapsed).map((x) => x.id));
+  const groupOf = new Map(g.nodes.map((n) => [n.id, n.groupId && expanded.has(n.groupId) ? n.groupId : void 0]));
+  const entries = {};
+  for (const e of g.edges) {
+    const tg = groupOf.get(e.target);
+    if (tg && groupOf.get(e.source) !== tg) entries[e.id] = tg;
+  }
+  const entered = new Set(Object.values(entries));
   const root = { id: "__root", children: [], edges: [] };
   const containers = /* @__PURE__ */ new Map();
   const container = (id, label) => {
     let c = containers.get(id);
     if (!c) {
       c = { id, children: [], layoutOptions: { ...ELK_GROUP_OPTIONS }, labels: [{ text: label }] };
+      if (entered.has(id)) {
+        c.layoutOptions = { ...c.layoutOptions, ...ELK_GROUP_ENTRY_OPTIONS };
+        c.ports = [{ id: `${id}::in`, width: 1, height: 1, layoutOptions: { "org.eclipse.elk.port.side": sides.in } }];
+      }
       containers.set(id, c);
       root.children.push(c);
     }
@@ -754,7 +779,7 @@ function buildElkGraph(g, o) {
     return {
       id: e.id,
       sources: [`${e.source}::${e.sourcePort}`],
-      targets: [`${e.target}::${e.targetPort}`],
+      targets: [entries[e.id] ? `${entries[e.id]}::in` : `${e.target}::${e.targetPort}`],
       labels: text ? [{ id: `${e.id}::label`, text, width: m.width, height: m.height }] : []
     };
   });
@@ -763,12 +788,12 @@ function buildElkGraph(g, o) {
     "org.eclipse.elk.direction": o.direction === "TB" ? "DOWN" : "RIGHT",
     "org.eclipse.elk.layered.thoroughness": thoroughnessFor(g.nodes.length)
   };
-  return { root, containers: new Set(containers.keys()), labelTexts };
+  return { root, containers: new Set(containers.keys()), labelTexts, entries };
 }
 async function computeLayout(g, o, elk = {}) {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
   const sides = PORT_SIDES[o.direction];
-  const { root, containers, labelTexts } = buildElkGraph(g, o);
+  const { root, containers, labelTexts, entries } = buildElkGraph(g, o);
   const { result, mode } = await runElk(root, elk);
   const nodes = {};
   const frames = [];
@@ -841,6 +866,14 @@ async function computeLayout(g, o, elk = {}) {
     for (const id of Object.keys(edges)) edges[id] = { labelText: edges[id].labelText };
     width = r.width;
     height = r.height;
+  }
+  for (const [id, groupId] of Object.entries(entries)) {
+    const f = frames.find((x) => x.id === groupId);
+    const pe = edges[id];
+    if (!f || !pe) continue;
+    const last = pe.points?.[pe.points.length - 1];
+    const fallback = o.direction === "TB" ? { x: f.x + f.width / 2, y: f.y } : { x: f.x, y: f.y + GROUP_HEADER + (f.height - GROUP_HEADER) / 2 };
+    pe.entry = { groupId, side: sides.in, ...last ?? fallback };
   }
   return {
     key: structureKey(g, o),
@@ -1538,8 +1571,10 @@ function stepChips(n, out, m) {
 function secondLine(n) {
   switch (n.stepKind) {
     case "async-send":
-    case "async-receive":
-      return /* @__PURE__ */ jsx("span", { className: "af-mono", children: n.channel });
+    case "async-receive": {
+      const text = n.channel ?? (n.summary && n.operationId ? shortOperationId(n.operationId) : void 0);
+      return text ? /* @__PURE__ */ jsx("span", { className: "af-mono", title: n.channel ?? n.operationId, children: text }) : null;
+    }
     case "workflow":
       return /* @__PURE__ */ jsxs("span", { className: "af-mono", children: [
         "\u2192 ",
@@ -1549,9 +1584,17 @@ function secondLine(n) {
           n.targetWorkflowId.split(".")[1]
         ] }) : null
       ] });
-    default:
-      return n.path ? /* @__PURE__ */ jsx("span", { className: "af-mono", children: n.path }) : /* @__PURE__ */ jsx("span", { className: "af-mono af-muted", children: n.operationId ? shortWorkflow(n.operationId) : "" });
+    default: {
+      const op = n.summary ? operationLabel(n) : void 0;
+      return op ? /* @__PURE__ */ jsx("span", { className: "af-mono", title: op, children: op }) : null;
+    }
   }
+}
+function mainLine(n) {
+  if (n.summary) return n.summary;
+  if (n.stepKind === "workflow") return null;
+  const op = operationLabel(n);
+  return op ? /* @__PURE__ */ jsx("span", { className: "af-mono", title: op, children: op }) : null;
 }
 var accentOf = (n) => n.stepKind === "async-send" ? "async-send" : n.stepKind === "async-receive" ? "async-receive" : n.stepKind === "workflow" ? "workflow" : "http";
 var StepNode = memo(function StepNode2({ id, data }) {
@@ -1570,7 +1613,7 @@ var StepNode = memo(function StepNode2({ id, data }) {
       /* @__PURE__ */ jsx(DiagBadge, { node: n })
     ] }),
     density !== "compact" && /* @__PURE__ */ jsxs(Fragment, { children: [
-      /* @__PURE__ */ jsx("div", { className: "af-card__line", children: n.summary ?? (n.operationId ? shortWorkflow(n.operationId) : "\xA0") }),
+      /* @__PURE__ */ jsx("div", { className: "af-card__line", children: mainLine(n) ?? "\xA0" }),
       /* @__PURE__ */ jsx("div", { className: "af-card__line af-card__line--sub", children: secondLine(n) }),
       /* @__PURE__ */ jsx("div", { className: "af-card__chips", children: stepChips(n, outEdges, m) })
     ] }),
@@ -1774,6 +1817,7 @@ var DIR = {
   [Position.Left]: { x: 1, y: 0 },
   [Position.Right]: { x: -1, y: 0 }
 };
+var SIDE_POSITION = { NORTH: Position.Top, SOUTH: Position.Bottom, EAST: Position.Right, WEST: Position.Left };
 function arrowHead(tip, dir, open, size = 8) {
   const len = Math.hypot(dir.x, dir.y) || 1;
   const ux = dir.x / len;
@@ -1844,11 +1888,14 @@ var AfEdge = memo(function AfEdge2(props) {
     startDir = { x: pts[1].x - pts[0].x, y: pts[1].y - pts[0].y };
     label = horizontal ? { x: sourceX + off + 4, y: (sourceY + targetY - off) / 2 } : { x: (sourceX + targetX - off) / 2, y: sourceY + off + 4 };
   } else {
-    const [p, lx, ly] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 6, offset: 18 });
+    const tx = placed.entry ? placed.entry.x : targetX;
+    const ty = placed.entry ? placed.entry.y : targetY;
+    const tpos = placed.entry ? SIDE_POSITION[placed.entry.side] : targetPosition;
+    const [p, lx, ly] = getSmoothStepPath({ sourceX, sourceY, targetX: tx, targetY: ty, sourcePosition, targetPosition: tpos, borderRadius: 6, offset: 18 });
     d = p;
     label = { x: lx, y: ly };
-    tip = { x: targetX, y: targetY };
-    tipDir = DIR[targetPosition];
+    tip = { x: tx, y: ty };
+    tipDir = DIR[tpos];
     start = { x: sourceX, y: sourceY };
     startDir = { x: -DIR[sourcePosition].x, y: -DIR[sourcePosition].y };
   }
@@ -2953,6 +3000,6 @@ function createOpenApiResolver(sources) {
   };
 }
 
-export { ArazzoGraph, ArazzoGraphFromDocument, EDGE_KINDS, ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, HEIGHTS, NODE_WIDTH, PORT_SIDES, ariaLabelFor, buildElkGraph, computeLayout, createOpenApiResolver, dataUrlToBlob, diagnosticsByNode, downloadBlob, edgeLabelText, elkMode, en, exportImage, formatTimeout, fr, nodeSize, prewarmElk, readVsCodeThemeKind, resetElk, resolveTheme, runElk, structureKey, thoroughnessFor, toMermaid, toViewGraph, visibleGraph };
+export { ArazzoGraph, ArazzoGraphFromDocument, EDGE_KINDS, ELK_GROUP_OPTIONS, ELK_NODE_OPTIONS, ELK_ROOT_OPTIONS, HEIGHTS, NODE_WIDTH, PORT_SIDES, ariaLabelFor, buildElkGraph, computeLayout, createOpenApiResolver, dataUrlToBlob, diagnosticsByNode, downloadBlob, edgeLabelText, elkMode, en, exportImage, formatTimeout, fr, nodeSize, operationLabel, prewarmElk, readVsCodeThemeKind, resetElk, resolveTheme, runElk, shortOperationId, structureKey, thoroughnessFor, toMermaid, toViewGraph, visibleGraph };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

@@ -47,7 +47,7 @@ function WorkflowList({
                     onWorkflowSelect(workflow.workflowId);
                   }
                 }}
-                className="text-indigo-600 hover:underline font-medium"
+                className="text-blue-600 hover:underline font-medium"
               >
                 {workflow.summary || workflow.workflowId}
               </a>
@@ -65,7 +65,7 @@ function WorkflowList({
                     <li key={step.stepId}>
                       <a
                         href={`#step-${workflow.workflowId}-${step.stepId}`}
-                        className={`text-sm hover:text-indigo-600 hover:underline ${theme.muted}`}
+                        className={`text-sm hover:text-blue-600 hover:underline ${theme.muted}`}
                       >
                         {stepIdx + 1}. {step.stepId}
                       </a>
@@ -96,8 +96,8 @@ function WorkflowList({
             className={`w-full text-left p-4 rounded-lg border transition-all ${
               isSelected
                 ? isDark
-                  ? 'bg-indigo-900/30 border-indigo-500'
-                  : 'bg-indigo-50 border-indigo-300'
+                  ? 'bg-blue-900/30 border-blue-500'
+                  : 'bg-blue-50 border-blue-300'
                 : `${theme.border} ${theme.hover}`
             }`}
           >
@@ -107,7 +107,7 @@ function WorkflowList({
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <code
                     className={`text-sm font-mono font-medium break-all ${
-                      isSelected ? 'text-indigo-500' : theme.text
+                      isSelected ? 'text-blue-500' : theme.text
                     }`}
                   >
                     {workflow.workflowId}

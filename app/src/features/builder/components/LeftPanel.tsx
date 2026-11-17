@@ -108,7 +108,7 @@ function ActiveSourcesSection({
                   <div className="flex items-center gap-1">
                     <span className="text-[9px] text-slate-400">{pathCount} {isAsync ? 'channels' : 'paths'}</span>
                     {isUsed && (
-                      <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 px-1 py-0.5 rounded">
+                      <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-1 py-0.5 rounded">
                         {stepsCount}
                       </span>
                     )}
@@ -179,7 +179,7 @@ function LeftPanel({
           <button
             onClick={() => setLeftMode('operations')}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-              leftMode === 'operations' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+              leftMode === 'operations' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             <OperationsIcon />
@@ -188,7 +188,7 @@ function LeftPanel({
           <button
             onClick={() => setLeftMode('yaml')}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-200 dark:border-slate-700 ${
-              leftMode === 'yaml' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+              leftMode === 'yaml' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             <CodeIcon />
@@ -197,7 +197,7 @@ function LeftPanel({
           <button
             onClick={() => setLeftMode('problems')}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-200 dark:border-slate-700 ${
-              leftMode === 'problems' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+              leftMode === 'problems' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
             data-testid="left-tab-problems"
           >
@@ -268,8 +268,8 @@ function LeftPanel({
       {/* Resize Handle */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-500/50 transition-colors z-10 ${
-          isResizing ? 'bg-indigo-500' : 'bg-transparent'
+        className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors z-10 ${
+          isResizing ? 'bg-blue-500' : 'bg-transparent'
         }`}
       />
     </div>

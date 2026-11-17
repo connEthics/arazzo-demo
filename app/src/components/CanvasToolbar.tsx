@@ -173,8 +173,8 @@ export default function CanvasToolbar({
                     className={`w-full px-3 py-1.5 text-xs text-left transition-colors ${
                       Math.round(zoom * 100) === preset
                         ? isDark
-                          ? 'bg-indigo-600/20 text-indigo-300'
-                          : 'bg-indigo-50 text-indigo-700'
+                          ? 'bg-blue-600/20 text-blue-300'
+                          : 'bg-blue-50 text-blue-700'
                         : isDark
                           ? 'hover:bg-slate-700 text-slate-300'
                           : 'hover:bg-gray-50 text-gray-600'

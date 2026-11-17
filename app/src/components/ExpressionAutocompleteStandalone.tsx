@@ -188,7 +188,7 @@ export default function ExpressionAutocompleteStandalone({
         }}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-3 py-2 rounded-lg border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+        className={`w-full px-3 py-2 rounded-lg border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${
           isDark 
             ? 'bg-slate-800 border-slate-600 text-white placeholder-slate-500' 
             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -211,8 +211,8 @@ export default function ExpressionAutocompleteStandalone({
               } ${
                 idx === selectedIndex
                   ? isDark 
-                    ? 'bg-indigo-900/30 text-indigo-300'
-                    : 'bg-indigo-50 text-indigo-700'
+                    ? 'bg-blue-900/30 text-blue-300'
+                    : 'bg-blue-50 text-blue-700'
                   : isDark
                     ? 'hover:bg-slate-700'
                     : 'hover:bg-gray-50'

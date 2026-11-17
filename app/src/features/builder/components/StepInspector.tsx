@@ -126,7 +126,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
           <button
             onClick={handleAiSuggest}
             disabled={isAiLoading}
-            className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-1 font-medium"
+            className="text-[10px] bg-ce-primary-solid text-ce-on-primary px-2 py-1 rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-1 font-medium"
           >
             {isAiLoading ? <span className="animate-spin text-xs">✨</span> : <span className="text-xs">✨</span>}
             AI MAPPING
@@ -149,7 +149,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
             <button
               onClick={() => setActiveTab('config')}
               className={`flex-1 px-3 py-1.5 transition-colors ${activeTab === 'config'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                 }`}
             >
@@ -158,7 +158,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
             <button
               onClick={() => setActiveTab('oas')}
               className={`flex-1 px-3 py-1.5 transition-colors ${activeTab === 'oas'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                 }`}
             >
@@ -173,8 +173,8 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
           <div className="space-y-4">
             {/* OAS Available Parameters Hint */}
             {!readOnly && oasOperation && oasOperation.parameters.length > 0 && (
-              <div className="bg-indigo-900/20 rounded-lg p-2.5 border border-indigo-500/20">
-                <div className="text-[10px] font-bold text-indigo-400 mb-2 uppercase tracking-tight">
+              <div className="bg-blue-900/20 rounded-lg p-2.5 border border-blue-500/20">
+                <div className="text-[10px] font-bold text-blue-400 mb-2 uppercase tracking-tight">
                   Available from API Spec:
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -182,7 +182,7 @@ export default function StepInspector({ readOnly = false }: StepInspectorProps) 
                     <button
                       key={idx}
                       onClick={() => addParameterFromOAS(param)}
-                      className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/10 transition-all flex items-center gap-1"
+                      className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-blue-300 border border-blue-500/20 hover:bg-blue-500/10 transition-all flex items-center gap-1"
                       title={`${param.description || param.name}`}
                     >
                       <span className="opacity-60">{param.in === 'path' ? '🔗' : '?'}</span>
@@ -275,7 +275,7 @@ function OASTab({
             {operation.parameters.map((param, idx) => (
               <div key={idx} className="bg-gray-50 rounded p-2 text-xs border border-gray-100">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-medium text-indigo-600">{param.name}</span>
+                  <span className="font-medium text-blue-600">{param.name}</span>
                   {param.required && (
                     <Badge variant="required" isDark={isDark} size="xs">required</Badge>
                   )}

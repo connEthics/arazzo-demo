@@ -80,7 +80,7 @@ export default function StepCard({
       case 'PUT':
       case 'PATCH': return { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500' };
       case 'DELETE': return { bg: 'bg-red-500', text: 'text-white', border: 'border-red-500' };
-      default: return { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500' };
+      default: return { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-500' };
     }
   };
 

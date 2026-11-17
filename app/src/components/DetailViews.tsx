@@ -195,7 +195,7 @@ export function SourceContent({ source, ...props }: ContentProps & { source: Sou
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className={`text-xs font-mono ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'} break-all hover:underline flex items-center gap-1`}
+          className={`text-xs font-mono ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'} break-all hover:underline flex items-center gap-1`}
         >
           {source.url}
           <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

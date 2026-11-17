@@ -128,7 +128,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
             onClick={() => setGroupBy('tag')}
             className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
               groupBy === 'tag' 
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' 
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -138,7 +138,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
             onClick={() => setGroupBy('source')}
             className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
               groupBy === 'source' 
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' 
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -148,7 +148,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
             onClick={() => setGroupBy('none')}
             className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
               groupBy === 'none' 
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' 
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -196,7 +196,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
                     onDragStart={(e) => onDragStart(e, op)}
                     className="cursor-grab active:cursor-grabbing"
                   >
-                    <Card isDark={false} className="p-2.5 hover:border-indigo-500 hover:shadow-sm transition-all group">
+                    <Card isDark={false} className="p-2.5 hover:border-blue-500 hover:shadow-sm transition-all group">
                       <div className="flex items-start gap-2">
                         <Badge 
                           variant={getMethodBadgeVariant(op.method)} 
@@ -224,7 +224,7 @@ export default function OperationsToolbox({ onOperationDragStart }: OperationsTo
                             e.stopPropagation();
                             onTapToAdd(op);
                           }}
-                          className="md:hidden shrink-0 ml-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                          className="md:hidden shrink-0 ml-2 bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors"
                         >
                           + Add
                         </button>

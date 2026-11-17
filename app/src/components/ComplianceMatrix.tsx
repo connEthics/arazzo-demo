@@ -83,7 +83,7 @@ export default function ComplianceMatrix({ isDark }: ComplianceMatrixProps) {
             <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Arazzo {SPEC_VERSION} Compliance Matrix</h3>
             <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               Current support status for the{' '}
-              <a href={SPEC_BASE_URL} target="_blank" rel="noopener noreferrer" className={`underline ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+              <a href={SPEC_BASE_URL} target="_blank" rel="noopener noreferrer" className={`underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                 Arazzo Specification {SPEC_VERSION}
               </a>
               {' '}(1.0.x documents remain supported). Rows marked <strong>1.1</strong> are new in this version.
@@ -138,7 +138,7 @@ export default function ComplianceMatrix({ isDark }: ComplianceMatrixProps) {
                               href={`${SPEC_BASE_URL}${feature.specUrl}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`hover:underline ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}
+                              className={`hover:underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
                             >
                               {feature.specSection}
                             </a>

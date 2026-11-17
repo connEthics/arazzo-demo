@@ -109,6 +109,16 @@ describe('workflowToGraph — order-to-cash (1.1, async)', () => {
     expect(edge(g, 'sequence', 'step:awaitShipment', 'step:publishCompleted')).toBeUndefined();
   });
 
+  it('keeps fan-out siblings parallel (M3: no sequence into a step that declares dependsOn)', () => {
+    // awaitInvoice and awaitShipment both depend on pay: no edge between them.
+    expect(edge(g, 'sequence', 'step:awaitInvoice', 'step:awaitShipment')).toBeUndefined();
+    expect(g.edges.filter((e) => e.target === 'step:awaitShipment').map((e) => [e.kind, e.source])).toEqual([['depends-on', 'step:pay']]);
+    expect(g.edges.filter((e) => e.target === 'step:awaitInvoice').map((e) => [e.kind, e.source])).toEqual([['depends-on', 'step:pay']]);
+    // No sequence edge targets a step that declares dependsOn.
+    const withDeps = new Set(g.nodes.filter((n) => n.step?.dependsOn?.length).map((n) => n.id));
+    expect(g.edges.filter((e) => e.kind === 'sequence' && withDeps.has(e.target))).toEqual([]);
+  });
+
   it('builds lanes in source order with a neutral workflow lane', () => {
     expect(g.groups.map((x) => [x.id, x.sourceType ?? x.kind])).toEqual([
       ['lane:shop', 'openapi'],
@@ -116,6 +126,59 @@ describe('workflowToGraph — order-to-cash (1.1, async)', () => {
       ['lane:workflow', 'workflow'],
     ]);
     expect(g.groups.find((x) => x.id === 'lane:workflow')!.nodeIds).toContain('join:publishCompleted');
+  });
+});
+
+describe('workflowToGraph — implicit sequence and dependsOn', () => {
+  const steps = (...list: Record<string, unknown>[]) =>
+    make(BASE11, (d) => {
+      d.workflows[0].steps = list.map((s) => ({ operationId: '$sourceDescriptions.api.op', ...s }));
+      d.workflows[0].outputs = { done: '$steps.a.outputs.x' };
+    });
+  const seq = (g: WorkflowGraph) => edgesOf(g, 'sequence').map((e) => `${e.source}->${e.target}`);
+
+  it('steps without dependsOn keep the usual sequence', () => {
+    const g = workflowToGraph(steps({ stepId: 'a' }, { stepId: 'b' }, { stepId: 'c' }), 'main');
+    expect(seq(g)).toEqual(['input->step:a', 'step:a->step:b', 'step:b->step:c', 'step:c->output']);
+  });
+
+  it('fan-out then join: parallel branches, join before the closing step', () => {
+    const g = workflowToGraph(
+      steps({ stepId: 'a' }, { stepId: 'b', dependsOn: ['a'] }, { stepId: 'c', dependsOn: ['a'] }, { stepId: 'd', dependsOn: ['b', 'c'] }, { stepId: 'e' }),
+      'main',
+    );
+    expect(seq(g)).toEqual(['input->step:a', 'step:d->step:e', 'step:e->output']);
+    expect(edgesOf(g, 'depends-on').map((e) => `${e.source}->${e.target}`)).toEqual([
+      'step:a->step:b',
+      'step:a->step:c',
+      'step:b->join:d',
+      'step:c->join:d',
+      'join:d->step:d',
+    ]);
+  });
+
+  it('a step does not emit a sequence into a next step that depends on another one', () => {
+    const g = workflowToGraph(steps({ stepId: 'a' }, { stepId: 'b' }, { stepId: 'c', dependsOn: ['a'] }), 'main');
+    expect(edge(g, 'sequence', 'step:b', 'step:c')).toBeUndefined();
+    expect(edge(g, 'depends-on', 'step:a', 'step:c')).toBeDefined();
+    expect(seq(g)).toEqual(['input->step:a', 'step:a->step:b', 'step:c->output']);
+  });
+
+  it('a dependency on another workflow step also replaces the sequence', () => {
+    const doc = steps({ stepId: 'a' }, { stepId: 'b', dependsOn: ['$workflows.main.steps.a'] });
+    const g = workflowToGraph(doc, 'main');
+    expect(edge(g, 'sequence', 'step:a', 'step:b')).toBeUndefined();
+    expect(edge(g, 'depends-on', 'ref:main/steps/a', 'step:b')).toBeDefined();
+  });
+
+  it('keeps the sequence when no dependsOn entry resolves (invalid document)', () => {
+    const g = workflowToGraph(steps({ stepId: 'a' }, { stepId: 'b', dependsOn: ['nope'] }), 'main');
+    expect(edge(g, 'sequence', 'step:a', 'step:b')).toBeDefined();
+  });
+
+  it('an unconditional goto or end still suppresses the sequence', () => {
+    const g = workflowToGraph(steps({ stepId: 'a', onSuccess: [{ name: 'stop', type: 'end' }] }, { stepId: 'b' }), 'main');
+    expect(edge(g, 'sequence', 'step:a', 'step:b')).toBeUndefined();
   });
 });
 

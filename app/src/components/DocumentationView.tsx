@@ -51,9 +51,9 @@ export default function DocumentationView({
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Highlight effect
-      element.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2');
+      element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
       setTimeout(() => {
-        element.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+        element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
       }, 2000);
     }
   }, []);
@@ -136,7 +136,7 @@ export default function DocumentationView({
         <footer className={`mt-12 pt-6 border-t text-center text-sm ${mutedClass} print:mt-8`} style={{ borderColor: isDark ? '#334155' : '#e5e7eb' }}>
           <p>Generated with Arazzo Builder</p>
           <p className="mt-1">
-            Made with ❤️ by <a href="https://connethics.com" className="text-indigo-600 hover:underline print:text-indigo-600">connethics.com</a>
+            Made with ❤️ by <a href="https://connethics.com" className="text-blue-600 hover:underline print:text-blue-600">connethics.com</a>
           </p>
         </footer>
       </div>

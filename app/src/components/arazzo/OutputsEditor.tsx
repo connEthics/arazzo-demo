@@ -50,7 +50,7 @@ export default function OutputsEditor({
   defaultContext = '$response.body',
 }: OutputsEditorProps) {
   const entries = Object.entries(outputs);
-  const inputClass = `w-full px-2 py-1 rounded border text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/30 ${
+  const inputClass = `w-full px-2 py-1 rounded border text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500/30 ${
     isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
   }`;
   const labelClass = `text-[10px] uppercase font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
@@ -134,7 +134,7 @@ function OutputRow({
   const toggleBtn = (active: boolean) =>
     `px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${
       active
-        ? 'bg-indigo-600 text-white'
+        ? 'bg-blue-600 text-white'
         : isDark
           ? 'bg-slate-800 text-slate-400 hover:bg-slate-700'
           : 'bg-white text-gray-500 hover:bg-gray-100'

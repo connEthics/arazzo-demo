@@ -77,8 +77,8 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
               range,
               options: {
                 isWholeLine: true,
-                className: isDark ? 'bg-indigo-900/40' : 'bg-indigo-100',
-                linesDecorationsClassName: isDark ? 'bg-indigo-500 w-1' : 'bg-indigo-500 w-1', // Gutter marker
+                className: isDark ? 'bg-blue-900/40' : 'bg-blue-100',
+                linesDecorationsClassName: isDark ? 'bg-blue-500 w-1' : 'bg-blue-500 w-1', // Gutter marker
               },
             },
           ];
@@ -201,7 +201,7 @@ export default function YamlEditor({ isDark = false }: YamlEditorProps) {
             <button
               onClick={handleApplyChanges}
               disabled={!!error}
-              className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Apply
             </button>

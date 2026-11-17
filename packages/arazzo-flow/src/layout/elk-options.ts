@@ -46,6 +46,16 @@ export const ELK_GROUP_OPTIONS = {
 } as const;
 
 /**
+ * Sous-workflow déplié qui reçoit des arêtes de l'extérieur (appel, `retry` via, transfert) :
+ * elles arrivent sur un port d'entrée du groupe, côté `in` (haut en TB, gauche en LR), et
+ * ne coupent pas l'en-tête.
+ */
+export const ELK_GROUP_ENTRY_OPTIONS = {
+  'org.eclipse.elk.portConstraints': 'FIXED_SIDE',
+  'org.eclipse.elk.portAlignment.default': 'CENTER',
+} as const;
+
+/**
  * Mesuré en D1 (Chromium, worker chaud) : thoroughness 10 → ~30 ms (11 nœuds), ~90 ms (pet-adoption, 12 nœuds,
  * 9 libellés, 4 arêtes arrière) ; 66 nœuds : 7 → ~230 ms, 4 → ~120 ms. D'où des paliers plus bas que R5 (10/7/4).
  */

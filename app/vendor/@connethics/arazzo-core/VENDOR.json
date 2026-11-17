@@ -5,18 +5,18 @@
   "source": {
     "repository": "arazzo-demo",
     "path": "packages/arazzo-core",
-    "commit": "3113388a171b0b0963b2dc1d2cc171790b22ffb3"
+    "commit": "14abc36d8aa9560399269047f3431ec8c292c482"
   },
-  "sha256": "131db879cf27e57ea8955a7a2e12b6a998f96f893b7d6b71ec2f717953de5d7a",
+  "sha256": "68fb0651167c912ab92decce538ad1d5f9806b3ad5ee8fb08cc3767dd65127ac",
   "files": {
     "LICENSE": "69a78fe10d4b3e395b9ffe335dda7bcdda0089b43550cee8cfa49063c1c12ed7",
-    "README.md": "79aa158dca95282d9ce7c9629752ac1eb1b47952fa26683ca44829dc44ef7180",
-    "dist/index.cjs": "1fd38c3e36a2d4d931d033f6d4d31feaf89e301bcc8b626ae00052aa1fb83ef3",
-    "dist/index.cjs.map": "8e57bb744d4d7442a326791bb53c392ccde9f8eb2cd3cce25fcee66c146b9083",
+    "README.md": "136bc744b49e2c05d13669d039f8b5415c127f8fa59f53c5d540db2389010e9f",
+    "dist/index.cjs": "efd25e78426c7804007febe06ba7574a7effde10959a9e102d16162f25d7a60f",
+    "dist/index.cjs.map": "c30c1f71dce00e0bb6574f0e878a506ae191b989ee32302fc8697d048d9514f6",
     "dist/index.d.cts": "729fab3c11a95d22544060f22584f92d84f97325043f55e435d8cb606a5b277b",
     "dist/index.d.ts": "729fab3c11a95d22544060f22584f92d84f97325043f55e435d8cb606a5b277b",
-    "dist/index.js": "542729b07c2aff4e7bcd617346d9b54e1febb4a511e3b5697bed98412e733622",
-    "dist/index.js.map": "0fc1a3a6408b7c1bfd4b8464cc35b4c928dd46414de460986b6a90f806dff8a7",
+    "dist/index.js": "a83d490afb87a7254a5731864f7a6f9a2a57d28d863258598332fcf78f75290b",
+    "dist/index.js.map": "2645335641c11466c74e8abc8e23afffe583a0a5d4de4da11383f5bba4121282",
     "package.json": "5b65b509d38deac52edb5fa824fd1d58f12a6f4014ac4d72eb66fa64a3998c99",
     "schemas/arazzo-1.0.schema.json": "b8715bd824fffcb2accf5077977d37c9e7a15be60d785e7a3a51cf600fd46ad4",
     "schemas/arazzo-1.1.schema.json": "37be908409bdb2f7bffe61fa23685c7e84cbeebfafac475a1d01dbc50ff7ab9e"

@@ -41,7 +41,7 @@ function StepCard({ step, index, isDark, textClass, mutedClass, borderClass }: S
         }`}
       >
         <div className="flex items-center gap-3 flex-wrap min-w-0">
-          <span className={`w-6 h-6 rounded-full ${isDark ? 'bg-indigo-600' : 'bg-indigo-500'} text-white text-xs font-bold flex items-center justify-center flex-shrink-0`}>
+          <span className={`w-6 h-6 rounded-full ${isDark ? 'bg-blue-600' : 'bg-blue-500'} text-white text-xs font-bold flex items-center justify-center flex-shrink-0`}>
             {index + 1}
           </span>
           <code className={`font-mono text-sm ${textClass} truncate`}>{step.stepId}</code>
@@ -179,7 +179,7 @@ function IntroView({ spec, workflow, isDark = false }: IntroViewProps) {
     </svg>
   );
   const StepsIcon = (
-    <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
     </svg>
   );
@@ -208,9 +208,9 @@ function IntroView({ spec, workflow, isDark = false }: IntroViewProps) {
               </p>
             )}
           </div>
-          <div className={`flex-shrink-0 p-3 rounded-xl ${isDark ? 'bg-indigo-900/30' : 'bg-indigo-50'} border ${isDark ? 'border-indigo-800' : 'border-indigo-200'}`}>
+          <div className={`flex-shrink-0 p-3 rounded-xl ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'} border ${isDark ? 'border-blue-800' : 'border-blue-200'}`}>
             <div className="text-center">
-              <div className={`text-2xl font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+              <div className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                 {workflow.steps?.length || 0}
               </div>
               <div className={`text-xs ${theme.muted}`}>steps</div>

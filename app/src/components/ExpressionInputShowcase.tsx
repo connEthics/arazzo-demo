@@ -218,25 +218,25 @@ export default function ExpressionInputShowcase({ isDark }: ExpressionInputShowc
         </h4>
         <div className="grid md:grid-cols-2 gap-4 text-sm">
           <div>
-            <code className="text-indigo-500">suggestions</code>
+            <code className="text-blue-500">suggestions</code>
             <span className={`ml-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               Array of expression suggestions with type, label, description
             </span>
           </div>
           <div>
-            <code className="text-indigo-500">variant</code>
+            <code className="text-blue-500">variant</code>
             <span className={`ml-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               &apos;default&apos; | &apos;compact&apos; | &apos;inline&apos; - Size variant
             </span>
           </div>
           <div>
-            <code className="text-indigo-500">showQuickSuggestions</code>
+            <code className="text-blue-500">showQuickSuggestions</code>
             <span className={`ml-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               Show quick suggestion buttons below input
             </span>
           </div>
           <div>
-            <code className="text-indigo-500">quickSuggestions</code>
+            <code className="text-blue-500">quickSuggestions</code>
             <span className={`ml-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               Array of expressions to show as quick buttons
             </span>

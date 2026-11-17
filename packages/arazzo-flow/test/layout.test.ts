@@ -5,7 +5,7 @@ import { toViewGraph } from '../src/adapt';
 import { buildElkGraph, computeLayout, structureKey, type LayoutOptions } from '../src/layout/layout';
 import { elkMode, resetElk } from '../src/layout/elk-client';
 import { nodeSize } from '../src/format';
-import { CATALOGUE, PET, load, rel, walk } from './fixtures';
+import { CATALOGUE, PET, SESSION, load, rel, walk } from './fixtures';
 
 const TB: LayoutOptions = { direction: 'TB', lanes: 'off', density: 'standard', lang: 'fr' };
 afterAll(() => resetElk());
@@ -79,6 +79,47 @@ describe('ELK input graph', () => {
     const create = clusters.flatMap((c) => c.children!).find((c) => c.id === 'step:create')!;
     expect(create.ports!.map((p) => p.id.split('::')[1])).toEqual(['in', 'out-next', 'out-retry']);
     expect(create.layoutOptions!['org.eclipse.elk.portConstraints']).toBe('FIXED_SIDE');
+  });
+});
+
+describe('expanded sub-workflow: edges enter through the group port (session-renewal)', () => {
+  const doc = load(SESSION);
+  const view = toViewGraph(workflowToGraph(doc, 'listUnpaidInvoices'), { subgraphs: { renewSession: workflowToGraph(doc, 'renewSession') } });
+  const entering = view.edges.filter((e) => e.target === 'group:renewSession/step:renew');
+
+  it('targets the group entry port in the ELK input graph', () => {
+    expect(entering.map((e) => e.via)).toEqual(['renewSession', 'renewSession']);
+    const { root, entries } = buildElkGraph(view, TB);
+    const group = root.children!.find((c) => c.id === 'group:renewSession')!;
+    expect(group.ports!.map((p) => [p.id, p.layoutOptions!['org.eclipse.elk.port.side']])).toEqual([['group:renewSession::in', 'NORTH']]);
+    expect(group.layoutOptions!['org.eclipse.elk.portConstraints']).toBe('FIXED_SIDE');
+    for (const e of entering) {
+      expect(entries[e.id]).toBe('group:renewSession');
+      expect(root.edges!.find((x) => x.id === e.id)!.targets).toEqual(['group:renewSession::in']);
+    }
+  });
+
+  it.each(['TB', 'LR'] as const)('%s: the retry via edge stops on the frame border, outside the header', async (direction) => {
+    const r = await computeLayout(view, { ...TB, direction }, { mode: 'main-thread' });
+    const f = r.frames.find((x) => x.id === 'group:renewSession')!;
+    for (const e of entering) {
+      const pe = r.edges[e.id]!;
+      const tip = pe.points![pe.points!.length - 1]!;
+      expect(pe.entry).toMatchObject({ groupId: 'group:renewSession', x: tip.x, y: tip.y });
+      // No point of the route lies inside the frame (header band included).
+      for (const p of pe.points!.slice(0, -1)) expect(p.x > f.x + 1 && p.x < f.x + f.width - 1 && p.y > f.y + 1 && p.y < f.y + f.height - 1, `${e.id} ${p.x},${p.y}`).toBe(false);
+      if (direction === 'TB') expect(Math.abs(tip.y - f.y)).toBeLessThanOrEqual(1);
+      else {
+        expect(Math.abs(tip.x - f.x)).toBeLessThanOrEqual(1);
+        expect(tip.y).toBeGreaterThanOrEqual(f.y + 44 - 1);
+      }
+    }
+  });
+
+  it('lanes mode: entry point computed on the recomputed frame', async () => {
+    const r = await computeLayout(view, { ...TB, lanes: 'lanes' }, { mode: 'main-thread' });
+    const f = r.frames.find((x) => x.id === 'group:renewSession')!;
+    for (const e of entering) expect(r.edges[e.id]!.entry).toEqual({ groupId: 'group:renewSession', side: 'NORTH', x: f.x + f.width / 2, y: f.y });
   });
 });
 

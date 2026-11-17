@@ -120,8 +120,8 @@ export default function WorkflowInputsEditor({
                     onClick={() => setEditingProp(null)}
                     className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                       isDark 
-                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        ? 'bg-blue-600 hover:bg-blue-500 text-white' 
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}
                   >
                     Done
@@ -145,7 +145,7 @@ export default function WorkflowInputsEditor({
                   <button
                     onClick={() => setEditingProp(propName)}
                     className={`p-1.5 rounded transition-colors ${
-                      isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-400 hover:text-indigo-600'
+                      isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-blue-400' : 'hover:bg-gray-100 text-gray-400 hover:text-blue-600'
                     }`}
                     title="Edit"
                   >

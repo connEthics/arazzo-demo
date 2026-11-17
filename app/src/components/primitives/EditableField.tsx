@@ -98,7 +98,7 @@ export default function EditableField({
   badge,
   compact = false,
   validate,
-  borderColor = 'border-indigo-400',
+  borderColor = 'border-blue-400',
   className = '',
 }: EditableFieldProps) {
   // Internal edit state (used for hover/click modes)
@@ -164,7 +164,7 @@ export default function EditableField({
   const mutedClass = isDark ? 'text-slate-400' : 'text-gray-500';
   const hoverBgClass = isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100';
   const inputBorderClass = isDark ? 'border-slate-600' : 'border-gray-300';
-  const focusRingClass = isDark ? 'focus:ring-indigo-500 focus:border-indigo-500' : 'focus:ring-indigo-500 focus:border-indigo-500';
+  const focusRingClass = isDark ? 'focus:ring-blue-500 focus:border-blue-500' : 'focus:ring-blue-500 focus:border-blue-500';
 
   // Render the read-only view
   const renderReadView = () => (

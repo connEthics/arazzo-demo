@@ -51,7 +51,7 @@ export default function StepHeader({
     const containerClasses = useMemo(() => {
         switch (variant) {
             case 'node':
-                return `bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800 px-3 py-2 flex items-center gap-2 flex-wrap ${className}`;
+                return `bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 px-3 py-2 flex items-center gap-2 flex-wrap ${className}`;
             case 'card':
                 return `flex items-center gap-3 p-3 transition-opacity ${className}`;
             case 'inspector':
@@ -192,6 +192,6 @@ function getMethodBg(method: string | null) {
         case 'PUT':
         case 'PATCH': return 'bg-amber-500';
         case 'DELETE': return 'bg-red-500';
-        default: return 'bg-indigo-500';
+        default: return 'bg-blue-500';
     }
 }

@@ -106,10 +106,10 @@ export default function ResizableInspectorPanel({
         {/* Visual indicator */}
         <div className={`w-full h-full transition-colors ${
           isResizing 
-            ? 'bg-indigo-500' 
+            ? 'bg-blue-500' 
             : isDark 
-              ? 'bg-slate-700 group-hover:bg-indigo-500/50' 
-              : 'bg-gray-200 group-hover:bg-indigo-400/50'
+              ? 'bg-slate-700 group-hover:bg-blue-500/50' 
+              : 'bg-gray-200 group-hover:bg-blue-400/50'
         }`} />
         
         {/* Grip dots - visible on hover */}

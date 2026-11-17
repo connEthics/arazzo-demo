@@ -170,7 +170,7 @@ export default function StepBody({
                                 handleUpdate({ parameters: newParams });
                                 setNewlyAddedKey(`param-${newParams.length - 1}`);
                             }}
-                            className="text-xs text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
+                            className="text-xs text-blue-500 hover:text-blue-400 flex items-center gap-1"
                         >
                             + Add
                         </button>
@@ -271,7 +271,7 @@ export default function StepBody({
                                                     : JSON.stringify(step.requestBody!.payload, null, 2));
                                                 setIsEditingPayload(true);
                                             }}
-                                            className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-400"
+                                            className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-400"
                                         >
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -285,7 +285,7 @@ export default function StepBody({
                                 <button
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={() => handleUpdate({ requestBody: { contentType: 'application/json', payload: {} } })}
-                                    className="text-xs text-indigo-500 hover:text-indigo-400"
+                                    className="text-xs text-blue-500 hover:text-blue-400"
                                 >
                                     + Add Body
                                 </button>
@@ -305,7 +305,7 @@ export default function StepBody({
                                                 onChange={(e) => handleUpdate({
                                                     requestBody: { ...step.requestBody!, contentType: e.target.value }
                                                 })}
-                                                className={`flex-1 bg-transparent border-none outline-none text-xs font-semibold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}
+                                                className={`flex-1 bg-transparent border-none outline-none text-xs font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
                                             >
                                                 <option value="application/json">application/json</option>
                                                 <option value="application/xml">application/xml</option>
@@ -351,8 +351,8 @@ export default function StepBody({
                                                 }
                                             }}
                                             className={`w-full px-3 py-2 rounded-md border text-xs font-mono h-32 resize-none transition-all
-                                                ${isDark ? 'bg-slate-800 border-slate-700 text-cyan-400 focus:border-indigo-500' : 'bg-gray-50 border-gray-200 text-indigo-600 focus:border-indigo-400'}
-                                                focus:ring-2 focus:ring-indigo-500/20 outline-none shadow-inner`}
+                                                ${isDark ? 'bg-slate-800 border-slate-700 text-cyan-400 focus:border-blue-500' : 'bg-gray-50 border-gray-200 text-blue-600 focus:border-blue-400'}
+                                                focus:ring-2 focus:ring-blue-500/20 outline-none shadow-inner`}
                                             placeholder='{"key": "$inputs.value"}'
                                         />
                                         <div className="absolute right-2 bottom-2 pointer-events-none opacity-40 text-[9px] font-medium">
@@ -407,7 +407,7 @@ export default function StepBody({
                     actions={canEdit && (
                         <button
                             onClick={() => handleUpdate({ successCriteria: [...(step.successCriteria || []), { condition: '' }] })}
-                            className="text-xs text-indigo-500 hover:text-indigo-400"
+                            className="text-xs text-blue-500 hover:text-blue-400"
                         >
                             + Add
                         </button>
